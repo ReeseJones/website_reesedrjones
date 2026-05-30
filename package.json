@@ -5,7 +5,9 @@
   "source": "src/index.html",
   "scripts": {
     "start": "parcel",
-    "build": "parcel build"
+    "build": "parcel build",
+    "deploy": "npm run build && wrangler deploy",
+    "preview": "npm run build && wrangler dev"
   },
   "dependencies": {
     "react": "^19.1.0",
@@ -14,6 +16,7 @@
   "devDependencies": {
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
-    "parcel": "^2.14.0"
+    "parcel": "^2.14.0",
+    "wrangler": "^4.95.0"
   }
 }
