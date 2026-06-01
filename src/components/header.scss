@@ -1,0 +1,65 @@
+@use "./../shared";
+
+header {
+    display: block;
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    flex: 0 0 auto;
+    background: shared.$primary-color;
+    border-bottom: shared.$primary-light-color solid 0.25rem;
+
+    a {
+        color: #dfdfdf;
+        min-height: 0;
+        flex: 1 1 fit-content;
+        margin: 1rem;
+        font-size: 1.5rem;
+        position: relative;
+        text-decoration: none;
+        transition: color 0.5s ease-out;
+    }
+
+    a:hover, a:focus {
+        color: #6ac3ff;
+        text-decoration: none;
+    }
+
+    a::after {
+        border-radius: 1em;
+        border-top: 0.1em solid #dfdfdf;
+        content: "";
+        position: absolute;
+        right: 100%;
+        bottom: 0;
+        left: 0;
+        transition: right 0.5s cubic-bezier(0, 0.5, 0, 1),
+            border-color 0.4s ease-out;
+    }
+
+    a:hover::after, a:focus::after {
+        right: 0;
+        border-color: #6ac3ff;
+        transition: right 0.5s cubic-bezier(0, 0.5, 0, 1),
+            border-color 0.4s ease-out;
+    }
+}
+
+header section {
+    display: block;
+    min-height: 0;
+    flex: 1 0;
+}
+
+header nav {
+    min-height: 0;
+    flex: 0 0 fit-content;
+    display: flex;
+    flex-direction: row;
+}
+
+.logo {
+    font-size: 2rem;
+    padding: 1rem;
+    padding-left: 3rem;
+}

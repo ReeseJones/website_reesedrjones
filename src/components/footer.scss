@@ -1,0 +1,33 @@
+@use "./../shared";
+
+.footer {
+    padding-top: 1em;
+    padding-bottom: 1em;
+    display: flex;
+    justify-content: center;
+    background: shared.$background-color;
+    border-top: shared.$primary-light-color solid 0.25rem;
+    flex: 0 0 auto;
+
+    ul {
+        margin: 0;
+        display: flex;
+        min-height: 0;
+        flex: 0 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: flex-start;
+
+        li {
+            white-space: pre;
+            display: flex;
+            flex-direction: row;
+            font-weight: normal;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            span {
+                font-weight: 900;
+            }
+        }
+    }
+}

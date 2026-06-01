@@ -1,0 +1,30 @@
+@use "shared";
+
+// stretch	Default. Items are stretched to fit the container	
+// center	Items are positioned at the center of the container	
+// flex-start	Items are positioned at the beginning of the container	
+// flex-end	Items are positioned at the end of the container	
+// baseline	Items are positioned at the baseline of the container	
+// initial	Sets this property to its default value. Read about initial	
+// inherit	Inherits this property from its parent element. Read about inherit
+
+@mixin flex-container($flex-dir, $align) {
+    position: relative;
+    display: flex;
+    flex-direction: $flex-dir;
+    justify-content: flex-start;
+    align-items: $align;
+}
+
+.flex {
+    position: relative;
+    display: flex;
+}
+
+.flex.row {
+    flex-direction: row;
+}
+
+.flex.column {
+    flex-direction: column;
+}

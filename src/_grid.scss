@@ -1,0 +1,132 @@
+/*
+Modified from https://github.com/elliotdahl/flex-grid-lite
+License: https://github.com/elliotdahl/flex-grid-lite/blob/master/LICENSE
+*/
+@use "sass:math";
+
+//Base unit used for spacing gutters
+$base-unit: 3rem;
+
+//Screen Sizes
+$screen-sm: 480px;
+$screen-md: 624px;
+$screen-lg: 744px;
+
+////////////////////////
+//The Flex Grid
+////////////////////////
+.grid {
+    box-sizing: border-box;
+    display: -webkit-flex;
+    display: -ms-flexbox;
+    display: -webkit-box;
+    display: flex;
+    -webkit-flex: 0 1 auto;
+    -ms-flex: 0 1 auto;
+    -webkit-box-flex: 0;
+    flex: 0 1 auto;
+    -webkit-flex-direction: row;
+    -ms-flex-direction: row;
+    -webkit-box-orient: horizontal;
+    -webkit-box-direction: normal;
+    flex-direction: row;
+    -webkit-flex-wrap: wrap;
+    -ms-flex-wrap: wrap;
+    flex-wrap: wrap;
+    //margin: 0 ($base-unit * -1) 0 ($base-unit * -1);
+    //Use this modifier to remove gutters
+    &.nogutter {
+        margin: 0;
+        & > .col {
+            padding: 0;
+        }
+    }
+}
+
+.col {
+    box-sizing: border-box;
+    -webkit-flex: 0 0 auto;
+    -ms-flex: 0 0 auto;
+    flex: 0 0 auto;
+    -webkit-flex-grow: 1;
+    -ms-flex-positive: 1;
+    -webkit-box-flex: 1;
+    flex-grow: 1;
+    -ms-flex-preferred-size: 0;
+    -webkit-flex-basis: 0;
+    flex-basis: 0;
+    max-width: 100%;
+    min-width: 0;
+    padding: 0 $base-unit 0 $base-unit;
+
+    &.justify-center {
+        justify-content: center;
+        text-align: center;
+    }
+}
+
+////////////////////////
+//Column Modifiers
+////////////////////////
+
+//Column Vertical Alignment Classes
+.col-align-top {
+    -webkit-align-self: flex-start;
+    -ms-flex-item-align: start;
+    align-self: flex-start;
+}
+
+.col-align-bottom {
+    align-self: flex-end;
+}
+
+.col-align-middle {
+    -webkit-align-self: center;
+    -ms-flex-item-align: center;
+    align-self: center;
+}
+
+////////////////////////
+//Column Sizing Classes
+////////////////////////
+
+//Fixed Column Class
+.col-fixed {
+    flex: initial;
+}
+
+//Percent Based Columns
+@for $i from 1 through 12 {
+  .col-#{$i} {
+    -ms-flex-preferred-size: math.div(100%, 12) * $i;
+    -webkit-flex-basis: math.div(100%, 12) * $i;
+    flex-basis: math.div(100%, 12) * $i;
+    max-width: math.div(100%, 12) * $i;
+  }
+}
+
+//////////////////
+//Media Queries
+//////////////////
+@media only screen and (max-width: $screen-sm) {
+    .col-sm {
+        flex: 100%;
+        max-width: 100%;
+    }
+}
+
+@media only screen and (max-width: $screen-md) {
+
+    .col-md {
+        flex: 100%;
+        max-width: 100%;
+    }
+
+}
+
+@media only screen and (max-width: $screen-lg) {
+    .col-lg {
+        flex: 100%;
+        max-width: 100%;
+    }
+}

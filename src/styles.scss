@@ -1,0 +1,137 @@
+@use "clear";
+@use "shared";
+@use "flex";
+@use "grid";
+@use "gallery";
+
+html {
+  color-scheme: light dark;
+  font-family: system-ui;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
+.article-body {
+    @include flex.flex-container(column, center);
+    flex: 1 1 0;
+    .image-wrapper {
+        margin-top: 8rem;
+        border-radius: 50%;
+        border-width: 4px;
+        border-color: white;
+        border-style: none;
+    }
+}
+
+.content {
+    @include flex.flex-container(column, center);
+    flex: 1 1 0;
+}
+
+.page-content {
+    max-width: 960px;
+    background-color: shared.$background-color;
+
+    h1, h2, h3, h4, h5, h6 {
+        padding: 2rem;
+        color: shared.$font-highlight-color;
+        text-align: center;
+        font-size: 2rem;
+    }
+
+    p {
+        padding-bottom: 1rem;
+        font-size: 1rem;
+    }
+}
+
+.hero-title {
+    margin-top: 3rem;
+    margin-bottom: 0rem;
+    font-size: 4rem;
+}
+
+.border {
+    @include shared.border;
+}
+
+.hero-body {
+    margin: 0;
+    font-size: 1.5rem;
+    padding-bottom: 4rem;
+}
+
+.anim-background {
+    @include flex.flex-container(column, center);
+    width: 100%;
+    height: 100%;
+    position: absolute;
+}
+
+.hero-effect {
+    z-index: -10;
+    position: fixed;
+    left: 0;
+    top: 0;
+}
+
+a {
+    color: #dfdfdf;
+    min-height: 0;
+    position: relative;
+    text-decoration: none;
+    transition: color 0.5s ease-out;
+}
+
+a:hover, a:focus {
+    color: shared.$font-highlight-color;;
+    text-decoration: none;
+}
+
+a::after {
+    border-radius: 1em;
+    border-top: 0.1em solid #dfdfdf;
+    content: "";
+    position: absolute;
+    right: 100%;
+    bottom: 0;
+    left: 0;
+    transition: right 0.5s cubic-bezier(0, 0.5, 0, 1),
+    border-color 0.4s ease-out;
+}
+
+a:hover::after {
+    right: 0;
+    border-color: shared.$font-highlight-color;
+    transition: right 0.5s cubic-bezier(0, 0.5, 0, 1),
+    border-color 0.4s ease-out;
+}
+
+.scroll-region {
+    @include flex.flex-container(column, center);
+    align-items: stretch;
+    overflow-y: auto;
+    width: 100%;
+    flex: 1 1;
+}
+
+::-webkit-scrollbar {
+    width: 12px;
+}
+
+::-webkit-scrollbar-track {
+    //background: shared.$primary-color;
+    //border: 0.25rem solid shared.$primary-light-color;
+    background: shared.$primary-color;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #888;
+    //border-radius: 1rem;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}

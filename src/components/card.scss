@@ -1,0 +1,42 @@
+@use "./../shared" as shared;
+@use "./../flex" as flex;
+
+.card-container {
+    @include flex.flex-container(row, stretch);
+    flex-wrap: wrap;
+    justify-content: space-evenly;
+    gap: 1rem;
+}
+
+.card {
+    @include flex.flex-container(column, center);
+    justify-content: end;
+    flex:  0 0 auto;
+    background: #1f1f1f;
+    color: shared.$light-font-color;
+    //border-radius: 1rem;
+    overflow: hidden;
+    width: 360px;
+}
+
+.card-details {
+    @include flex.flex-container(column, center);
+    flex: 1 1 auto;
+    padding: shared.$padding-size
+}
+
+.card-title {
+    font-weight: 800;
+    font-size: 1.5rem;
+}
+
+.card-background {
+    position: relative;
+    width: 100%;
+}
+
+.card-content {
+    @include flex.flex-container(column, center);
+    flex: 1 1 auto;
+    padding: shared.$padding-size
+}

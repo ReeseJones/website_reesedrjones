@@ -1,0 +1,17 @@
+@use "./../../shared";
+
+.page-content {
+    .card {
+        @include shared.border;
+    }
+}
+
+
+.hero-image {
+    @include shared.border;
+}
+
+
+.blog-article {
+    //TODO: Set Styles for MD files
+}
