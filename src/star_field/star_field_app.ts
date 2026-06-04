@@ -1,4 +1,4 @@
-import { Application, PointData, Particle as PixiParticle, Assets, ParticleContainer, Point, Texture } from "pixi.js";
+import { Application, PointData, Particle as PixiParticle, Assets, ParticleContainer, Point, Texture, WRAP_MODES } from "pixi.js";
 
 import starCloudFilepath from "url:../images/starcloud.png";
 
@@ -38,6 +38,8 @@ export class StarField {
             console.error("Failed to load star texture");
             return;
         }
+
+        this.starTexture.source.addressMode = "repeat";
 
         this.particleContainer.blendMode = "add";
         this.app.stage.addChild(this.particleContainer);

@@ -13,7 +13,7 @@ export const usePixiApp = () => {
         console.log("Creating new pixi app");
         const tempApp = new PIXI.Application();
 
-        tempApp.init({
+        const initPromise = tempApp.init({
             resolution: window.devicePixelRatio || 1,
             backgroundColor: 0
         }).then(() => {
@@ -24,9 +24,11 @@ export const usePixiApp = () => {
 
         return () => {
             console.log("destroying pixi app");
-            pixiApp.current?.destroy(true, true);
-            pixiApp.current = null;
-            setAppInitialized(false);
+            initPromise.finally(() => {
+                pixiApp.current?.destroy(true, true);
+                pixiApp.current = null;
+                setAppInitialized(false);
+            })
         };
     }, []);
 

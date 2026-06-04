@@ -1,5 +1,7 @@
 import { ImageGallery } from "../components/image_gallery";
 
+import makingBaconFilepath from "url:../images/makin-bacon.jpg?width=263&height=315";
+
 export const AboutMePage = () => {
 
     const imageData = [
@@ -18,7 +20,7 @@ export const AboutMePage = () => {
             <div className="grid col col-lg col-6 justify-center">
                 <img
                     className="border"
-                    src={"../images/makin-bacon.jpg"}
+                    src={makingBaconFilepath}
                     alt="Reese Jones making bacon while at a camping trip"
                 ></img>
             </div>
