@@ -7,7 +7,7 @@ export interface ArticlesIndexPageProps {
     cards: ICardProps[];
 }
 
-export const ArticlesIndexPage = (props: ArticlesIndexPageProps) => {
+export const ArticlesIndexPage = () => {
 
     const cards: ICardProps[] = [];
 
