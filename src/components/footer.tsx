@@ -7,19 +7,22 @@ export const Footer = () => {
                 <h2>Contact</h2>
                 <ul>
                     <li key={"email"}>
-                        <span>Email:</span> reesedrjones@gmail.com
+                        <span>Email: </span><a href="mailto:reesedrjones@gmail.com">reesedrjones@gmail.com</a>
                     </li>
                     <li key={"phone number"}>
-                        <span>Phone: </span> 425-591-2419
+                        <span>Phone: </span>
+                        <a href="tel:425-591-2419">
+                            425-591-2419
+                        </a>
                     </li>
                     <li key={"Linkedin"}>
-                        <span>LinkedIn: </span>{" "}
+                        <span>LinkedIn: </span>
                         <a href="https://www.linkedin.com/in/reesedrjones/">
                             www.linkedin.com/in/reesedrjones
                         </a>
                     </li>
                     <li key={"github"}>
-                        <span>GitHub: </span>{" "}
+                        <span>GitHub: </span>
                         <a href="https://github.com/ReeseJones">
                             https://github.com/ReeseJones
                         </a>

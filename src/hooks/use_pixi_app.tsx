@@ -4,55 +4,86 @@ import { useEffect, useRef, useState } from "react";
 
 export const usePixiApp = () => {
     const [appContainer, setAppContainer] = useState<HTMLElement | null>(null);
-    const [viewMounted, setViewMounted] = useState(false);
     const [appInitialized, setAppInitialized] = useState(false);
-
+    const [appReady, setAppReady] = useState(false);
     const pixiApp = useRef<PIXI.Application | null>(null);
 
+    // Load Pixi App on mount and destroy on unmount.
     useEffect(() => {
         console.log("Creating new pixi app");
-        const tempApp = new PIXI.Application();
+        let isMounted = true;
+        pixiApp.current = new PIXI.Application();
 
-        const initPromise = tempApp.init({
+        const initPromise = pixiApp.current.init({
             resolution: window.devicePixelRatio || 1,
-            backgroundColor: 0
+            backgroundColor: 0,
         }).then(() => {
-            tempApp.canvas.classList.add("hero-effect");
-            pixiApp.current = tempApp;
+            if(!isMounted) {
+                return;
+            }
+            // After pixiApp is initialized it may be used.
+            pixiApp.current?.canvas.classList.add("hero-effect");
             setAppInitialized(true);
+            console.log("Pixi app initialized");
+        }).catch((error) => {
+            if(!isMounted) {
+                return;
+            }
+            console.log("Pixi app initialized failed with error: ", error);
+            setAppInitialized(false);
         });
 
         return () => {
+            isMounted = false;
             console.log("destroying pixi app");
+            const appRef = pixiApp.current;
             initPromise.finally(() => {
-                pixiApp.current?.destroy(true, true);
-                pixiApp.current = null;
-                setAppInitialized(false);
-            })
+                appRef?.destroy();
+                console.log("Pixi app destroyed");
+            });
         };
     }, []);
 
     // Add pixi canvas to the DOM.
     useEffect(() => {
-        if (appContainer !== null && pixiApp.current) {
-            console.log("Added pixi view");
-            pixiApp.current.resizeTo = window;
+        let isMounted = true;
+        // No app set yet
+        if (!pixiApp.current) {
+            return;
+        }
+
+        // App not initialized yet, wait for initialization before adding to the DOM.
+        if(!appInitialized) {
+            return;
+        }
+
+        if (appContainer != null) {
+            console.log("Adding Pixi Canvas to the DOM");
             appContainer.appendChild(pixiApp.current.canvas);
-            setTimeout(() => pixiApp.current?.resize(), 1);
+            pixiApp.current.resizeTo = appContainer;
+            // Force onetime resize.
+            setTimeout(() => {
+                if(!isMounted) {
+                    return;
+                }
+                pixiApp.current?.resize();
+                setAppReady(true);
+            }, 1);
+        } else {
+            pixiApp.current.canvas.remove();
+            console.log("Container Cleared: Pixi Canvas from the DOM");
+            setAppReady(false);
         }
 
         // Remove pixi canvas from the DOM on cleanup.
-        return () => {
-            if (pixiApp.current && appContainer) {
-                console.log("removed pixi view");
-                
-                pixiApp.current.canvas.remove();
-                setViewMounted(false);
-                pixiApp.current.resizeTo = undefined as any;
-            }
+        return () => {  
+            isMounted = false;
+            pixiApp.current?.canvas?.remove();
+            console.log("Unmounted: Pixi Canvas from the DOM");
         };
     }, [appContainer, appInitialized]);
 
+/*
     useEffect(() => {
         const resizeChecker = setInterval(() => {
             const resizeTarget = pixiApp.current?.resizeTo;
@@ -79,12 +110,13 @@ export const usePixiApp = () => {
             clearInterval(resizeChecker);
         };
     }, [viewMounted]);
+*/
 
-    const containerMounting = React.useCallback((node: HTMLDivElement) => {
-        if (node) {
+    const setPixiAppContainer = React.useCallback((node?: HTMLElement | null) => {
+        if (node && node.isConnected) {
             setAppContainer(node);
         }
     }, []);
 
-    return [containerMounting, pixiApp, viewMounted] as const;
+    return [setPixiAppContainer, pixiApp, appReady] as const;
 };

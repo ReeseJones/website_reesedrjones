@@ -16,10 +16,11 @@ export const Layout = (props: LayoutProps) => {
     const [starDepth, setStarDepth] = useState(7);
     const [maxEdges, setMaxEdges] = useState(3);
     const [minEdges, setMinEdges] = useState(1);
-    const [containerRef, pixiApp, viewMounted] = usePixiApp();
+    const [setAppContainer, pixiAppRef, appReady] = usePixiApp();
 
-    usePixiStarBackground(
-        pixiApp.current,
+    const [starField, starfieldIsReady] = usePixiStarBackground(
+        pixiAppRef,
+        appReady,
         starDepth,
         maxEdges,
         minEdges,
@@ -28,7 +29,7 @@ export const Layout = (props: LayoutProps) => {
 
     return (
         <>
-            <div className="anim-background" ref={containerRef}>
+            <div className="anim-background" ref={setAppContainer}>
                 <Header />
                 <div className="scroll-region">
                     <div className="content">

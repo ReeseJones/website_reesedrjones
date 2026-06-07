@@ -1,4 +1,4 @@
-import { Application, PointData, Particle as PixiParticle, Assets, ParticleContainer, Point, Texture, WRAP_MODES } from "pixi.js";
+import { Application, Particle as PixiParticle, Assets, ParticleContainer, Point, Texture } from "pixi.js";
 
 import starCloudFilepath from "url:../images/starcloud.png";
 
@@ -7,6 +7,7 @@ import { Particle } from "./particle";
 import { StarFieldParameters } from "./star_field_parameters";
 import { LineRenderer } from "./line_renderer";
 import { spawnStars } from "./star_spawner";
+import { add, subtract, length, normalize, scale } from "../maths/vector";
 
 
 export class StarField {
@@ -22,7 +23,8 @@ export class StarField {
     }});
 
     private stars: Particle[] = [];
-    private lastPosition = new Point(0, 0);
+    private currentPosition = new Point(0, 0);
+    private targetPosition = new Point(0, 0);
     private starTexture: Texture | null = null;
     private lineRenderer: LineRenderer | null = null;
     private parallaxSpeedMultiplier = 0.7;
@@ -77,7 +79,7 @@ export class StarField {
 
         for (const star of stars) {
 
-            const offset = this.getMouseOffsetPosition(star.scale);
+            const offset = this.getStarOffset(star.scale);
 
             star.particle = new PixiParticle({
                  texture: this.starTexture,
@@ -118,26 +120,39 @@ export class StarField {
         this.lineRenderer?.destroy();
     }
 
-    private getMouseOffsetPosition = (speedMultiplier: number) => {
-        const mousePos: PointData =
-            this.app.renderer.events.pointer.global;
+    private updateMousePosition = (dt: number) => {
+        const mousePos = this.app.renderer.events.pointer.global;
 
         mousePos.x = clamp(mousePos.x, 0, window.innerWidth);
         mousePos.y = clamp(mousePos.y, 0, window.innerHeight);
 
-        if (this.lastPosition.x === 0 && this.lastPosition.y === 0) {
-            this.lastPosition = new Point(mousePos.x, mousePos.y);
+        if (this.currentPosition.x === 0 && this.currentPosition.y === 0 && (mousePos.x !== 0 || mousePos.y !== 0)) {
+            console.log(`initial mouse position set: ${mousePos}`);
+            this.currentPosition = new Point(mousePos.x, mousePos.y);
+            this.targetPosition = new Point(mousePos.x, mousePos.y);
         }
 
+        this.targetPosition = new Point(mousePos.x, mousePos.y);
+        let moveDir = subtract(this.targetPosition, this.currentPosition);
+        scale(moveDir, { x: dt, y: dt }, moveDir);
+        add(
+            this.currentPosition,
+            moveDir,
+            this.currentPosition
+        );
+    }
+
+    private getStarOffset = (speedMultiplier: number) => {
+        const currentPos = this.currentPosition;
         const screenWidth = this.app.screen.width;
         const screenHeight = this.app.screen.height;
 
         const vec = {
             x:
-                (mousePos.x - screenWidth / 2) / (screenWidth / 2) +
+                (currentPos.x - screenWidth / 2) / (screenWidth / 2) +
                 Math.sin(this.spinner * Math.PI) * Math.cos(this.spinner * 25),
             y:
-                (mousePos.y - screenHeight / 2) / (screenHeight / 2) +
+                (currentPos.y - screenHeight / 2) / (screenHeight / 2) +
                 Math.sin(3 * this.spinner * Math.PI) * Math.cos(this.spinner * 25)
         };
         const finalOffset = {
@@ -158,12 +173,13 @@ export class StarField {
     private update = () => {
         const dt = this.app.ticker.elapsedMS / 1000;
         this.spinner += (Math.PI / 512) * dt;
+        this.updateMousePosition(dt);
         for (let i = 0; i < this.stars.length; i++) {
             const star = this.stars[i];
             star.direction += star.directionSpeed * dt;
             if (star.particle) {
                 star.particle.rotation = star.direction;
-                const offset = this.getMouseOffsetPosition(star.scale);
+                const offset = this.getStarOffset(star.scale);
                 star.particle.x = star.position.x + offset.x;
                 star.particle.y = star.position.y + offset.y;
             }
