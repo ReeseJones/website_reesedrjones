@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="262.36429mm"
+   height="265.70154mm"
+   viewBox="0 0 262.36429 265.70154"
+   version="1.1"
+   id="svg1"
+   inkscape:version="1.4.2 (f4327f4, 2025-05-13)"
+   sodipodi:docname="favicon.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="mm"
+     showguides="false"
+     inkscape:window-width="3840"
+     inkscape:window-height="2066"
+     inkscape:window-x="-11"
+     inkscape:window-y="-11"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1" />
+  <defs
+     id="defs1">
+    <rect
+       x="122.39095"
+       y="109.79188"
+       width="190.78589"
+       height="194.38562"
+       id="rect4" />
+    <rect
+       x="31.497669"
+       y="102.59241"
+       width="804.54047"
+       height="852.23694"
+       id="rect3" />
+    <rect
+       x="42.296871"
+       y="179.98669"
+       width="732.54584"
+       height="734.3457"
+       id="rect2" />
+    <filter
+       style="color-interpolation-filters:sRGB;"
+       inkscape:label="Drop Shadow"
+       id="filter18"
+       x="-0.0056031017"
+       y="-0.0040167284"
+       width="1.0462256"
+       height="1.033138">
+      <feFlood
+         result="flood"
+         in="SourceGraphic"
+         flood-opacity="1.000000"
+         flood-color="rgb(0,0,0)"
+         id="feFlood17" />
+      <feGaussianBlur
+         result="blur"
+         in="SourceGraphic"
+         stdDeviation="0.200000"
+         id="feGaussianBlur17" />
+      <feOffset
+         result="offset"
+         in="blur"
+         dx="3.000000"
+         dy="3.000000"
+         id="feOffset17" />
+      <feComposite
+         result="comp1"
+         operator="in"
+         in="flood"
+         in2="offset"
+         id="feComposite17" />
+      <feComposite
+         result="comp2"
+         operator="over"
+         in="SourceGraphic"
+         in2="comp1"
+         id="feComposite18" />
+    </filter>
+    <rect
+       x="122.39095"
+       y="109.79188"
+       width="190.78589"
+       height="194.38562"
+       id="rect21" />
+  </defs>
+  <g
+     inkscape:groupmode="layer"
+     id="layer1"
+     inkscape:label="Layer 1"
+     transform="translate(16.715382,-9.8165674)">
+    <rect
+       style="fill:#000000;stroke-width:0.264583"
+       id="rect1-9"
+       width="256"
+       height="256"
+       x="-10.351094"
+       y="19.518108"
+       rx="32"
+       ry="32"
+       inkscape:label="shadow" />
+    <rect
+       style="fill:#999999;stroke-width:0.264583"
+       id="rect1"
+       width="256"
+       height="256"
+       x="-16.715382"
+       y="9.8165674"
+       rx="32"
+       ry="32"
+       inkscape:label="base" />
+    <text
+       xml:space="preserve"
+       transform="matrix(1.7326516,0,0,1.5601755,-262.52696,-183.071)"
+       id="text21"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:170.667px;line-height:1.25;font-family:'Segoe UI';-inkscape-font-specification:'Segoe UI Bold';text-align:center;letter-spacing:0px;word-spacing:0px;white-space:pre;shape-inside:url(#rect21);display:inline;fill:#1a1a1a;fill-opacity:1;stroke-width:0.999786;stroke-dasharray:none"
+       x="51.333435"
+       y="0"><tspan
+         x="162.07574"
+         y="263.52008"
+         id="tspan2"><tspan
+           style="display:inline"
+           id="tspan1">R</tspan></tspan></text>
+    <text
+       xml:space="preserve"
+       transform="matrix(1.7326516,0,0,1.5601755,-277.34329,-190.43957)"
+       id="text3"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:170.667px;line-height:1.25;font-family:'Segoe UI';-inkscape-font-specification:'Segoe UI Bold';text-align:center;letter-spacing:0px;word-spacing:0px;white-space:pre;shape-inside:url(#rect4);display:inline;fill:#1414ff;fill-opacity:1;stroke-width:0.999786;stroke-dasharray:none"
+       x="51.333435"
+       y="0"><tspan
+         x="162.07574"
+         y="263.52008"
+         id="tspan5"><tspan
+           style="display:inline"
+           id="tspan3">R</tspan></tspan></text>
+  </g>
+</svg>

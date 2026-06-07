@@ -1,18 +1,17 @@
-import * as React from "react";
-import * as PIXI from "pixi.js";
-import { useEffect, useRef, useState } from "react";
+import { Application } from "pixi.js";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 export const usePixiApp = () => {
     const [appContainer, setAppContainer] = useState<HTMLElement | null>(null);
     const [appInitialized, setAppInitialized] = useState(false);
     const [appReady, setAppReady] = useState(false);
-    const pixiApp = useRef<PIXI.Application | null>(null);
+    const pixiApp = useRef<Application | null>(null);
 
     // Load Pixi App on mount and destroy on unmount.
     useEffect(() => {
         console.log("Creating new pixi app");
         let isMounted = true;
-        pixiApp.current = new PIXI.Application();
+        pixiApp.current = new Application();
 
         const initPromise = pixiApp.current.init({
             resolution: window.devicePixelRatio || 1,
@@ -83,36 +82,7 @@ export const usePixiApp = () => {
         };
     }, [appContainer, appInitialized]);
 
-/*
-    useEffect(() => {
-        const resizeChecker = setInterval(() => {
-            const resizeTarget = pixiApp.current?.resizeTo;
-            const view = pixiApp.current?.canvas;
-            if (resizeTarget && view) {
-                if (
-                    window.innerWidth === view.offsetWidth &&
-                    window.innerHeight === view.offsetHeight
-                ) {
-                    if (!viewMounted) {
-                        console.log("Mounted the view");
-                        setViewMounted(true);
-                    }
-                } else {
-                    if (viewMounted) {
-                        console.log("View Unmounted");
-                        setViewMounted(false);
-                    }
-                }
-            }
-        }, 100);
-
-        return () => {
-            clearInterval(resizeChecker);
-        };
-    }, [viewMounted]);
-*/
-
-    const setPixiAppContainer = React.useCallback((node?: HTMLElement | null) => {
+    const setPixiAppContainer = useCallback((node?: HTMLElement | null) => {
         if (node && node.isConnected) {
             setAppContainer(node);
         }

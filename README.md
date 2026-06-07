@@ -9,18 +9,25 @@ Clone or fork this repository and use npm to setup the project
 
 ```bash
 git clone https://github.com/ReeseJones/website_reesedrjones.git
+cd website_reesedrjones
 npm install
 ```
 
 ## Running
 
-This project can be cloned and run locally with npm
+Run this project locally with npm
 
 ```bash
 npm run start
 ```
 
 This starts [Parcel](https://parceljs.org/) which bundles and locally hosts the website.
+
+I chose Parcel because it
+ - Integrates JavaScript and HTML seamlessly
+ - Deals with asset management such as loading images between code and webpages
+ - Automatically handles bundling css and compiling scss
+ - Is easy to use developing locally for my static website
 
 ## Publishing
 
