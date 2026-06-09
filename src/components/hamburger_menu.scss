@@ -1,0 +1,28 @@
+.hamburger-menu {
+    display: flex;
+    flex-direction: column;
+}
+
+.hamburger-menu heading {
+    width: 100%;
+}
+
+.hamburger-menu .content {
+    display: none;
+}
+
+.hamburger-menu > button {
+    width: 48px;
+    height: 48px;
+}
+
+
+.desktop {
+    .hamburger-menu .content {
+        display: unset;
+    }
+
+    .hamburger-menu > button {
+        display: none;
+    }
+}

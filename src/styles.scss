@@ -13,15 +13,20 @@ html {
   height: 100%;
 }
 
+#app {
+    width: 100%;
+    height: 100%;
+}
+
 .article-body {
     @include flex.flex-container(column, center);
     flex: 1 1 0;
-    .image-wrapper {
+    img {
         margin-top: 8rem;
         border-radius: 50%;
         border-width: 4px;
         border-color: white;
-        border-style: none;
+        border-style: solid;
     }
 }
 
