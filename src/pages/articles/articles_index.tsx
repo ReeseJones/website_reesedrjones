@@ -18,4 +18,8 @@ export class PageIndex<T> {
     getPageParams(name: string): T | undefined {
         return this.pages.get(name);
     }
+
+    getAllPages(): T[] {
+        return [...this.pages.values()];
+    }
 }

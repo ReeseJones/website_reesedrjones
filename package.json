@@ -2,7 +2,7 @@
   "name": "website_reesedrjones",
   "private": true,
   "version": "1.0.0",
-  "source": "src/index.html",
+  "source": "./src/index.html",
   "scripts": {
     "start": "parcel",
     "build": "parcel build",
@@ -17,6 +17,7 @@
     "react-router-dom": "^7.16.0"
   },
   "devDependencies": {
+    "@parcel/resolver-glob": "^2.16.4",
     "@parcel/transformer-sass": "^2.16.4",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",

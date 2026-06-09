@@ -1,1 +1,1 @@
-import "./flex_gallery";
+import "./flexbox_gallery/flex_gallery";

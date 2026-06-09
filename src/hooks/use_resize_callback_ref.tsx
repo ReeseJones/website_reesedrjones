@@ -1,6 +1,12 @@
 import { useCallback, useRef } from 'react';
 
-type ResizeCallback = (dimensions: { width: number; height: number }, element: HTMLElement) => void;
+export interface Dimensions {
+  width: number;
+  height: number;
+}
+
+
+export type ResizeCallback = (dimensions: Dimensions, element: HTMLElement) => void;
 
 export const useResizeCallbackRef = <T extends HTMLElement>(onResize: ResizeCallback) => {
   const observerRef = useRef<ResizeObserver | null>(null);

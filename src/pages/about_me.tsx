@@ -1,16 +1,15 @@
 import { ImageGallery } from "../components/image_gallery";
 
-import makingBaconFilepath from "url:../images/makin-bacon.jpg?width=263&height=315";
+import makingBaconFilepath from "url:/src/images/makin-bacon.jpg?width=263&height=315";
+import playingBeatsaberFilepath from "url:/src/images/playing_beatsaber.jpg?width=263&height=315";
+
+import images from 'url:/src/images/about-me-gallery/*.jpg';
+
+const imageMap = images as unknown as Record<string, string>;
+const imageUrls = Object.values(imageMap);
 
 export const AboutMePage = () => {
 
-    const imageData = [
-        "../images/pottery.jpg",
-        "../images/board.jpg",
-        "../images/bike.jpg",
-        "../images/puzzle.jpg",
-        "../images/dog.jpg",
-    ];
 
     return (
         <div className="page-content grid">
@@ -74,7 +73,7 @@ export const AboutMePage = () => {
             <div className="grid col col-lg col-6 justify-center">
                 <img
                     className="border"
-                    src={"../images/playing_beatsaber.JPG"}
+                    src={playingBeatsaberFilepath}
                     alt="Reese Jones setting up Beatsaber at his computer."
                 ></img>
             </div>
@@ -93,7 +92,7 @@ export const AboutMePage = () => {
                 </p>
             </div>
             <div className="col col-12">
-                <ImageGallery imageUrls={imageData}></ImageGallery>
+                <ImageGallery imageUrls={imageUrls}></ImageGallery>
             </div>
         </div>
     );

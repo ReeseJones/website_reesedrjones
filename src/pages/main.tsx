@@ -1,5 +1,5 @@
 import "../styles.scss";
-import headshotPhotoFilename from "url:../images/headshot5.jpg";
+import headshotPhotoFilename from "url:../images/headshot6.jpg";
 
 export const Main = () => {
     return (

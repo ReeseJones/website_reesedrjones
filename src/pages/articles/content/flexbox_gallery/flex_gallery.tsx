@@ -1,5 +1,5 @@
-import { Register } from "../index_instance";
-
+import { Register } from "../../index_instance";
+import heroImage from "url:./hero_image.jpg";
 
 const content = <>
     <p>To make a flexbox gallery make a container like this</p>
@@ -17,6 +17,6 @@ const content = <>
 Register("flex_gallery", {
     title: "Flexbox Image Gallery",
     subtitle: "Make an image gallery using native css flexbox",
-    heroImageUrl: "fake_image.png",
+    heroImageUrl: heroImage,
     children: content
 });

@@ -85,6 +85,7 @@ summary,
 time,
 mark,
 audio,
+dialog,
 video {
     margin: 0;
     padding: 0;
@@ -164,4 +165,9 @@ ol {
     margin: 0;
     padding: 0;
     list-style: none;
+}
+
+dialog {
+    max-width: none;
+    max-height: none;
 }

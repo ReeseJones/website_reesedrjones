@@ -16,6 +16,63 @@
     height: 48px;
 }
 
+.hamburger-menu dialog {
+    margin: 0;
+    margin-inline-end: auto;
+    height: 100%;
+}
+
+
+.hamburger-menu {
+    /* 1. Define the base style of the dialog when it is OPEN */
+    dialog[open] {
+        opacity: 1;
+        transform: translateX(0);
+        
+        /* Transition opacity and transform. 
+            'allow-discrete' is required to animate the display property! */
+        transition: 
+            opacity 0.4s ease,
+            transform 0.4s ease-in-out,
+            display 0.4s allow-discrete;
+    }
+
+    /* 2. Define the STARTING state right before it pops open */
+    @starting-style {
+        dialog[open] {
+            opacity: 0;
+            transform: translateX(-100%); // starts slightly smaller
+        }
+    }
+
+    /* 3. Define the CLOSING state (when the [open] attribute is removed) */
+    dialog {
+        opacity: 0;
+        transform: translateX(-100%);
+        transition: 
+            opacity 0.3s ease,
+            transform 0.3s ease,
+            display 0.3s allow-discrete;
+    }
+
+    /* BONUS: You can animate the backdrop too! */
+    dialog::backdrop {
+        background-color: rgba(0, 0, 0, 0);
+        transition: display 0.4s allow-discrete, background-color 0.4s ease;
+    }
+
+    dialog[open]::backdrop {
+        background-color: rgba(0, 0, 0, 0.5);
+    }
+
+    @starting-style {
+        dialog[open]::backdrop {
+            background-color: rgba(0, 0, 0, 0);
+        }
+    }
+}
+
+
 
 .desktop {
     .hamburger-menu .content {

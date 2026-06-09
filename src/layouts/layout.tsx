@@ -1,11 +1,11 @@
-import {useState, ReactNode, useCallback, useRef} from "react";
-import "../styles.scss"; // <--- includes reset and must be first
+import "../styles.scss";
+import { useState, ReactNode, useCallback, useRef } from "react";
 import { Footer } from "../components/footer";
 import { Header } from "../components/header";
 import { usePixiApp } from "../hooks/use_pixi_app";
 import { usePixiStarBackground } from "../hooks/use_pixi_star_background";
 import { Outlet } from "react-router";
-import { useResizeCallbackRef } from "../hooks/use_resize_callback_ref";
+import { useResizeCallbackRef, Dimensions } from "../hooks/use_resize_callback_ref";
 import { classNameMap } from "../lib/classNameMap";
 
 
@@ -35,9 +35,7 @@ export const Layout = (props: LayoutProps) => {
         rootStarCount
     );
 
-    const observerRef = useRef<ResizeObserver | null>(null);
-
-    const handleResize = useCallback((size: { width: number; height: number }, element: HTMLElement) => {
+    const handleResize = useCallback((size: Dimensions, element: HTMLElement) => {
         const { width, height } = size;
 
         if ( width > 600 ) {

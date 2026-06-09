@@ -17,6 +17,7 @@ export const ImageGallery = (
                     <li key={url}>
                         <img
                             src={url}
+                            loading="lazy"
                         ></img>
                     </li>
                 );

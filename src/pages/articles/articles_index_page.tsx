@@ -2,6 +2,7 @@ import * as React from "react";
 import { ICardProps } from "../../components/card";
 import { CardContainer } from "../../components/card_container";
 import {Link} from "react-router";
+import { ARTICLES_INDEX } from "./index_instance";
 
 export interface ArticlesIndexPageProps {
     cards: ICardProps[];
@@ -9,7 +10,12 @@ export interface ArticlesIndexPageProps {
 
 export const ArticlesIndexPage = () => {
 
-    const cards: ICardProps[] = [];
+    const cards: ICardProps[] = ARTICLES_INDEX.getAllPages().map((page) => {
+        return {
+            id: page.title,
+            ...page
+        }
+    });
 
     return (
         <div className="page-content grid">

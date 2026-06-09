@@ -19,7 +19,7 @@ export const Header = () => {
         <div className="flex row">
             <h2>Site Navigation</h2>
         </div>
-        <button aria-label="Close menu" onClick={closeMenu}>
+        <button aria-label="Close Site Navigation" onClick={closeMenu}>
             <div>✕</div>
         </button>
     </div>;
