@@ -1,7 +1,7 @@
 import { Register } from "../../index_instance";
 import heroImage from "url:./hero_image.jpg";
 
-const content = <>
+export const content = <>
     <p>To make a flexbox gallery make a container like this</p>
     <p>
         Then to get images to dynamically size to fit the container
@@ -13,10 +13,4 @@ const content = <>
     </p>
 </>;
 
-
-Register("flex_gallery", {
-    title: "Flexbox Image Gallery",
-    subtitle: "Make an image gallery using native css flexbox",
-    heroImageUrl: heroImage,
-    children: content
-});
+export default () => content;

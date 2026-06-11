@@ -1,6 +1,6 @@
 import * as React from "react";
 import "./article.scss";
-import "./content/article_pages";
+
 import { ArticlePageLayout } from "./article_page_layout";
 import { useArticleData } from "./useArticleData";
 

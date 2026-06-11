@@ -8,6 +8,8 @@ import { Main } from './pages/main';
 import { ARTICLE_NAME } from './routing/site_params';
 import { ArticlePage } from './pages/articles/article_page';
 import { ArticlesIndexPage } from './pages/articles/articles_index_page';
+import { ARTICLE_PAGES } from "./pages/articles/index_instance";
+
 
 let container = document.getElementById("app")!;
 let root = createRoot(container)
@@ -19,7 +21,9 @@ root.render(
           <Route path="/" element={<Main />} />
           <Route path="/about-me" element={<AboutMePage />} />
           <Route path="/articles" element={<ArticlesIndexPage />}></Route>
-          <Route path={`/articles/:articleName`} element={<ArticlePage />}></Route>
+          {ARTICLE_PAGES.map((pageDetails) => {
+            return <Route path={pageDetails.path} element={pageDetails.articleComponent}></Route>;
+          })}
           <Route path="*" element={<NotFoundPage />} />
         </Route>
       </Routes>
