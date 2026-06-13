@@ -73,9 +73,9 @@ export class StarField {
             defaultOptions.maxDepth
         );
 
-        console.log(
-            `rootStars: ${rootStars.length} totalStars: ${stars.length}`
-        );
+        //console.log(
+        //    `rootStars: ${rootStars.length} totalStars: ${stars.length}`
+        //);
 
         for (const star of stars) {
 
@@ -127,7 +127,7 @@ export class StarField {
         mousePos.y = clamp(mousePos.y, 0, window.innerHeight);
 
         if (this.currentPosition.x === 0 && this.currentPosition.y === 0 && (mousePos.x !== 0 || mousePos.y !== 0)) {
-            console.log(`initial mouse position set: ${mousePos}`);
+            //console.log(`initial mouse position set: ${mousePos}`);
             this.currentPosition = new Point(mousePos.x, mousePos.y);
             this.targetPosition = new Point(mousePos.x, mousePos.y);
         }

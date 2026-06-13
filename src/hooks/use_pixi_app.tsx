@@ -9,7 +9,7 @@ export const usePixiApp = () => {
 
     // Load Pixi App on mount and destroy on unmount.
     useEffect(() => {
-        console.log("Creating new pixi app");
+        //console.log("Creating new pixi app");
         let isMounted = true;
         pixiApp.current = new Application();
 
@@ -23,22 +23,22 @@ export const usePixiApp = () => {
             // After pixiApp is initialized it may be used.
             pixiApp.current?.canvas.classList.add("hero-effect");
             setAppInitialized(true);
-            console.log("Pixi app initialized");
+            //console.log("Pixi app initialized");
         }).catch((error) => {
             if(!isMounted) {
                 return;
             }
-            console.log("Pixi app initialized failed with error: ", error);
+            //console.log("Pixi app initialized failed with error: ", error);
             setAppInitialized(false);
         });
 
         return () => {
             isMounted = false;
-            console.log("destroying pixi app");
+            //console.log("destroying pixi app");
             const appRef = pixiApp.current;
             initPromise.finally(() => {
                 appRef?.destroy();
-                console.log("Pixi app destroyed");
+                //console.log("Pixi app destroyed");
             });
         };
     }, []);
@@ -57,7 +57,7 @@ export const usePixiApp = () => {
         }
 
         if (appContainer != null) {
-            console.log("Adding Pixi Canvas to the DOM");
+            //console.log("Adding Pixi Canvas to the DOM");
             appContainer.appendChild(pixiApp.current.canvas);
             pixiApp.current.resizeTo = appContainer;
             // Force onetime resize.
@@ -70,7 +70,7 @@ export const usePixiApp = () => {
             }, 1);
         } else {
             pixiApp.current.canvas.remove();
-            console.log("Container Cleared: Pixi Canvas from the DOM");
+            //console.log("Container Cleared: Pixi Canvas from the DOM");
             setAppReady(false);
         }
 
@@ -78,7 +78,7 @@ export const usePixiApp = () => {
         return () => {  
             isMounted = false;
             pixiApp.current?.canvas?.remove();
-            console.log("Unmounted: Pixi Canvas from the DOM");
+            //console.log("Unmounted: Pixi Canvas from the DOM");
         };
     }, [appContainer, appInitialized]);
 

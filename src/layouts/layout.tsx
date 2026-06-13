@@ -40,10 +40,10 @@ export const Layout = (props: LayoutProps) => {
 
         if ( width > 600 ) {
             setDeviceSize(DeviceSize.Desktop);
-            console.log(`Use Desktop Layout`);
+            //console.log(`Use Desktop Layout`);
         } else {
             setDeviceSize(DeviceSize.Mobile);
-            console.log(`Use Mobile Layout`);
+            //console.log(`Use Mobile Layout`);
         }
     }, []);
 

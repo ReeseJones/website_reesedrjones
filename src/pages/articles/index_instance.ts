@@ -3,8 +3,6 @@ import { ArticlePageEntry } from "./ArticlePageEntry.ts";
 import ARTICLE_PAGE_IMPORTS from './content/*/*.tsx';
 import { ReactNode } from "react";
 
-console.log(ARTICLE_PAGE_IMPORTS);
-
 function GetArticlesList() {
     const keyStack: string[] = [];
 
@@ -51,5 +49,3 @@ function GetArticlesList() {
 }
 
 export const ARTICLE_PAGES = [...GetArticlesList()];
-
-console.log(ARTICLE_PAGES);
