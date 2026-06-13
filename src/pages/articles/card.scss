@@ -1,5 +1,5 @@
-@use "./../shared" as shared;
-@use "./../flex" as flex;
+@use "/src/_shared.scss" as shared;
+@use "/src/_flex.scss" as flex;
 
 .card-container {
     @include flex.flex-container(row, stretch);

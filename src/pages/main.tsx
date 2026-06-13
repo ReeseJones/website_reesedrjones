@@ -1,5 +1,5 @@
 import "../styles.scss";
-import headshotPhotoFilename from "url:../images/headshot6.jpg";
+import headshotPhotoFilename from "url:../images/headshot6.jpg?width=200";
 
 export const Main = () => {
     return (
@@ -11,7 +11,7 @@ export const Main = () => {
                 height={200}
             />
             <p className="hero-title">Reese Jones</p>
-            <p className="hero-body">Software Engineer, Gamer & Climber</p>
+            <p className="hero-body">Software Engineer, Gamer & Part-time Adventurer</p>
         </section>
     );
 };

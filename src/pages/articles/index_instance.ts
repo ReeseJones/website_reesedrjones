@@ -1,39 +1,42 @@
+import { ArticleDetails } from "./article_details.ts";
+import { ArticlePageEntry } from "./ArticlePageEntry.ts";
+import ARTICLE_PAGE_IMPORTS from './content/*/*.tsx';
 import { ReactNode } from "react";
-import { ArticleDetails } from "./article_details";
-import { PageIndex } from "./articles_index";
 
-import articleComponents from './content/*/*.tsx';
-
-export const ARTICLES_INDEX = new PageIndex<ArticleDetails>();
-
-export function Register(name: string, params: ArticleDetails) {
-    return ARTICLES_INDEX.registerPage(name, params);
-}
-
-console.log(articleComponents);
-
-export interface ArticlePageDetails {
-    articleComponent: ReactNode;
-    path: string;
-}
+console.log(ARTICLE_PAGE_IMPORTS);
 
 function GetArticlesList() {
     const keyStack: string[] = [];
 
-    function* getArticles(obj: any, keyStack: string[], maxDepth = Infinity, currentDepth = 0): IterableIterator<ArticlePageDetails> {
+    function* getArticles(obj: unknown, keyStack: string[], maxDepth = Infinity, currentDepth = 0): IterableIterator<ArticlePageEntry> {
         // If we have reached the depth limit, yield the entire remaining object/value
-        if (currentDepth >= maxDepth) {
+
+        if (obj && typeof obj === 'object' && 'default' in obj) {
+            const moduleObj = obj as unknown as {
+                default: () => ReactNode;
+                ARTICLE_DETAILS: ArticleDetails;
+            };
+
             const path = keyStack.join('/');
             yield {
-                articleComponent: obj.default(),
-                path: `articles/${path}`
+                articleComponent: moduleObj.default,
+                path,
+                details: moduleObj.ARTICLE_DETAILS,
             };
+            
             return;
         }
 
-        for (const key of Object.keys(obj)) {
+        if(currentDepth >= maxDepth) {
+            return;
+        }
+
+        if(!obj || typeof obj !== 'object') {
+            return;
+        }
+
+        for (const [key, value] of Object.entries(obj)) {
             keyStack.push(key);
-            const value = obj[key];
             // Check if the item is a nestable object
             if (value && typeof value === 'object') {
                 // Recursively call the generator and increment the depth tracking counter
@@ -43,7 +46,7 @@ function GetArticlesList() {
         }
     }
 
-    return getArticles(articleComponents, keyStack, 2)
+    return getArticles(ARTICLE_PAGE_IMPORTS, keyStack, 5)
 
 }
 

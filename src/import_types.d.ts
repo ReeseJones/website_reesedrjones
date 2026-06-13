@@ -28,3 +28,8 @@ declare module "*.css" {
     const fileName: string;
     export = fileName;
 }
+
+declare module "*.mdx" {
+    const fileName: string;
+    export = fileName;
+}

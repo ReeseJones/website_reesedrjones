@@ -11,7 +11,7 @@ export const ImageGallery = (
     const { imageUrls, ...restOfProps } = props;
 
     return (
-        <ul className={restOfProps?.className + " gallery"}>
+        <ul {...restOfProps} className="gallery">
             {imageUrls.map((url) => {
                 return (
                     <li key={url}>

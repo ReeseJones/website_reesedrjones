@@ -22,7 +22,8 @@ root.render(
           <Route path="/about-me" element={<AboutMePage />} />
           <Route path="/articles" element={<ArticlesIndexPage />}></Route>
           {ARTICLE_PAGES.map((pageDetails) => {
-            return <Route path={pageDetails.path} element={pageDetails.articleComponent}></Route>;
+            const ArticleComponent = pageDetails.articleComponent;
+            return <Route path={`/articles/${pageDetails.path}`} element={<ArticleComponent/>}></Route>;
           })}
           <Route path="*" element={<NotFoundPage />} />
         </Route>

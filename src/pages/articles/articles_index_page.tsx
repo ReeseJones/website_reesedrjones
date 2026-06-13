@@ -1,20 +1,27 @@
-import * as React from "react";
-import { ICardProps } from "../../components/card";
-import { CardContainer } from "../../components/card_container";
+import "./card.scss";
 import {Link} from "react-router";
-import { ARTICLES_INDEX } from "./index_instance";
-
-export interface ArticlesIndexPageProps {
-    cards: ICardProps[];
-}
+import { ARTICLE_PAGES } from "./index_instance";
 
 export const ArticlesIndexPage = () => {
 
-    const cards: ICardProps[] = ARTICLES_INDEX.getAllPages().map((page) => {
-        return {
-            id: page.title,
-            ...page
-        }
+    const cards = ARTICLE_PAGES.map((page) => {
+        return <section className="card" key={page.path}>
+            {page.details.heroImageUrl && <img className="card-background"
+                 src={page.details.heroImageUrl}
+                 alt={page.details.heroImageAlt}
+            />}
+            <div className="card-content">
+                <Link to={page.path}>
+                    {<h2 className="card-title">{page.details.title} </h2>}
+                </Link>
+                <section className="card-details">
+                    { page.details.subtitle && <p className="description">{page.details.description}</p> }
+                    <p>
+                        Date: {page.details.date}
+                    </p>
+                </section>
+            </div>
+        </section>
     });
 
     return (
@@ -23,7 +30,9 @@ export const ArticlesIndexPage = () => {
                 <h1>Articles</h1>
             </div>
             <div className="col col-12">
-                <CardContainer cards={cards} />
+                <div className="card-container">
+                    {cards}
+                </div>
             </div>
         </div>
     );

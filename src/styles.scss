@@ -37,7 +37,8 @@ html {
 
 .page-content {
     max-width: 960px;
-    background-color: shared.$background-color;
+    /* background-color: shared.$background-color; */
+    background-image: linear-gradient( 225deg, shared.$background-color, rgb(12, 12, 12));
 
     h1, h2, h3, h4, h5, h6 {
         padding: 2rem;

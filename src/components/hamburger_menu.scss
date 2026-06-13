@@ -24,20 +24,19 @@
 
 
 .hamburger-menu {
-    /* 1. Define the base style of the dialog when it is OPEN */
+    /* Open state */
     dialog[open] {
+        display: flex;
+        flex-direction: column;
         opacity: 1;
         transform: translateX(0);
-        
-        /* Transition opacity and transform. 
-            'allow-discrete' is required to animate the display property! */
         transition: 
             opacity 0.4s ease,
             transform 0.4s ease-in-out,
             display 0.4s allow-discrete;
     }
 
-    /* 2. Define the STARTING state right before it pops open */
+    /* Same as closed state */
     @starting-style {
         dialog[open] {
             opacity: 0;
@@ -45,7 +44,7 @@
         }
     }
 
-    /* 3. Define the CLOSING state (when the [open] attribute is removed) */
+    /* Closed state default */
     dialog {
         opacity: 0;
         transform: translateX(-100%);
@@ -55,7 +54,10 @@
             display 0.3s allow-discrete;
     }
 
-    /* BONUS: You can animate the backdrop too! */
+    .dialog-content {
+        flex: 1;
+    }
+
     dialog::backdrop {
         background-color: rgba(0, 0, 0, 0);
         transition: display 0.4s allow-discrete, background-color 0.4s ease;

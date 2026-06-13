@@ -48,10 +48,10 @@ export class StarField {
         const width = window.screen.width;
         const height = window.screen.height;
         const spawnBounds = {
-            x: -width,
-            y: -height,
-            width: width * 2,
-            height: height * 2
+            x: -width*0.4,
+            y: -height*0.4,
+            width: width * 1.4,
+            height: height * 1.4
         };
         const defaultOptions = {
             count: 50,

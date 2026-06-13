@@ -1,6 +1,8 @@
 export interface ArticleDetails {
     title: string;
     subtitle: string;
-    children?: React.ReactNode;
+    description: string;
+    date: string;
     heroImageUrl: string;
+    heroImageAlt: string;
 }

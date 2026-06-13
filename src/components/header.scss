@@ -10,6 +10,7 @@ header {
     background: shared.$primary-color;
     border-bottom: shared.$primary-light-color solid 0.25rem;
     padding: 1rem 1rem 1rem 1rem;
+    background-image: linear-gradient( 225deg, shared.$background-color, rgb(12, 12, 12));
 
     a {
         color: #dfdfdf;
