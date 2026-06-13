@@ -4,12 +4,15 @@ import makingBaconFilepath from "url:/src/images/makin-bacon.jpg?width=263&heigh
 import playingBeatsaberFilepath from "url:/src/images/playing_beatsaber.jpg?width=263&height=315";
 
 import images from 'url:/src/images/about-me-gallery/*.jpg';
+import { useLocation } from "react-router-dom";
 
 const imageMap = images as unknown as Record<string, string>;
 const imageUrls = Object.values(imageMap);
 
 export const AboutMePage = () => {
 
+    const location = useLocation();
+    console.log("Current React Router Path:", location.pathname);
 
     return (
         <div className="page-content grid">

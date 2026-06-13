@@ -1,5 +1,5 @@
 import "./card.scss";
-import {Link} from "react-router";
+import {Link} from "react-router-dom";
 import { ARTICLE_PAGES } from "./index_instance";
 
 export const ArticlesIndexPage = () => {

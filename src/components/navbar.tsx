@@ -1,6 +1,6 @@
 import React from "react";
 import { NAVBAR_PAGES } from "./site_map";
-import { Link } from "react-router";
+import { Link } from "react-router-dom";
 
 export interface NavbarProps extends React.ComponentPropsWithoutRef<'nav'> {
 

@@ -4,7 +4,7 @@ import { Footer } from "../components/footer";
 import { Header } from "../components/header";
 import { usePixiApp } from "../hooks/use_pixi_app";
 import { usePixiStarBackground } from "../hooks/use_pixi_star_background";
-import { Outlet } from "react-router";
+import { Outlet } from "react-router-dom";
 import { useResizeCallbackRef, Dimensions } from "../hooks/use_resize_callback_ref";
 import { classNameMap } from "../lib/classNameMap";
 
