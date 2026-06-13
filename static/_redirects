@@ -1,4 +1,3 @@
-/index.html      /index.html  200
 /about-me        /index.html  200
 /articles        /index.html  200
 /articles/:category/:article /index.html  200
