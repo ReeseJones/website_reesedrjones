@@ -1,6 +1,6 @@
 import { ArticleDetails } from "./article_details.ts";
 import { ArticlePageEntry } from "./ArticlePageEntry.ts";
-import ARTICLE_PAGE_IMPORTS from './content/*/*.tsx';
+import ARTICLE_PAGE_IMPORTS from '/src/pages/articles/content/**/*.tsx';
 import { ReactNode } from "react";
 
 function GetArticlesList() {

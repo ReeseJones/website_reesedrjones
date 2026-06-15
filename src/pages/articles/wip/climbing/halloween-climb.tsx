@@ -15,7 +15,7 @@ export default function CreatingStarsWithPixiArticle() {
 
     return (
         <ArticlePageLayout {...ARTICLE_DETAILS}>
-            <HalloweenClimbMdx/>;
+            <HalloweenClimbMdx/>
         </ArticlePageLayout>
     )
 }

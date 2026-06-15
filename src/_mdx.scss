@@ -1,0 +1,223 @@
+/* --- MDX Layout & Typography Configuration --- */
+.mdx-content {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  font-size: 16px;
+  line-height: 1.6;
+  word-wrap: break-word;
+  color: #24292f; /* Light theme text fallback */
+}
+
+/* System-level Dark Mode Switcher */
+@media (prefers-color-scheme: dark) {
+  .mdx-content {
+    color: #c9d1d9;
+  }
+}
+
+/* Block Content Elements */
+.mdx-content p,
+.mdx-content blockquote,
+.mdx-content ul,
+.mdx-content ol,
+.mdx-content dl,
+.mdx-content table,
+.mdx-content pre {
+  margin-top: 0;
+  margin-bottom: 16px;
+}
+
+/* --- Headings --- */
+.mdx-content h1,
+.mdx-content h2,
+.mdx-content h3,
+.mdx-content h4,
+.mdx-content h5,
+.mdx-content h6 {
+  margin-top: 24px;
+  margin-bottom: 16px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.mdx-content h1 { font-size: 2em; border-bottom: 1px solid #eee; padding-bottom: 0.3em; }
+.mdx-content h2 { font-size: 1.5em; border-bottom: 1px solid #eee; padding-bottom: 0.3em; }
+.mdx-content h3 { font-size: 1.25em; }
+.mdx-content h4 { font-size: 1em; }
+
+@media (prefers-color-scheme: dark) {
+  .mdx-content h1, .mdx-content h2 { border-bottom-color: #21262d; }
+}
+
+/* --- Inline Anchors --- */
+.mdx-content a {
+  color: #0969da;
+  text-decoration: none;
+}
+.mdx-content a:hover {
+  text-decoration: underline;
+}
+@media (prefers-color-scheme: dark) {
+  .mdx-content a { color: #58a6ff; }
+}
+
+/* --- Lists --- */
+.mdx-content ul,
+.mdx-content ol {
+  padding-left: 2em;
+}
+.mdx-content li + li {
+  margin-top: 0.25em;
+}
+
+/* --- Blockquotes --- */
+.mdx-content blockquote {
+  padding: 0 1em;
+  color: #57606a;
+  border-left: 0.25em solid #d0d7de;
+}
+@media (prefers-color-scheme: dark) {
+  .mdx-content blockquote {
+    color: #8b949e;
+    border-left-color: #30363d;
+  }
+}
+
+/* --- Code Snippets (Inline & Fenced) --- */
+/* Inline Code `like this` */
+.mdx-content :not(pre) > code {
+  padding: 0.2em 0.4em;
+  margin: 0;
+  font-size: 85%;
+  font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
+  background-color: rgba(175, 184, 193, 0.2);
+  border-radius: 6px;
+}
+
+/* Code Blocks ```like this``` */
+.mdx-content pre {
+  padding: 16px;
+  overflow: auto;
+  font-size: 85%;
+  line-height: 1.45;
+  background-color: #f6f8fa;
+  border-radius: 6px;
+}
+.mdx-content pre code {
+  font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  font-size: 100%;
+  word-break: normal;
+  white-space: pre;
+}
+@media (prefers-color-scheme: dark) {
+  .mdx-content pre { background-color: #161b22; }
+}
+
+/* --- Tables --- */
+.mdx-content table {
+  display: block;
+  width: 100%;
+  width: max-content;
+  max-width: 100%;
+  overflow: auto;
+  border-spacing: 0;
+  border-collapse: collapse;
+}
+.mdx-content table th,
+.mdx-content table td {
+  padding: 6px 13px;
+  border: 1px solid #d0d7de;
+}
+.mdx-content table tr {
+  background-color: #ffffff;
+  border-top: 1px solid #hsla(210,18%,87%,1);
+}
+.mdx-content table tr:nth-child(2n) {
+  background-color: #f6f8fa;
+}
+@media (prefers-color-scheme: dark) {
+  .mdx-content table th, .mdx-content table td { border-color: #30363d; }
+  .mdx-content table tr { background-color: #0d1117; }
+  .mdx-content table tr:nth-child(2n) { background-color: #161b22; }
+}
+
+/* --- Images & Divider Rules --- */
+.mdx-content img {
+  max-width: 100%;
+  box-sizing: content-box;
+  background-color: transparent;
+}
+.mdx-content hr {
+  height: 0.25em;
+  padding: 0;
+  margin: 24px 0;
+  background-color: #e1e4e6;
+  border: 0;
+}
+@media (prefers-color-scheme: dark) {
+  .mdx-content hr { background-color: #30363d; }
+}
+
+/* --- Inline Typography & Formatting --- */
+
+/* Bold text (via **bold** or <strong>) */
+.mdx-content strong,
+.mdx-content b {
+  font-weight: 600; /* Standard for heavy system fonts */
+  color: #000000;   /* Slightly punchier contrast for light mode */
+}
+
+/* Italic text (via *italics* or <em>) */
+.mdx-content em,
+.mdx-content i {
+  font-style: italic;
+}
+
+/* Strikethrough text (via ~~strikethrough~~ or <del>) */
+.mdx-content del {
+  text-decoration: line-through;
+  color: #57606a;
+}
+
+/* Highlighted text (via <mark>) */
+.mdx-content mark {
+  background-color: rgba(255, 222, 122, 0.4); /* Soft warm yellow */
+  padding: 0.1em 0.2em;
+  border-radius: 3px;
+}
+
+/* Subscript & Superscript (via <sub> and <sup>) */
+.mdx-content sub,
+.mdx-content sup {
+  font-size: 75%;
+  line-height: 0;
+  position: relative;
+  vertical-align: baseline;
+}
+.mdx-content sub { bottom: -0.25em; }
+.mdx-content sup { top: -0.5em; }
+
+/* Abbreviations (via <abbr>) */
+.mdx-content abbr[title] {
+  text-decoration: underline dotted;
+  cursor: help;
+}
+
+/* --- Dark Mode Adjustments --- */
+@media (prefers-color-scheme: dark) {
+  .mdx-content strong,
+  .mdx-content b {
+    color: #ffffff; /* High contrast white for dark mode */
+  }
+  
+  .mdx-content del {
+    color: #8b949e;
+  }
+  
+  .mdx-content mark {
+    background-color: rgba(242, 199, 68, 0.25); /* Muted gold for dark backgrounds */
+    color: #c9d1d9;
+  }
+}

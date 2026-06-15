@@ -16,7 +16,7 @@ export default function BuildingABed() {
 
     return (
         <ArticlePageLayout {...ARTICLE_DETAILS}>
-            <BuildingABedMdx/>;
+            <BuildingABedMdx/>
         </ArticlePageLayout>
     )
 }

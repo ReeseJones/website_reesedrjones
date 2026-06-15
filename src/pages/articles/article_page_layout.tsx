@@ -24,10 +24,10 @@ export const ArticlePageLayout = (props: IArticlePageProps) => {
                         src={heroImageUrl}
                     />}
                 </div>
-                <div className="col col-12">
+                <div className="col col-12 mdx-content">
                     {children}
                 </div>
             </div>
         </article>
-    );
+    )
 };
