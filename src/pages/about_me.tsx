@@ -17,7 +17,7 @@ export const AboutMePage = () => {
     return (
         <div className="page-content grid">
             <div className="col col-12">
-                <h1>A little about me</h1>
+                <h1>A little about me!</h1>
             </div>
             <div className="grid col col-lg col-6 justify-center">
                 <img
