@@ -122,6 +122,7 @@ a:hover::after {
     overflow-y: auto;
     width: 100%;
     flex: 1 1;
+    overscroll-behavior: none;
 }
 
 ::-webkit-scrollbar {
