@@ -79,6 +79,10 @@ The component is wrapped in a top-level container with class `.carousel`, config
 - **Animation Duration Customization:**
   - Configurable via optional `animationDurationMs` prop, which sets `--carousel-duration` on the root element style (e.g. `--carousel-duration: 400ms`).
   - Can also be overridden directly in SCSS.
+- **Slide & Title Navigation Links (`linkUrl`):**
+  - When `item.linkUrl` is defined, both the slide image and the active title in `.title-row` render as interactive links (`<Link>` for internal SPA routes, `<a>` with `target="_blank"` for external URLs).
+  - Clicks during slide animation (`isTransitioning: true`) are suppressed (`e.preventDefault()`) to prevent unintentional navigation during drag/swipe or rapid panning.
+  - Cloned buffer slots have `tabIndex={-1}` to maintain clean, non-duplicate keyboard tab navigation.
 
 ---
 

@@ -1,6 +1,7 @@
 import "./carousel.scss";
 
 import React, { useCallback } from "react";
+import { Link } from "react-router-dom";
 import { useCarouselTrack } from "./use_carousel_track";
 import { useThumbnailScroll } from "./use_thumbnail_scroll";
 import { useSwipeGestures } from "./use_swipe_gestures";
@@ -112,7 +113,21 @@ export function Carousel({
       aria-label={rest["aria-label"] ?? "Image Carousel"}
     >
       <div className="title-row">
-        <p>{activeItem?.title ?? ""}</p>
+        {activeItem?.linkUrl ? (
+          <p>
+            {/^(https?:)?\/\//.test(activeItem.linkUrl) ? (
+              <a href={activeItem.linkUrl} target="_blank" rel="noopener noreferrer">
+                {activeItem.title}
+              </a>
+            ) : (
+              <Link to={activeItem.linkUrl}>
+                {activeItem.title}
+              </Link>
+            )}
+          </p>
+        ) : (
+          <p>{activeItem?.title ?? ""}</p>
+        )}
       </div>
 
       <div className="stage-row">
@@ -141,6 +156,42 @@ export function Carousel({
                 ? slotIndex
                 : slotIndex + 1;
 
+              const isExternal = Boolean(
+                item.linkUrl && /^(https?:)?\/\//.test(item.linkUrl)
+              );
+
+              const slideImage = (
+                <img src={item.fullImageUrl} alt={item.alt ?? item.title} />
+              );
+
+              const slideContent = item.linkUrl ? (
+                isExternal ? (
+                  <a
+                    href={item.linkUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    tabIndex={isClone ? -1 : 0}
+                    onClick={(e) => {
+                      if (isTransitioning) e.preventDefault();
+                    }}
+                  >
+                    {slideImage}
+                  </a>
+                ) : (
+                  <Link
+                    to={item.linkUrl}
+                    tabIndex={isClone ? -1 : 0}
+                    onClick={(e) => {
+                      if (isTransitioning) e.preventDefault();
+                    }}
+                  >
+                    {slideImage}
+                  </Link>
+                )
+              ) : (
+                slideImage
+              );
+
               return (
                 <div
                   key={`slide-${slotIndex}`}
@@ -154,7 +205,7 @@ export function Carousel({
                   }
                   aria-hidden={isClone ? "true" : undefined}
                 >
-                  <img src={item.fullImageUrl} alt={item.alt ?? item.title} />
+                  {slideContent}
                 </div>
               );
             })}

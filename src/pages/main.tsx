@@ -5,42 +5,39 @@ import { Carousel, CarouselItem } from "../components/carousel/carousel";
 import { useCarouselController } from "../components/carousel/use_carousel_controller";
 import { useCarouselAutoScroll } from "../components/carousel/use_carousel_auto_scroll";
 
-import campfireImg from "url:../images/about-me-gallery/campfire.jpg";
-import droneImg from "url:../images/about-me-gallery/drone_picture.jpg";
-import boulderingImg from "url:../images/about-me-gallery/bouldering_hike.jpg";
-import snowboardingImg from "url:../images/about-me-gallery/snowboarding_stevens_pass_2022.jpg";
-import paddleBoardingImg from "url:../images/about-me-gallery/paddle_boarding.jpg";
+import dotsSplashImg from "url:../images/games/dots_splash.png";
+import guardiansOfNogardSplashImg from "url:../images/games/guardians_of_nogard_splash.png";
+import projectScaleSplashImg from "url:../images/games/project_scale_splash.png";
+import radicalFrederickSplashImg from "url:../images/games/radical_frederick_splash.png";
 
-const TEST_CAROUSEL_ITEMS: CarouselItem[] = [
+const CAROUSEL_ITEMS: CarouselItem[] = [
     {
-        title: "Campfire by the Lake",
-        fullImageUrl: campfireImg,
-        thumbnailUrl: campfireImg,
-        alt: "Warm campfire glowing by the lake at night",
+        title: "D.O.T.S.",
+        fullImageUrl: dotsSplashImg,
+        thumbnailUrl: dotsSplashImg,
+        alt: "Dots splash screen",
+        linkUrl: "/articles/games/dots",
     },
     {
-        title: "Aerial Drone Photography",
-        fullImageUrl: droneImg,
-        thumbnailUrl: droneImg,
-        alt: "Aerial landscape captured by drone",
+        title: "Guardians of Nogard",
+        fullImageUrl: guardiansOfNogardSplashImg,
+        thumbnailUrl: guardiansOfNogardSplashImg,
+        alt: "Guardians of Nogard splash screen",
+        linkUrl: "/articles/games/guardians-of-nogard",
     },
     {
-        title: "Red Rock Bouldering Hike",
-        fullImageUrl: boulderingImg,
-        thumbnailUrl: boulderingImg,
-        alt: "Scenic bouldering hike across red rock canyons",
+        title: "Project Scale",
+        fullImageUrl: projectScaleSplashImg,
+        thumbnailUrl: projectScaleSplashImg,
+        alt: "Project Scale splash screen",
+        linkUrl: "/articles/games/project-scale",
     },
     {
-        title: "Snowboarding Stevens Pass",
-        fullImageUrl: snowboardingImg,
-        thumbnailUrl: snowboardingImg,
-        alt: "Snowboarding down powder trails at Stevens Pass",
-    },
-    {
-        title: "Summer Paddle Boarding",
-        fullImageUrl: paddleBoardingImg,
-        thumbnailUrl: paddleBoardingImg,
-        alt: "Paddle boarding on calm open waters during summer",
+        title: "Radical Frederick & The Pick of Fate",
+        fullImageUrl: radicalFrederickSplashImg,
+        thumbnailUrl: radicalFrederickSplashImg,
+        alt: "Radical Frederick splash screen",
+        linkUrl: "/articles/games/radical-frederick",
     },
 ];
 
@@ -48,7 +45,7 @@ export const Main = () => {
     const [isPaused, setIsPaused] = useState(false);
 
     const carouselController = useCarouselController({
-        itemCount: TEST_CAROUSEL_ITEMS.length,
+        itemCount: CAROUSEL_ITEMS.length,
     });
 
     useCarouselAutoScroll({
@@ -75,7 +72,7 @@ export const Main = () => {
                 onBlur={() => setIsPaused(false)}
             >
                 <Carousel
-                    items={TEST_CAROUSEL_ITEMS}
+                    items={CAROUSEL_ITEMS}
                     {...carouselController.bind}
                 />
             </div>
