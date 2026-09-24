@@ -59,3 +59,47 @@ export function getRandomIndices(start: number, end: number, count: number) {
 
     return chosenIndices;
 }
+
+/**
+ * Validates that an index is an integer within bounds for a given collection or length.
+ * Throws a RangeError if the index is out of bounds or not an integer.
+ *
+ * @param index - The candidate index to validate.
+ * @param lengthOrCollection - The collection length as a number, or any object with a length property.
+ * @param name - Optional identifier/context for the error message (defaults to "Index").
+ * @returns The validated index.
+ * @throws {RangeError} If index is not an integer or is outside [0, count - 1] (or non-zero when count is 0).
+ */
+export function validateIndex(
+    index: number,
+    lengthOrCollection: number | { length: number },
+    name: string = "Index"
+): number {
+    const count =
+        typeof lengthOrCollection === "number"
+            ? lengthOrCollection
+            : (lengthOrCollection?.length ?? 0);
+
+    if (count < 0) {
+        throw new RangeError(
+            `validateIndex: count must be non-negative, received ${count}.`
+        );
+    }
+
+    if (count === 0) {
+        if (index !== 0) {
+            throw new RangeError(
+                `${name} (${index}) is invalid for empty collection of count 0. Expected 0.`
+            );
+        }
+        return 0;
+    }
+
+    if (!Number.isInteger(index) || index < 0 || index >= count) {
+        throw new RangeError(
+            `${name} (${index}) is out of bounds for count ${count}. Expected an integer in range [0, ${count - 1}].`
+        );
+    }
+
+    return index;
+}
