@@ -1,4 +1,5 @@
 import "./card.scss";
+import "./article_index_page.scss";
 import {Link} from "react-router-dom";
 import { ARTICLE_PAGES } from "./index_instance";
 
@@ -25,13 +26,13 @@ export const ArticlesIndexPage = () => {
     });
 
     return (
-        <div className="page-content grid">
-            <div className="col col-12">
-                <h1>Articles</h1>
-            </div>
-            <div className="col col-12">
-                <div className="card-container">
-                    {cards}
+        <div className="page-content">
+            <h1>Articles</h1>
+            <div className="grid">
+                <div className="col col-12">
+                    <div className="card-container">
+                        {cards}
+                    </div>
                 </div>
             </div>
         </div>

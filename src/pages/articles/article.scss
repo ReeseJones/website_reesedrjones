@@ -1,6 +1,8 @@
 @use "./../../shared";
 
 .page-content {
+    min-height: 100%;
+
     .card {
         @include shared.border;
     }

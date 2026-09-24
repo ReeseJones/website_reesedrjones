@@ -1,7 +1,7 @@
 import { ArticleDetails } from "../../article_details";
 import { ArticlePageLayout } from "../../article_page_layout";
 import MyDogScottyMdx from "./my-dog-scotty.mdx";
-import ScottyPuppyFilePath from "url:./images/scotty_puppy_01.jpg?width=400";
+import ScottyPuppyFilePath from "url:./images/scotty_puppy_01.jpg?width=360";
 
 
 export const ARTICLE_DETAILS: ArticleDetails = {
