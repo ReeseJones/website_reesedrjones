@@ -1,5 +1,6 @@
 import "../styles.scss";
-import React, { useState } from "react";
+import "./main.scss";
+import React from "react";
 import headshotPhotoFilename from "url:../images/headshot6.jpg?width=200";
 import { Carousel, CarouselItem } from "../components/carousel/carousel";
 import { useCarouselController } from "../components/carousel/use_carousel_controller";
@@ -42,16 +43,13 @@ const CAROUSEL_ITEMS: CarouselItem[] = [
 ];
 
 export const Main = () => {
-    const [isPaused, setIsPaused] = useState(false);
-
     const carouselController = useCarouselController({
         itemCount: CAROUSEL_ITEMS.length,
     });
 
-    useCarouselAutoScroll({
+    const { pauseProps } = useCarouselAutoScroll({
         onAdvance: carouselController.scrollRight,
         intervalMs: 5000,
-        paused: isPaused,
     });
 
     return (
@@ -64,13 +62,7 @@ export const Main = () => {
             />
             <p className="hero-title">Reese Jones</p>
             <p className="hero-body">Software Engineer, Gamer & Part-time Adventurer</p>
-            <div
-                style={{ width: "100%", maxWidth: "800px", padding: "0 1rem 4rem", boxSizing: "border-box" }}
-                onMouseEnter={() => setIsPaused(true)}
-                onMouseLeave={() => setIsPaused(false)}
-                onFocus={() => setIsPaused(true)}
-                onBlur={() => setIsPaused(false)}
-            >
+            <div className="carousel-container" {...pauseProps}>
                 <Carousel
                     items={CAROUSEL_ITEMS}
                     {...carouselController.bind}

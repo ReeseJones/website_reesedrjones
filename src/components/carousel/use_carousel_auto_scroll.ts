@@ -1,4 +1,11 @@
-import { useEffect, useRef } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+
+export interface CarouselPauseProps {
+  onMouseEnter: () => void;
+  onMouseLeave: () => void;
+  onFocus: () => void;
+  onBlur: (e: React.FocusEvent<any>) => void;
+}
 
 export interface UseCarouselAutoScrollOptions {
   onAdvance: () => void;
@@ -6,23 +13,60 @@ export interface UseCarouselAutoScrollOptions {
   paused?: boolean;
 }
 
+export interface UseCarouselAutoScrollReturn {
+  isPaused: boolean;
+  pause: () => void;
+  resume: () => void;
+  pauseProps: CarouselPauseProps;
+}
+
 /**
  * Automatically triggers carousel slide advance on a recurring timer,
- * pausing when paused is true or the browser tab is hidden.
+ * pausing when paused is true, when hovered/focused, or when the browser tab is hidden.
  */
 export function useCarouselAutoScroll({
   onAdvance,
   intervalMs = 5000,
   paused = false,
-}: UseCarouselAutoScrollOptions): void {
+}: UseCarouselAutoScrollOptions): UseCarouselAutoScrollReturn {
+  const [isInternalPaused, setIsInternalPaused] = useState(false);
   const onAdvanceRef = useRef(onAdvance);
 
   useEffect(() => {
     onAdvanceRef.current = onAdvance;
   }, [onAdvance]);
 
+  const pause = useCallback(() => {
+    setIsInternalPaused(true);
+  }, []);
+
+  const resume = useCallback(() => {
+    setIsInternalPaused(false);
+  }, []);
+
+  const handleMouseEnter = useCallback(() => {
+    setIsInternalPaused(true);
+  }, []);
+
+  const handleMouseLeave = useCallback(() => {
+    setIsInternalPaused(false);
+  }, []);
+
+  const handleFocus = useCallback(() => {
+    setIsInternalPaused(true);
+  }, []);
+
+  const handleBlur = useCallback((e: React.FocusEvent<any>) => {
+    // Only resume if focus leaves the container entirely
+    if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
+      setIsInternalPaused(false);
+    }
+  }, []);
+
+  const effectivePaused = paused || isInternalPaused;
+
   useEffect(() => {
-    if (paused || intervalMs <= 0) {
+    if (effectivePaused || intervalMs <= 0) {
       return;
     }
 
@@ -63,5 +107,17 @@ export function useCarouselAutoScroll({
         document.removeEventListener("visibilitychange", handleVisibilityChange);
       }
     };
-  }, [intervalMs, paused]);
+  }, [intervalMs, effectivePaused]);
+
+  return {
+    isPaused: effectivePaused,
+    pause,
+    resume,
+    pauseProps: {
+      onMouseEnter: handleMouseEnter,
+      onMouseLeave: handleMouseLeave,
+      onFocus: handleFocus,
+      onBlur: handleBlur,
+    },
+  };
 }

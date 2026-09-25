@@ -19,6 +19,16 @@ html {
     height: 100%;
 }
 
+:focus {
+    outline: 2px solid shared.$font-highlight-color;
+    outline-offset: 2px;
+}
+
+html:focus,
+body:focus {
+    outline: none;
+}
+
 .article-body {
     @include flex.flex-container(column, center);
     flex: 1 1 0;

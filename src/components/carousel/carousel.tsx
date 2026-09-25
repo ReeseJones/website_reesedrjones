@@ -131,16 +131,6 @@ export function Carousel({
       </div>
 
       <div className="stage-row">
-        <button
-          type="button"
-          className="arrow prev"
-          onClick={handlePrev}
-          aria-label="Previous slide"
-          disabled={items.length <= 1 || !onScrollLeft}
-        >
-          ❮
-        </button>
-
         <div className="viewport" {...swipeHandlers} aria-live="polite">
           <div {...trackProps}>
             {Array.from({ length: slotCount }, (_, slotIndex) => {
@@ -152,6 +142,7 @@ export function Carousel({
                 hasMultipleItems &&
                 (slotIndex === 0 || slotIndex === slotCount - 1);
               const isActive = slotIndex === currentSlot;
+              const isSelected = !isClone && itemIndex === selectedIndex;
               const displayIndex = hasMultipleItems
                 ? slotIndex
                 : slotIndex + 1;
@@ -164,33 +155,32 @@ export function Carousel({
                 <img src={item.fullImageUrl} alt={item.alt ?? item.title} />
               );
 
-              const slideContent = item.linkUrl ? (
-                isExternal ? (
-                  <a
-                    href={item.linkUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    tabIndex={isClone ? -1 : 0}
-                    onClick={(e) => {
-                      if (isTransitioning) e.preventDefault();
-                    }}
-                  >
-                    {slideImage}
-                  </a>
+              const slideContent =
+                item.linkUrl && isSelected ? (
+                  isExternal ? (
+                    <a
+                      href={item.linkUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => {
+                        if (isTransitioning) e.preventDefault();
+                      }}
+                    >
+                      {slideImage}
+                    </a>
+                  ) : (
+                    <Link
+                      to={item.linkUrl}
+                      onClick={(e) => {
+                        if (isTransitioning) e.preventDefault();
+                      }}
+                    >
+                      {slideImage}
+                    </Link>
+                  )
                 ) : (
-                  <Link
-                    to={item.linkUrl}
-                    tabIndex={isClone ? -1 : 0}
-                    onClick={(e) => {
-                      if (isTransitioning) e.preventDefault();
-                    }}
-                  >
-                    {slideImage}
-                  </Link>
-                )
-              ) : (
-                slideImage
-              );
+                  slideImage
+                );
 
               return (
                 <div
@@ -211,6 +201,16 @@ export function Carousel({
             })}
           </div>
         </div>
+
+        <button
+          type="button"
+          className="arrow prev"
+          onClick={handlePrev}
+          aria-label="Previous slide"
+          disabled={items.length <= 1 || !onScrollLeft}
+        >
+          ❮
+        </button>
 
         <button
           type="button"

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import { ArticleDetails } from "../../article_details";
 import { ArticlePageLayout } from "../../article_page_layout";
 import { Carousel, CarouselItem } from "../../../../components/carousel/carousel";
@@ -56,25 +56,19 @@ export const ARTICLE_DETAILS: ArticleDetails = {
 };
 
 export function GuardiansScreenshotCarousel() {
-    const [isPaused, setIsPaused] = useState(false);
-
     const carouselController = useCarouselController({
         itemCount: SCREENSHOT_ITEMS.length,
     });
 
-    useCarouselAutoScroll({
+    const { pauseProps } = useCarouselAutoScroll({
         onAdvance: carouselController.scrollRight,
         intervalMs: 5000,
-        paused: isPaused,
     });
 
     return (
         <div
             style={{ width: "100%", maxWidth: "800px", margin: "1.5rem auto 2.5rem", boxSizing: "border-box" }}
-            onMouseEnter={() => setIsPaused(true)}
-            onMouseLeave={() => setIsPaused(false)}
-            onFocus={() => setIsPaused(true)}
-            onBlur={() => setIsPaused(false)}
+            {...pauseProps}
         >
             <Carousel
                 items={SCREENSHOT_ITEMS}

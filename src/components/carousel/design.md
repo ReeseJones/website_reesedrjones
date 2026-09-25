@@ -30,10 +30,8 @@ The component is wrapped in a top-level container with class `.carousel`, config
   - Updates in sync with the active slide.
 - **Row 2 — Main Stage (`.stage-row`):**
   - Largest section of the component.
-  - **Static Navigation Arrows (`.arrow`):**
-    - Fixed on the left (`.arrow.prev`) and right (`.arrow.next`).
-    - Cycles through items one-by-one with wraparound looping.
   - **Clipped Viewport (`.viewport`):**
+    - Ordered first in the DOM within `.stage-row` so that the active slide image is the first focused element of the middle row during keyboard tab navigation.
     - Uses `overflow: hidden; position: relative;` to clip adjacent slides.
   - **Sliding Track (`.track`):**
     - Flex container holding all full-size slides.
@@ -42,6 +40,11 @@ The component is wrapped in a top-level container with class `.carousel`, config
   - **Slide & Main Image (`.slide` > `img`):**
     - `.slide`: `flex: 0 0 100%; width: 100%; height: 100%;` to fill the viewport completely.
     - `img`: Targeted directly as `.slide img` (no `.image` class needed). Set to `width: 100%; height: 100%; object-fit: cover; display: block;` to cleanly fill the stage.
+    - When selected and `item.linkUrl` is defined, `img` is wrapped inside `<Link>` or `<a>`. When unselected or without `linkUrl`, `img` renders directly inside `.slide`. All slide DOM elements persist across all slots.
+  - **Static Navigation Arrows (`.arrow`):**
+    - Ordered after `.viewport` in the DOM (`.arrow.prev` followed by `.arrow.next`) to produce the sequential keyboard focus order: active slide image -> left arrow -> right arrow.
+    - Positioned absolutely (`position: absolute; top: 50%; transform: translateY(-50%); z-index: 2;`) over the left (`.arrow.prev`) and right (`.arrow.next`) edges of the stage, preserving identical visual overlay on top of the images.
+    - Cycles through items one-by-one with wraparound looping.
 - **Row 3 — Thumbnail Strip (`.thumbnails-row`):**
   - Horizontal list of thumbnail preview buttons (`.thumbnail`).
   - Active thumbnail marked with class `.active`.
@@ -80,9 +83,15 @@ The component is wrapped in a top-level container with class `.carousel`, config
   - Configurable via optional `animationDurationMs` prop, which sets `--carousel-duration` on the root element style (e.g. `--carousel-duration: 400ms`).
   - Can also be overridden directly in SCSS.
 - **Slide & Title Navigation Links (`linkUrl`):**
-  - When `item.linkUrl` is defined, both the slide image and the active title in `.title-row` render as interactive links (`<Link>` for internal SPA routes, `<a>` with `target="_blank"` for external URLs).
-  - Clicks during slide animation (`isTransitioning: true`) are suppressed (`e.preventDefault()`) to prevent unintentional navigation during drag/swipe or rapid panning.
-  - Cloned buffer slots have `tabIndex={-1}` to maintain clean, non-duplicate keyboard tab navigation.
+  - **DOM Persistence:** All slide elements and images exist continuously in the DOM across all virtual track slots to ensure seamless CSS transforms and avoid layout reflows.
+  - **Selected-Index Link Wrapping:** When `item.linkUrl` is defined, only the slide image at the active selected index (`itemIndex === selectedIndex && !isClone`) is wrapped in an interactive link (`<Link>` for internal SPA routes, `<a>` with `target="_blank"` for external URLs).
+  - **Passive Non-Selected Slides:** Non-selected slides and cloned buffer slots render purely as passive `<img>` elements inside `.slide` without anchor tags or interactive tab stops.
+  - **Title Row Synchronization:** The active title in `.title-row` renders as a link for the currently selected item (`items[selectedIndex]`).
+  - **Accessibility & Focus Containment:**
+    - Exactly one slide link exists in the DOM at any given moment, eliminating redundant tab stops and preventing focus indicators on off-screen/buffer slides.
+    - Prevents unexpected browser auto-scrolling of the viewport caused by focusing off-screen anchors.
+    - Cloned slots (`isClone: true`) are marked with `aria-hidden="true"` and contain no interactive child elements, maintaining WCAG compliance.
+  - **Interaction Guard:** Clicks during slide animation (`isTransitioning: true`) are suppressed (`e.preventDefault()`) to prevent unintentional navigation during drag/swipe or rapid panning.
 
 ---
 
@@ -161,12 +170,21 @@ Each behavioral responsibility is extracted into its own dedicated hook file in 
 
 ### 2. `useCarouselAutoScroll` (Auto-Play Timer Hook)
 - **File:** [src/components/carousel/use_carousel_auto_scroll.ts](file:///D:/_/website_reesedrjones/src/components/carousel/use_carousel_auto_scroll.ts)
-- **Purpose:** Automatically advances the carousel on a recurring timer.
+- **Purpose:** Automatically advances the carousel on a recurring timer with built-in hover and focus pause management.
 - **Inputs (`UseCarouselAutoScrollOptions`):**
   - `onAdvance: () => void`: The advance callback (typically `scrollRight` from controller).
   - `intervalMs?: number`: Interval delay in milliseconds (defaults to `5000ms`).
-  - `paused?: boolean`: Pauses auto-scrolling (e.g. during hover, touch, or active modal).
-- **Behavior:** Runs a recurring interval that invokes `onAdvance` and automatically suspends while the browser tab is hidden (`visibilitychange`).
+  - `paused?: boolean`: Optional external pause override (e.g. during active modal or manual control).
+- **Outputs (`UseCarouselAutoScrollReturn`):**
+  - `isPaused: boolean`: Effective pause state combining external `paused` and internal hover/focus states.
+  - `pause: () => void`: Programmatic pause function.
+  - `resume: () => void`: Programmatic resume function.
+  - `pauseProps: CarouselPauseProps`: Pre-bundled event handlers (`{ onMouseEnter, onMouseLeave, onFocus, onBlur }`) to spread onto carousel wrapper containers.
+- **Behavior:**
+  - Runs a recurring interval that invokes `onAdvance` when active.
+  - Automatically suspends while the browser tab is hidden (`visibilitychange`).
+  - Pauses when hovering over the container (`onMouseEnter` / `onMouseLeave`).
+  - Pauses on keyboard focus (`onFocus`), and on blur guards against internal element-to-element focus shifts using `!e.currentTarget.contains(e.relatedTarget)` so the timer only resumes when focus leaves the container entirely.
 
 ### 3. `useCarouselTrack` (Presentational Track Motion Hook)
 - **File:** [src/components/carousel/use_carousel_track.ts](file:///D:/_/website_reesedrjones/src/components/carousel/use_carousel_track.ts)
@@ -220,12 +238,16 @@ Descendants rely on HTML tags and structural context rather than redundant class
 - `.carousel` (Root container, sets CSS variables e.g. `--carousel-duration`)
   - `.title-row`
     - `p` (Active title text)
+      - `a` (Optional active title link)
   - `.stage-row`
-    - `button.arrow.prev`, `button.arrow.next`
     - `.viewport`
       - `.track`
         - `.slide`, `.slide.active`
-          - `img` (Full size image, no `.image` class needed)
+          - `a` (Interactive link wrapper only for the active selected slide with `linkUrl`)
+            - `img` (Full size image)
+          - `img` (Direct child image for non-selected slides or slides without `linkUrl`)
+    - `button.arrow.prev`
+    - `button.arrow.next`
   - `.thumbnails-row`
     - `button`, `button.active` (Thumbnail preview button, no `.thumbnail` class needed)
       - `img` (Thumbnail preview image, no `.thumbnail-img` class needed)
