@@ -23,13 +23,13 @@ The component adheres to standard DOM flow without absolute viewport breakout or
   - Defaults to expanding to fill its parent container (`width: 100%`).
   - Styled with direct SCSS defaults matching the site theme.
 
-- **Heading Tab Container (`.panel-heading` / `.heading`):**
+- **Heading Tab Container (`.heading`):**
   - Rendered conditionally: present only when the `heading` prop is provided.
   - Positioned at the top-left of the panel container (`align-self: flex-start;`).
   - Sits seamlessly on top of the content container with `margin-bottom: -$panel-border-width` and `z-index: 2` to overlap the top border.
   - Houses any slottable ReactNode (text, headings, badges, action buttons, or custom layout).
 
-- **Content Container (`.panel-content` / `.content`):**
+- **Content Container (`.content`):**
   - Main panel body rendering `children`.
   - Full width (`width: 100%`) with internal padding and unified background.
   - Border radius dynamically adapts:
@@ -85,14 +85,14 @@ Styling is organized across two distinct layers:
   - Ensures `<Panel>` renders out-of-the-box with complete, functional binder-folder tab aesthetics wherever imported.
 - **Site-Wide Conceptual Overrides ([src/styles.scss](../../styles.scss)):**
   - High-level design overrides applied across the entire website without re-implementing component geometry.
-  - Standardizes site-wide panel typography: `.panel .panel-heading { font-size: 1.5rem; font-weight: bold; }`.
-  - Additional page or context-specific overrides can be made similarly by targeting `.panel`, `.panel-heading`, or `.panel-content`.
+  - Standardizes site-wide panel typography: `.panel > .heading { font-size: 1.5rem; font-weight: bold; }`.
+  - Additional page or context-specific overrides can be made similarly by targeting `.panel > .heading` or `.panel > .content`.
 
 ---
 
 ## 6. Minimal CSS Class Hierarchy & Contextual Selectors
 
 - `.panel` (Root container, sets layout and default font color)
-  - `.panel-heading`, `.heading` (Heading tab container, rendered only when `heading` prop is provided)
+  - `> .heading` (Heading tab container, rendered only when `heading` prop is provided)
     - `::after` (Outward fillet curve pseudo-element)
-  - `.panel-content`, `.content` (Panel body container)
+  - `> .content` (Panel body container)

@@ -11,12 +11,12 @@ export interface PanelProps extends React.HTMLAttributes<HTMLDivElement> {
   heading?: React.ReactNode;
 
   /**
-   * Optional HTML attributes forwarded directly to the heading container element (.panel-heading).
+   * Optional HTML attributes forwarded directly to the heading container element (.heading).
    */
   headingProps?: React.HTMLAttributes<HTMLDivElement>;
 
   /**
-   * Optional HTML attributes forwarded directly to the content container element (.panel-content).
+   * Optional HTML attributes forwarded directly to the content container element (.content).
    */
   contentProps?: React.HTMLAttributes<HTMLDivElement>;
 
@@ -28,10 +28,10 @@ export interface PanelProps extends React.HTMLAttributes<HTMLDivElement> {
 
 /**
  * Panel component with an integrated binder-style folder tab heading.
- * Conforms to normal DOM flow with a 2-piece or 3-piece structure:
+ * Conforms to normal DOM flow with a 2-piece structure:
  * - Root container: `.panel`
- * - Heading container (if heading provided): `.panel-heading` (also `.heading`)
- * - Content container: `.panel-content` (also `.content`)
+ * - Heading container (if heading provided): `.heading`
+ * - Content container: `.content`
  */
 export function Panel({
   heading,
@@ -45,7 +45,6 @@ export function Panel({
   const hasHeading = heading !== undefined && heading !== null;
 
   const headingClasses = [
-    "panel-heading",
     "heading",
     headingProps?.className,
   ]
@@ -53,7 +52,6 @@ export function Panel({
     .join(" ");
 
   const contentClasses = [
-    "panel-content",
     "content",
     contentProps?.className,
   ]

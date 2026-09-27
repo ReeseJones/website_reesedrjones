@@ -41,7 +41,7 @@ body:focus {
     }
 }
 
-.content {
+.scroll-region > .content {
     @include flex.flex-container(column, center);
     flex: 1 1 0;
 }
@@ -65,8 +65,7 @@ body:focus {
 }
 
 .panel {
-    .panel-heading,
-    .heading {
+    > .heading {
         font-size: 1.5rem; // ~24px
         font-weight: bold;
     }

@@ -18,8 +18,7 @@ $panel-heading-color: shared.$font-highlight-color;
   box-sizing: border-box;
   color: $panel-font-color;
 
-  .panel-heading,
-  .heading {
+  > .heading {
     position: relative;
     display: inline-flex;
     align-items: center;
@@ -66,8 +65,7 @@ $panel-heading-color: shared.$font-highlight-color;
     }
   }
 
-  .panel-content,
-  .content {
+  > .content {
     position: relative;
     width: 100%;
     box-sizing: border-box;
@@ -79,10 +77,7 @@ $panel-heading-color: shared.$font-highlight-color;
   }
 
   // When heading is present, top-left corner connects seamlessly to the tab
-  .panel-heading + .panel-content,
-  .heading + .content,
-  .panel-heading + .content,
-  .heading + .panel-content {
+  > .heading + .content {
     border-top-left-radius: 0;
   }
 }
