@@ -1,6 +1,45 @@
 # Guardians of Nogard
 
-Defend the realm of Nogard in this action adventure game.
+Guardians of Nogard is a top-down fantasy hack-n-slash. The players must fight through hordes of orcs using various weapons and spells to save the Pumpkin Princess!
+
+<Video />
+
+## Screenshots
 
 <Carousel />
 
+## Features
+
+- Four unique weapons with different strengths and weaknesses!
+- Four powerful particle-laden spells!
+- Four extra consumable items
+- Four player local co-op!
+
+## About
+
+Guardians of Nogard was developed in just one semester in C. None of us had programmed a game from scratch before, but it did not stop us from scheming up some crazy ideas and over-scoped ambitions. Naturally we had to cut back a lot of features, but the core concept of our game still held true: a game where you could slay hundreds of mindless orcs hack-n-slash style!
+
+The game engine was programmed from scratch and is modeled after an inheritance-based architecture. While not super extensible, it was quick and easy to use and got our game up and running. For graphics we were given a wrapper around DirectX called Alpha Engine, an in-house API developed by DigiPen. It gave us the basic ability to render textures to the screen. From there we took it further, adding the ability to have animated sprites and a tile map renderer.
+
+One thing I discovered from Guardians of Nogard is that having two players play a game together creates a lot of unexpected outcomes. They get crazy ideas in their head, and they act much differently than if they were left alone to play a game undisturbed. One thing that immediately emerged was that players like gold. It was not enough to kill an orc and loot his gold. Players found it exceedingly fun to swoop in and steal the gold right out from under another player who had just slain an orc. Underhanded tactics included pushing orcs into allies so that they would die (and therefore not be able to pick up gold), and roll-sniping (waiting until a player killed an orc, and immediately rolling towards the loot). I quickly learned what the term "co-optional" meant. This turned out to be one of the better "features" of our game.
+
+## Team
+
+- Alex Fricke – Producer
+- Reese Jones – Tech Lead
+- Nathan Kinnick – Gameplay Programmer
+- Brandon Dulyea – Level Design
+
+## Contributions to the Game
+
+- Architected the game engine in C creating a pseudo-inheritance-based engine, simple and easy to use allowing for new designers to jump in and create object types.
+- Developed a simple XML file parser to load Tiled XML files giving designers the tools to create levels and varying waves of enemies.
+- Implemented A* pathfinding allowing for enemies that could intelligently navigate the map.
+- Optimized the game to use broad phase collision detection (quad tree), increasing collidable objects on screen from about 800 to 2000.
+- Integrated Alpha Engine graphics and created a sprite system allowing for animated sprites.
+- Created a particle system allowing for the design of interesting looking effects for spells.
+- Created environment art.
+
+## Download
+
+Guardians of Nogard is not currently available for download.

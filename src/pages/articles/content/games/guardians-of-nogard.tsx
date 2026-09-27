@@ -48,8 +48,8 @@ const SCREENSHOT_ITEMS: CarouselItem[] = [
 
 export const ARTICLE_DETAILS: ArticleDetails = {
     title: "Guardians of Nogard",
-    subtitle: "Action adventure game",
-    description: "Defend the realm of Nogard in this action adventure game.",
+    subtitle: "Top-down fantasy hack-n-slash",
+    description: "Defend the realm of Nogard in this 4-player top-down fantasy hack-n-slash.",
     date: "2026-09-24",
     heroImageUrl: guardiansOfNogardSplashUrl,
     heroImageAlt: "Guardians of Nogard game splash screen",
@@ -78,11 +78,29 @@ export function GuardiansScreenshotCarousel() {
     );
 }
 
-export default function GuardiansOfNogardArticle() {
+export function GuardiansGameplayVideo() {
     return (
-        <ArticlePageLayout {...ARTICLE_DETAILS}>
-            <GuardiansOfNogardMdx components={{ Carousel: GuardiansScreenshotCarousel }} />
-        </ArticlePageLayout>
+        <div style={{ width: "100%", maxWidth: "800px", margin: "1.5rem auto 2.5rem", aspectRatio: "16/9" }}>
+            <iframe
+                src="https://www.youtube-nocookie.com/embed/6pP6JI2q0nM"
+                title="Guardians of Nogard Gameplay Video"
+                style={{ width: "100%", height: "100%", border: 0, borderRadius: "8px" }}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+            />
+        </div>
     );
 }
 
+export default function GuardiansOfNogardArticle() {
+    return (
+        <ArticlePageLayout {...ARTICLE_DETAILS}>
+            <GuardiansOfNogardMdx
+                components={{
+                    Carousel: GuardiansScreenshotCarousel,
+                    Video: GuardiansGameplayVideo,
+                }}
+            />
+        </ArticlePageLayout>
+    );
+}

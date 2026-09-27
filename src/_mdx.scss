@@ -1,16 +1,18 @@
+@use "shared";
+
 /* --- MDX Layout & Typography Configuration --- */
 .mdx-content {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
   font-size: 16px;
   line-height: 1.6;
   word-wrap: break-word;
-  color: #24292f; /* Light theme text fallback */
+  color: shared.$font-color;
 }
 
 /* System-level Dark Mode Switcher */
 @media (prefers-color-scheme: dark) {
   .mdx-content {
-    color: #c9d1d9;
+    color: shared.$font-color;
   }
 }
 
@@ -61,12 +63,70 @@
 }
 
 /* --- Lists --- */
-.mdx-content ul,
-.mdx-content ol {
-  padding-left: 2em;
+.mdx-content ul {
+  list-style-type: disc;
+  padding-left: 1.75rem;
+  margin-top: 0.5rem;
+  margin-bottom: 1.25rem;
+
+  ul {
+    list-style-type: circle;
+    padding-left: 1.5rem;
+    margin-top: 0.35rem;
+    margin-bottom: 0.35rem;
+
+    ul {
+      list-style-type: square;
+    }
+  }
 }
-.mdx-content li + li {
-  margin-top: 0.25em;
+
+.mdx-content ol {
+  list-style-type: decimal;
+  padding-left: 1.75rem;
+  margin-top: 0.5rem;
+  margin-bottom: 1.25rem;
+
+  ol {
+    list-style-type: lower-alpha;
+    padding-left: 1.5rem;
+    margin-top: 0.35rem;
+    margin-bottom: 0.35rem;
+
+    ol {
+      list-style-type: lower-roman;
+    }
+  }
+}
+
+.mdx-content li {
+  margin-bottom: 0.5rem;
+  line-height: 1.6;
+
+  &::marker {
+    color: shared.$font-highlight-color;
+  }
+
+  > p {
+    margin-top: 0;
+    margin-bottom: 0.25rem;
+  }
+
+  > p:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.mdx-content ol > li::marker {
+  font-weight: 600;
+}
+
+.mdx-content .task-list-item {
+  list-style-type: none;
+
+  &::marker {
+    content: none;
+  }
 }
 
 /* --- Blockquotes --- */
