@@ -7,6 +7,8 @@ import { useContainedScroll } from "../../hooks/use_contained_scroll";
 import { useSwipeGestures } from "./use_swipe_gestures";
 import { validateIndex } from "../../lib/helpers";
 
+export type CarouselImageMode = "fit" | "cover";
+
 export interface CarouselItem {
   title: string;
   fullImageUrl: string;
@@ -14,6 +16,7 @@ export interface CarouselItem {
   alt?: string;
   linkUrl?: string;
   description?: string;
+  imageMode?: CarouselImageMode;
 }
 
 export interface CarouselProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -23,6 +26,7 @@ export interface CarouselProps extends React.HTMLAttributes<HTMLDivElement> {
   onScrollRight?: () => void;
   onSelectIndex?: (index: number) => void;
   animationDurationMs?: number; // Defaults to 400ms
+  imageMode?: CarouselImageMode; // Defaults to "fit"
 }
 
 export function Carousel({
@@ -32,6 +36,7 @@ export function Carousel({
   onScrollRight,
   onSelectIndex,
   animationDurationMs = 400,
+  imageMode = "fit",
   className,
   style,
   tabIndex = 0,
@@ -187,10 +192,13 @@ export function Carousel({
                   slideImage
                 );
 
+              const effectiveImageMode = item.imageMode ?? imageMode;
+              const isCover = effectiveImageMode === "cover";
+
               return (
                 <div
                   key={`slide-${slotIndex}`}
-                  className={`slide ${isActive ? "active" : ""}`.trim()}
+                  className={`slide ${isActive ? "active" : ""} ${isCover ? "cover" : ""}`.trim()}
                   role="group"
                   aria-roledescription="slide"
                   aria-label={

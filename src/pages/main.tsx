@@ -28,11 +28,11 @@ const CAROUSEL_ITEMS: CarouselItem[] = [
         linkUrl: "/articles/games/guardians-of-nogard",
     },
     {
-        title: "Project Scale",
+        title: "Void Guardian",
         fullImageUrl: projectScaleSplashImg,
         thumbnailUrl: projectScaleSplashImg,
-        alt: "Project Scale splash screen",
-        linkUrl: "/articles/games/project-scale",
+        alt: "Void Guardian splash screen",
+        linkUrl: "/articles/games/void-guardian",
     },
     {
         title: "Radical Frederick & The Pick of Fate",

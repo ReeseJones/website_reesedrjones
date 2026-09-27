@@ -121,6 +121,8 @@ Touch interactions are classified into three distinct outcomes upon gesture comp
 ## 5. Component Interface & Data Model
 
 ```typescript
+export type CarouselImageMode = "fit" | "cover";
+
 export interface CarouselItem {
   title: string;
   fullImageUrl: string;
@@ -128,6 +130,7 @@ export interface CarouselItem {
   alt?: string;
   linkUrl?: string;
   description?: string;
+  imageMode?: CarouselImageMode;
 }
 
 export interface CarouselProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -137,6 +140,7 @@ export interface CarouselProps extends React.HTMLAttributes<HTMLDivElement> {
   onScrollRight?: () => void;
   onSelectIndex?: (index: number) => void;
   animationDurationMs?: number; // Defaults to 400ms
+  imageMode?: CarouselImageMode; // Defaults to "fit"
 }
 ```
 
@@ -243,9 +247,9 @@ Descendant rules are flattened directly under `.carousel` to maintain 2–3 leve
   - `.stage-row` (Main stage flex row, provides relative positioning context for arrows)
   - `.viewport` (Clipped aspect-ratio window, scoped directly under `.carousel`)
   - `.track` (Sliding horizontal strip, scoped directly under `.carousel`)
-  - `.slide` (Individual slide container, scoped directly under `.carousel`)
+  - `.slide` (Individual slide container, scoped directly under `.carousel`; accepts optional `.cover` class)
     - `> a` (Interactive link wrapper for active slide)
-    - `> img`, `> a > img` (Direct child image elements)
+    - `> img`, `> a > img` (Direct child image elements; styled with `object-fit: contain` by default for "fit" mode, and `object-fit: cover` under `.cover`)
   - `.arrow` (Navigation buttons, `.prev` and `.next`)
   - `.thumbnails-row` (Horizontal thumbnail list)
     - `> button`, `> button.active` (Thumbnail preview buttons)
