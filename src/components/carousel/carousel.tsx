@@ -3,7 +3,7 @@ import "./carousel.scss";
 import React, { useCallback } from "react";
 import { Link } from "react-router-dom";
 import { useCarouselTrack } from "./use_carousel_track";
-import { useThumbnailScroll } from "./use_thumbnail_scroll";
+import { useContainedScroll } from "../../hooks/use_contained_scroll";
 import { useSwipeGestures } from "./use_swipe_gestures";
 import { validateIndex } from "../../lib/helpers";
 
@@ -53,7 +53,12 @@ export function Carousel({
     animationDurationMs,
   });
 
-  const thumbnailsRowRef = useThumbnailScroll(selectedIndex);
+  const thumbnailsRowRef = useContainedScroll<HTMLDivElement>({
+    activeSelector: "button.active",
+    trigger: selectedIndex,
+    axis: "x",
+    alignment: "nearest",
+  });
 
   const handlePrev = useCallback(() => {
     if (items.length <= 1 || isTransitioning) return;
@@ -203,7 +208,6 @@ export function Carousel({
         </div>
 
         <button
-          type="button"
           className="arrow prev"
           onClick={handlePrev}
           aria-label="Previous slide"
@@ -213,7 +217,6 @@ export function Carousel({
         </button>
 
         <button
-          type="button"
           className="arrow next"
           onClick={handleNext}
           aria-label="Next slide"
@@ -227,7 +230,6 @@ export function Carousel({
         {items.map((item, index) => (
           <button
             key={index}
-            type="button"
             className={index === selectedIndex ? "active" : undefined}
             onClick={() => handleSelect(index)}
             aria-label={`Go to slide ${index + 1}: ${item.title}`}

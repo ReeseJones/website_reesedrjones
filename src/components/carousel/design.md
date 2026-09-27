@@ -202,11 +202,12 @@ Each behavioral responsibility is extracted into its own dedicated hook file in 
   - `trackProps`: Pre-bundled props for `<div className="track" />` (`ref`, `className`, `style`, `onTransitionEnd`).
   - `recordAction: (action: "left" | "right" | "select") => void`: Informs the hook of user intent to optimize wrap detection.
 
-### 4. `useThumbnailScroll` (Thumbnail Strip Auto-Scroll Hook)
-- **File:** [src/components/carousel/use_thumbnail_scroll.ts](./use_thumbnail_scroll.ts)
-- **Purpose:** Watches `selectedIndex` and smoothly scrolls the active thumbnail button (`button.active`) into view inside the thumbnails row.
-- **Inputs:** `selectedIndex: number`.
-- **Outputs:** `thumbnailsRowRef: React.RefObject<HTMLDivElement | null>` to attach to `<div className="thumbnails-row" />`.
+### 4. `useContainedScroll` (Thumbnail Strip Auto-Scroll Hook)
+- **File:** [src/hooks/use_contained_scroll.ts](../../hooks/use_contained_scroll.ts)
+- **Purpose:** Used directly in `<Carousel />` to watch `selectedIndex` and smoothly scroll the active thumbnail button (`button.active`) into view inside the thumbnails row.
+- **Implementation:** Leverages the reusable [src/hooks/use_contained_scroll.ts](../../hooks/use_contained_scroll.ts) hook and [src/lib/scroll_helpers.ts](../../lib/scroll_helpers.ts) DOM utility, ensuring horizontal scrolling is strictly container-confined to `.thumbnails-row` and never moves ancestor elements or the window viewport.
+- **Configuration:** `{ activeSelector: "button.active", trigger: selectedIndex, axis: "x", alignment: "nearest" }`.
+- **Outputs:** `thumbnailsRowRef: React.RefObject<HTMLDivElement | null>` attached to `<div className="thumbnails-row" />`.
 
 ### 5. `useSwipeGestures` (Touch Gesture Detection Hook)
 - **File:** [src/components/carousel/use_swipe_gestures.ts](./use_swipe_gestures.ts)
