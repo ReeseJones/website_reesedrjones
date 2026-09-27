@@ -64,6 +64,14 @@ body:focus {
     }
 }
 
+.panel {
+    .panel-heading,
+    .heading {
+        font-size: 1.5rem; // ~24px
+        font-weight: bold;
+    }
+}
+
 .hero-title {
     margin-top: 3rem;
     margin-bottom: 0rem;

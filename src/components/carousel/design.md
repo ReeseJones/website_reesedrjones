@@ -5,10 +5,10 @@ Design specification for the project and game showcase carousel on the main land
 ---
 
 ## 1. Overview
-- **Purpose:** Showcase games and projects built by Reese Jones on the main page ([src/pages/main.tsx](file:///D:/_/website_reesedrjones/src/pages/main.tsx)).
-- **Component File:** [src/components/carousel/carousel.tsx](file:///D:/_/website_reesedrjones/src/components/carousel/carousel.tsx)
-- **Style File:** [src/components/carousel/carousel.scss](file:///D:/_/website_reesedrjones/src/components/carousel/carousel.scss)
-- **Design Document:** [src/components/carousel/design.md](file:///D:/_/website_reesedrjones/src/components/carousel/design.md)
+- **Purpose:** Showcase games and projects built by Reese Jones on the main page ([src/pages/main.tsx](../../pages/main.tsx)).
+- **Component File:** [src/components/carousel/carousel.tsx](./carousel.tsx)
+- **Style File:** [src/components/carousel/carousel.scss](./carousel.scss)
+- **Design Document:** [src/components/carousel/design.md](./design.md)
 
 ---
 
@@ -142,7 +142,7 @@ export interface CarouselProps extends React.HTMLAttributes<HTMLDivElement> {
 
 - **Controlled Props:** `selectedIndex` directly dictates the active slide. The component emits `onScrollLeft`, `onScrollRight`, and `onSelectIndex` rather than managing its own index state.
 - **Index Validation & Fail-Fast Behavior:**
-  - `selectedIndex` is strictly validated upon render rather than silently clamped or corrected, delegating bounds checking to the generic `validateIndex` utility in [src/lib/helpers.ts](file:///D:/_/website_reesedrjones/src/lib/helpers.ts).
+  - `selectedIndex` is strictly validated upon render rather than silently clamped or corrected, delegating bounds checking to the generic `validateIndex` utility in [src/lib/helpers.ts](../../lib/helpers.ts).
   - When `items.length > 0`: `selectedIndex` must be an integer within the valid range `0 <= selectedIndex < items.length`. If `selectedIndex < 0` or `selectedIndex >= items.length` (or is non-integer), a `RangeError` is thrown with a descriptive message indicating the provided value and the valid range `[0, items.length - 1]`.
   - When `items.length === 0`: `selectedIndex` must equal `0`; any other value throws a `RangeError`.
   - Design rationale: Silently correcting out-of-range indices masks upstream state bugs and causes desynchronization between parent state and visual stage. Fail-fast error throwing ensures consumers or state hooks (`useCarouselController`) intentionally manage index bounds using `wrapIndex` or `useWrappingIndex`.
@@ -155,7 +155,7 @@ export interface CarouselProps extends React.HTMLAttributes<HTMLDivElement> {
 Each behavioral responsibility is extracted into its own dedicated hook file in `src/components/carousel/`:
 
 ### 1. `useCarouselController` (Core State & Looping Hook)
-- **File:** [src/components/carousel/use_carousel_controller.ts](file:///D:/_/website_reesedrjones/src/components/carousel/use_carousel_controller.ts)
+- **File:** [src/components/carousel/use_carousel_controller.ts](./use_carousel_controller.ts)
 - **Purpose:** Manages the active slide index, boundary clamping, and looping wrap logic.
 - **Inputs (`UseCarouselControllerOptions`):**
   - `itemCount: number`: Total number of items.
@@ -169,7 +169,7 @@ Each behavioral responsibility is extracted into its own dedicated hook file in 
   - `bind`: Pre-configured prop bundle `{ selectedIndex, onScrollLeft, onScrollRight, onSelectIndex }` for direct spreading onto `<Carousel {...bind} />`.
 
 ### 2. `useCarouselAutoScroll` (Auto-Play Timer Hook)
-- **File:** [src/components/carousel/use_carousel_auto_scroll.ts](file:///D:/_/website_reesedrjones/src/components/carousel/use_carousel_auto_scroll.ts)
+- **File:** [src/components/carousel/use_carousel_auto_scroll.ts](./use_carousel_auto_scroll.ts)
 - **Purpose:** Automatically advances the carousel on a recurring timer with built-in hover and focus pause management.
 - **Inputs (`UseCarouselAutoScrollOptions`):**
   - `onAdvance: () => void`: The advance callback (typically `scrollRight` from controller).
@@ -187,7 +187,7 @@ Each behavioral responsibility is extracted into its own dedicated hook file in 
   - Pauses on keyboard focus (`onFocus`), and on blur guards against internal element-to-element focus shifts using `!e.currentTarget.contains(e.relatedTarget)` so the timer only resumes when focus leaves the container entirely.
 
 ### 3. `useCarouselTrack` (Presentational Track Motion Hook)
-- **File:** [src/components/carousel/use_carousel_track.ts](file:///D:/_/website_reesedrjones/src/components/carousel/use_carousel_track.ts)
+- **File:** [src/components/carousel/use_carousel_track.ts](./use_carousel_track.ts)
 - **Purpose:** Extracts low-level DOM side effects (`useEffect`s), cloned-slide generation, slot calculations, silent-snap boundary resets, and transition fallback timers away from `<Carousel />`.
 - **Inputs (`UseCarouselTrackOptions`):**
   - `items: CarouselItem[]`: Full item list.
@@ -203,13 +203,13 @@ Each behavioral responsibility is extracted into its own dedicated hook file in 
   - `recordAction: (action: "left" | "right" | "select") => void`: Informs the hook of user intent to optimize wrap detection.
 
 ### 4. `useThumbnailScroll` (Thumbnail Strip Auto-Scroll Hook)
-- **File:** [src/components/carousel/use_thumbnail_scroll.ts](file:///D:/_/website_reesedrjones/src/components/carousel/use_thumbnail_scroll.ts)
+- **File:** [src/components/carousel/use_thumbnail_scroll.ts](./use_thumbnail_scroll.ts)
 - **Purpose:** Watches `selectedIndex` and smoothly scrolls the active thumbnail button (`button.active`) into view inside the thumbnails row.
 - **Inputs:** `selectedIndex: number`.
 - **Outputs:** `thumbnailsRowRef: React.RefObject<HTMLDivElement | null>` to attach to `<div className="thumbnails-row" />`.
 
 ### 5. `useSwipeGestures` (Touch Gesture Detection Hook)
-- **File:** [src/components/carousel/use_swipe_gestures.ts](file:///D:/_/website_reesedrjones/src/components/carousel/use_swipe_gestures.ts)
+- **File:** [src/components/carousel/use_swipe_gestures.ts](./use_swipe_gestures.ts)
 - **Purpose:** Tracks touch coordinates without triggering component re-renders, evaluating horizontal vector dominance and minimum distance thresholds.
 - **Inputs (`UseSwipeGesturesOptions`):**
   - `onSwipeLeft?: () => void`: Invoked when user swipes left.
@@ -218,7 +218,7 @@ Each behavioral responsibility is extracted into its own dedicated hook file in 
 - **Outputs (`SwipeGestureHandlers`):** `{ onTouchStart, onTouchMove, onTouchEnd, onTouchCancel }` to spread directly onto `<div className="viewport" />`.
 
 ### 6. `useWrappingIndex` & `wrapIndex` (Generic Index Wrapping Hook & Math)
-- **File:** [src/hooks/use_wrapping_index.ts](file:///D:/_/website_reesedrjones/src/hooks/use_wrapping_index.ts)
+- **File:** [src/hooks/use_wrapping_index.ts](../../hooks/use_wrapping_index.ts)
 - **Purpose:** Pure mathematical modulo wrapping hook and function ensuring an arbitrary index wraps cleanly within `[0, maxIndex - 1]`. Uses Euclidean modulo `((selectedIndex % maxIndex) + maxIndex) % maxIndex` to properly handle negative values.
 - **Hook Signature:** `useWrappingIndex(selectedIndex: number, maxIndex: number): number`
   - `selectedIndex`: The input candidate index.

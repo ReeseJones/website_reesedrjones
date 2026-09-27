@@ -5,6 +5,7 @@ import headshotPhotoFilename from "url:../images/headshot6.jpg?width=200";
 import { Carousel, CarouselItem } from "../components/carousel/carousel";
 import { useCarouselController } from "../components/carousel/use_carousel_controller";
 import { useCarouselAutoScroll } from "../components/carousel/use_carousel_auto_scroll";
+import { Panel } from "../components/panel/panel";
 
 import dotsSplashImg from "url:../images/games/dots_splash.png";
 import guardiansOfNogardSplashImg from "url:../images/games/guardians_of_nogard_splash.png";
@@ -62,12 +63,16 @@ export const Main = () => {
             />
             <p className="hero-title">Reese Jones</p>
             <p className="hero-body">Software Engineer, Gamer & Part-time Adventurer</p>
-            <div className="carousel-container" {...pauseProps}>
+            <Panel
+                heading="Games"
+                className="carousel-container"
+            >
                 <Carousel
                     items={CAROUSEL_ITEMS}
                     {...carouselController.bind}
+                    {...pauseProps}
                 />
-            </div>
+            </Panel>
         </section>
     );
 };
