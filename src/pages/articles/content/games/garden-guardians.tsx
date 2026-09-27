@@ -1,8 +1,15 @@
 import React from "react";
 import { ArticleDetails } from "../../article_details";
 import { ArticlePageLayout } from "../../article_page_layout";
+import { Carousel, CarouselItem } from "../../../../components/carousel/carousel";
+import { useCarouselController } from "../../../../components/carousel/use_carousel_controller";
+import { useCarouselAutoScroll } from "../../../../components/carousel/use_carousel_auto_scroll";
 import GardenGuardiansMdx from "./garden-guardians.mdx";
 import gardenGuardiansLogoUrl from "url:./images/garden_guardians/logo.png?as=webp&width=700";
+
+import screen01 from "url:./images/garden_guardians/GardenGuardians_1_hires.jpg";
+import screen02 from "url:./images/garden_guardians/GardenGuardians_2_hires.jpg";
+import screen03 from "url:./images/garden_guardians/GardenGuardians_3_hires.jpg";
 
 import princessPumpkinImg from "url:./images/garden_guardians/princess_pumpkin.png?as=webp&width=250";
 import radishKnightImg from "url:./images/garden_guardians/radish_knight.png?as=webp&width=250";
@@ -17,6 +24,27 @@ export const ARTICLE_DETAILS: ArticleDetails = {
     heroImageUrl: gardenGuardiansLogoUrl,
     heroImageAlt: "Garden Guardians game logo",
 };
+
+const SCREENSHOT_ITEMS: CarouselItem[] = [
+    {
+        title: "His Meggnificence Boss Battle",
+        fullImageUrl: screen01,
+        thumbnailUrl: screen01,
+        alt: "Garden Guardians boss arena battle against His Meggnificence and Sir Filet Mignonitaur",
+    },
+    {
+        title: "Sir Angus of Istanbull Arena",
+        fullImageUrl: screen02,
+        thumbnailUrl: screen02,
+        alt: "Garden Guardians circular wooden arena battle against Sir Angus of Istanbull",
+    },
+    {
+        title: "Meat Menace Swarm Combat",
+        fullImageUrl: screen03,
+        thumbnailUrl: screen03,
+        alt: "Garden Guardians vegetable heroes battling swarming meat enemies in the garden",
+    },
+];
 
 const CHARACTERS = [
     {
@@ -40,6 +68,29 @@ const CHARACTERS = [
         alt: "Potato Golem character portrait",
     },
 ];
+
+export function GardenScreenshotCarousel() {
+    const carouselController = useCarouselController({
+        itemCount: SCREENSHOT_ITEMS.length,
+    });
+
+    const { pauseProps } = useCarouselAutoScroll({
+        onAdvance: carouselController.scrollRight,
+        intervalMs: 5000,
+    });
+
+    return (
+        <div
+            style={{ width: "100%", maxWidth: "800px", margin: "1.5rem auto 2.5rem", boxSizing: "border-box" }}
+            {...pauseProps}
+        >
+            <Carousel
+                items={SCREENSHOT_ITEMS}
+                {...carouselController.bind}
+            />
+        </div>
+    );
+}
 
 export function GardenCharacters() {
     return (
@@ -78,6 +129,7 @@ export default function GardenGuardiansArticle() {
             <GardenGuardiansMdx
                 components={{
                     Video: GardenGameplayVideo,
+                    Carousel: GardenScreenshotCarousel,
                     Characters: GardenCharacters,
                 }}
             />

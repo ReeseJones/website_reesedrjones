@@ -11,8 +11,16 @@ import dotsSplashImg from "url:../images/games/dots_splash.png";
 import guardiansOfNogardSplashImg from "url:../images/games/guardians_of_nogard_splash.png";
 import projectScaleSplashImg from "url:../images/games/project_scale_splash.png";
 import radicalFrederickSplashImg from "url:../images/games/radical_frederick_splash.png";
+import gardenGuardiansSplashImg from "url:../images/games/garden_guardians_splash.jpg";
 
 const CAROUSEL_ITEMS: CarouselItem[] = [
+    {
+        title: "Garden Guardians",
+        fullImageUrl: gardenGuardiansSplashImg,
+        thumbnailUrl: gardenGuardiansSplashImg,
+        alt: "Garden Guardians gameplay screenshot",
+        linkUrl: "/articles/games/garden-guardians",
+    },
     {
         title: "D.O.T.S.",
         fullImageUrl: dotsSplashImg,
