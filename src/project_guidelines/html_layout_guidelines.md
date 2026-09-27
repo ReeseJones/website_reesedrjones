@@ -13,6 +13,7 @@ Guidelines and architectural principles for designing HTML structure and page la
   - Smell: A `div` whose only child is another `div` with no siblings (`<div><div>...</div></div>`).
   - Single-child elements cannot perform layout (flex, grid, or flow require 2+ elements). They exist only for visual decoration or sizing constraints that belong on the parent or child.
   - Fix: Eliminate the wrapper `div`s and consolidate their CSS declarations onto the primary semantic element.
+  - **Exception for Structural Containers (Rows / Columns):** Specific container types like rows or columns (e.g., `.title-row`, `.grid-row`, `.col-12`) are structurally designed to host layout regions and support multiple siblings, even if only one child is currently present. These represent intentional layout scaffolding and are not considered wrapper anti-patterns.
 
 ### Example 1: Section & Page Container Constraints
 

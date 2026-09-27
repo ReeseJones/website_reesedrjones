@@ -73,7 +73,7 @@
     align-items: center;
     justify-content: center;
 
-    a {
+    > a {
       display: block;
       width: 100%;
       height: 100%;
@@ -88,7 +88,8 @@
       }
     }
 
-    img {
+    > img,
+    > a > img {
       margin: 0;
       border: none;
       border-radius: 0;
@@ -176,7 +177,7 @@
       background: #777;
     }
 
-    button {
+    > button {
       flex: 0 0 auto;
       background: transparent;
       border: 2px solid transparent;
@@ -198,7 +199,7 @@
         transform: scale(1.05);
       }
 
-      img {
+      > img {
         margin: 0;
         border: none;
         border-radius: 0;

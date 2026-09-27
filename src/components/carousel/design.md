@@ -233,21 +233,19 @@ Each behavioral responsibility is extracted into its own dedicated hook file in 
 
 ## 7. Minimal CSS Class Hierarchy & Contextual Selectors
 
-Descendants rely on HTML tags and structural context rather than redundant classes:
+Descendant rules are flattened directly under `.carousel` to maintain 2–3 levels of context (satisfying CSS guidelines), avoiding brittle mirror-nesting of the DOM tree:
 
-- `.carousel` (Root container, sets CSS variables e.g. `--carousel-duration`)
-  - `.title-row`
+- `.carousel` (Root container, sets layout and CSS variables e.g. `--carousel-duration`)
+  - `.title-row` (Title header flex row)
     - `p` (Active title text)
       - `a` (Optional active title link)
-  - `.stage-row`
-    - `.viewport`
-      - `.track`
-        - `.slide`, `.slide.active`
-          - `a` (Interactive link wrapper only for the active selected slide with `linkUrl`)
-            - `img` (Full size image)
-          - `img` (Direct child image for non-selected slides or slides without `linkUrl`)
-    - `button.arrow.prev`
-    - `button.arrow.next`
-  - `.thumbnails-row`
-    - `button`, `button.active` (Thumbnail preview button, no `.thumbnail` class needed)
-      - `img` (Thumbnail preview image, no `.thumbnail-img` class needed)
+  - `.stage-row` (Main stage flex row, provides relative positioning context for arrows)
+  - `.viewport` (Clipped aspect-ratio window, scoped directly under `.carousel`)
+  - `.track` (Sliding horizontal strip, scoped directly under `.carousel`)
+  - `.slide` (Individual slide container, scoped directly under `.carousel`)
+    - `> a` (Interactive link wrapper for active slide)
+    - `> img`, `> a > img` (Direct child image elements)
+  - `.arrow` (Navigation buttons, `.prev` and `.next`)
+  - `.thumbnails-row` (Horizontal thumbnail list)
+    - `> button`, `> button.active` (Thumbnail preview buttons)
+      - `> img` (Direct child thumbnail image)
