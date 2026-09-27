@@ -39,110 +39,110 @@
     align-items: center;
     justify-content: center;
     position: relative;
+  }
 
-    .viewport {
+  .viewport {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+    aspect-ratio: 16 / 9;
+    touch-action: pan-y;
+    border-radius: 8px;
+  }
+
+  .track {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    height: 100%;
+    transition: transform var(--carousel-duration, 400ms) cubic-bezier(0.25, 1, 0.5, 1);
+    will-change: transform;
+
+    &.no-transition {
+      transition: none;
+    }
+  }
+
+  .slide {
+    flex: 0 0 100%;
+    width: 100%;
+    height: 100%;
+    min-width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    a {
+      display: block;
       width: 100%;
       height: 100%;
-      position: relative;
-      overflow: hidden;
-      aspect-ratio: 16 / 9;
-      touch-action: pan-y;
-      border-radius: 8px;
+      cursor: pointer;
 
-      .track {
-        display: flex;
-        flex-direction: row;
-        width: 100%;
-        height: 100%;
-        transition: transform var(--carousel-duration, 400ms) cubic-bezier(0.25, 1, 0.5, 1);
-        will-change: transform;
+      &:focus {
+        outline-offset: -2px;
+      }
 
-        &.no-transition {
-          transition: none;
-        }
-
-        .slide {
-          flex: 0 0 100%;
-          width: 100%;
-          height: 100%;
-          min-width: 100%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-
-          a {
-            display: block;
-            width: 100%;
-            height: 100%;
-            cursor: pointer;
-
-            &:focus {
-              outline-offset: -2px;
-            }
-
-            &::after {
-              display: none;
-            }
-          }
-
-          img {
-            margin: 0;
-            border: none;
-            border-radius: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-            user-select: none;
-            -webkit-user-drag: none;
-          }
-        }
+      &::after {
+        display: none;
       }
     }
 
-    .arrow {
-      position: absolute;
-      top: 50%;
-      transform: translateY(-50%);
-      z-index: 2;
-      background: rgba(0, 0, 0, 0.5);
-      color: shared.$font-color;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      border-radius: 50%;
-      width: 44px;
-      height: 44px;
-      padding: 0;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.25rem;
-      line-height: 1;
-      transition: background-color 0.2s ease, color 0.2s ease, opacity 0.2s ease, transform 0.2s ease;
-      backdrop-filter: blur(4px);
+    img {
+      margin: 0;
+      border: none;
+      border-radius: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      user-select: none;
+      -webkit-user-drag: none;
+    }
+  }
 
-      &:hover:not(:disabled) {
-        background-color: rgba(0, 0, 0, 0.8);
-        color: shared.$font-highlight-color;
-        border-color: shared.$font-highlight-color;
-      }
+  .arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 2;
+    background: rgba(0, 0, 0, 0.5);
+    color: shared.$font-color;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    line-height: 1;
+    transition: background-color 0.2s ease, color 0.2s ease, opacity 0.2s ease, transform 0.2s ease;
+    backdrop-filter: blur(4px);
 
-      &:active:not(:disabled) {
-        transform: translateY(-50%) scale(0.95);
-      }
+    &:hover:not(:disabled) {
+      background-color: rgba(0, 0, 0, 0.8);
+      color: shared.$font-highlight-color;
+      border-color: shared.$font-highlight-color;
+    }
 
-      &:disabled {
-        opacity: 0.25;
-        cursor: not-allowed;
-      }
+    &:active:not(:disabled) {
+      transform: translateY(-50%) scale(0.95);
+    }
 
-      &.prev {
-        left: 0.75rem;
-      }
+    &:disabled {
+      opacity: 0.25;
+      cursor: not-allowed;
+    }
 
-      &.next {
-        right: 0.75rem;
-      }
+    &.prev {
+      left: 0.75rem;
+    }
+
+    &.next {
+      right: 0.75rem;
     }
   }
 
