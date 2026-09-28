@@ -2,9 +2,12 @@
     width: calc(100% - 2rem);
     max-width: 800px;
     box-sizing: border-box;
-    margin-bottom: 4rem;
+    margin-bottom: 2rem;
+}
 
-    @media (max-width: 768px) {
-        margin-bottom: 2rem;
+// Styles applied in desktop environment
+.desktop {
+    .carousel-container {
+        margin-bottom: 4rem;
     }
 }

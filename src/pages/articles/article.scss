@@ -11,6 +11,11 @@
 
 .hero-image {
     @include shared.border;
+    max-width: 100%;
+    height: auto;
+    box-sizing: border-box;
+    display: block;
+    margin: 0 auto;
 }
 
 

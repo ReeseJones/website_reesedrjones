@@ -4,19 +4,22 @@
 .card-container {
     @include flex.flex-container(row, stretch);
     flex-wrap: wrap;
-    justify-content: space-evenly;
-    gap: 1rem;
+    justify-content: center;
+    gap: 1.5rem;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .card {
     @include flex.flex-container(column, center);
     justify-content: end;
-    flex:  0 0 auto;
+    flex: 0 1 360px;
+    width: 100%;
+    max-width: 360px;
+    box-sizing: border-box;
     background: #1f1f1f;
     color: shared.$light-font-color;
-    //border-radius: 1rem;
     overflow: hidden;
-    width: 360px;
 }
 
 .card-details {

@@ -194,11 +194,12 @@ export function Carousel({
 
               const effectiveImageMode = item.imageMode ?? imageMode;
               const isCover = effectiveImageMode === "cover";
+              const isFit = effectiveImageMode === "fit";
 
               return (
                 <div
                   key={`slide-${slotIndex}`}
-                  className={`slide ${isActive ? "active" : ""} ${isCover ? "cover" : ""}`.trim()}
+                  className={`slide ${isActive ? "active" : ""} ${isCover ? "cover" : ""} ${isFit ? "fit" : ""}`.trim()}
                   role="group"
                   aria-roledescription="slide"
                   aria-label={
