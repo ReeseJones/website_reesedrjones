@@ -133,3 +133,80 @@ export const MOBILE_GALAXY_PARAMETERS: Partial<GalaxyParameters> = {
     centerOffsetY: 3.0,
     dprCap: 1.25,
 };
+
+export function rgbToHex(rgb: [number, number, number]): string {
+    const r = Math.round(Math.min(1, Math.max(0, rgb[0])) * 255)
+        .toString(16)
+        .padStart(2, "0");
+    const g = Math.round(Math.min(1, Math.max(0, rgb[1])) * 255)
+        .toString(16)
+        .padStart(2, "0");
+    const b = Math.round(Math.min(1, Math.max(0, rgb[2])) * 255)
+        .toString(16)
+        .padStart(2, "0");
+    return `#${r}${g}${b}`;
+}
+
+export function hexToRgb(hex: string): [number, number, number] {
+    const clean = hex.replace("#", "");
+    const bigint = parseInt(clean, 16);
+    if (isNaN(bigint)) return [1, 1, 1];
+    const r = Number((((bigint >> 16) & 255) / 255).toFixed(3));
+    const g = Number((((bigint >> 8) & 255) / 255).toFixed(3));
+    const b = Number(((bigint & 255) / 255).toFixed(3));
+    return [r, g, b];
+}
+
+export interface GalaxyPreset {
+    id: string;
+    name: string;
+    params: Partial<GalaxyParameters>;
+}
+
+export const GALAXY_PRESETS: GalaxyPreset[] = [
+    {
+        id: "pinprick_default",
+        name: "Pin-prick Crystalline (Default)",
+        params: DEFAULT_PINPRICK_PARAMETERS,
+    },
+    {
+        id: "orb_bokeh",
+        name: "Volumetric Orb Bokeh",
+        params: DEFAULT_ORB_PARAMETERS,
+    },
+    {
+        id: "dense_core",
+        name: "Hyper-Dense Nucleus",
+        params: {
+            ...DEFAULT_PINPRICK_PARAMETERS,
+            starCount: 380000,
+            coreDensityRatio: 0.30,
+            coreGlowBoost: 2.0,
+            rotationSpeed: 0.055,
+        },
+    },
+    {
+        id: "deep_nebula",
+        name: "Deep Interstellar Nebula",
+        params: {
+            ...DEFAULT_ORB_PARAMETERS,
+            accentColor: [0.85, 0.18, 0.78],
+            armInnerColor: [0.15, 0.95, 0.88],
+            armOuterColor: [0.08, 0.22, 0.88],
+            coreBlazeColor: [1.0, 0.95, 0.75],
+            pointScale: 48.0,
+        },
+    },
+    {
+        id: "slow_majestic",
+        name: "Slow Majestic Spiral",
+        params: {
+            ...DEFAULT_PINPRICK_PARAMETERS,
+            rotationSpeed: 0.018,
+            armWinding: 0.65,
+            spurFrequency: 0.28,
+            driftSpeed: 0.10,
+        },
+    },
+];
+

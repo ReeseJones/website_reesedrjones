@@ -212,6 +212,50 @@ export class GalaxyRenderer {
         return this.params.style;
     }
 
+    /**
+     * Dynamically update parameters in real-time without recreating WebGL context.
+     * Geometry is regenerated only when structural parameters change.
+     */
+    public updateParameters(newParams: Partial<GalaxyParameters>): void {
+        if (!this.gl || this.isDestroyed) return;
+
+        if (newParams.style && newParams.style !== this.params.style) {
+            this.setStyle(newParams.style);
+        }
+
+        const needsGeometryRebuild =
+            (newParams.starCount !== undefined &&
+                newParams.starCount !== this.params.starCount) ||
+            (newParams.armCount !== undefined &&
+                newParams.armCount !== this.params.armCount) ||
+            (newParams.armWinding !== undefined &&
+                newParams.armWinding !== this.params.armWinding) ||
+            (newParams.armDispersion !== undefined &&
+                newParams.armDispersion !== this.params.armDispersion) ||
+            (newParams.spurFrequency !== undefined &&
+                newParams.spurFrequency !== this.params.spurFrequency) ||
+            (newParams.coreRadius !== undefined &&
+                newParams.coreRadius !== this.params.coreRadius) ||
+            (newParams.diskRadius !== undefined &&
+                newParams.diskRadius !== this.params.diskRadius) ||
+            (newParams.diskThickness !== undefined &&
+                newParams.diskThickness !== this.params.diskThickness) ||
+            (newParams.coreDensityRatio !== undefined &&
+                newParams.coreDensityRatio !== this.params.coreDensityRatio);
+
+        Object.assign(this.params, newParams);
+
+        if (needsGeometryRebuild) {
+            this.rebuildStarBuffer();
+        }
+
+        this.uploadColorUniforms();
+    }
+
+    public getParameters(): GalaxyParameters {
+        return { ...this.params };
+    }
+
     public destroy(): void {
         this.isDestroyed = true;
         if (this.rafId !== null) {
@@ -380,13 +424,43 @@ export class GalaxyRenderer {
             "u_coreGlowBoost"
         );
 
-        // Static color uniform configuration
-        gl.uniform3fv(this.uCoreColorLoc, this.params.coreColor);
-        gl.uniform3fv(this.uCoreBlazeColorLoc, this.params.coreBlazeColor);
-        gl.uniform3fv(this.uArmInnerColorLoc, this.params.armInnerColor);
-        gl.uniform3fv(this.uArmOuterColorLoc, this.params.armOuterColor);
-        gl.uniform3fv(this.uAccentColorLoc, this.params.accentColor);
-        gl.uniform1f(this.uCoreGlowBoostLoc, this.params.coreGlowBoost);
+        // Upload color uniforms
+        this.uploadColorUniforms();
+    }
+
+    private uploadColorUniforms(): void {
+        const gl = this.gl;
+        if (!gl || !this.program) return;
+
+        gl.useProgram(this.program);
+        if (this.uCoreColorLoc) {
+            gl.uniform3fv(this.uCoreColorLoc, this.params.coreColor);
+        }
+        if (this.uCoreBlazeColorLoc) {
+            gl.uniform3fv(this.uCoreBlazeColorLoc, this.params.coreBlazeColor);
+        }
+        if (this.uArmInnerColorLoc) {
+            gl.uniform3fv(this.uArmInnerColorLoc, this.params.armInnerColor);
+        }
+        if (this.uArmOuterColorLoc) {
+            gl.uniform3fv(this.uArmOuterColorLoc, this.params.armOuterColor);
+        }
+        if (this.uAccentColorLoc) {
+            gl.uniform3fv(this.uAccentColorLoc, this.params.accentColor);
+        }
+        if (this.uCoreGlowBoostLoc) {
+            gl.uniform1f(this.uCoreGlowBoostLoc, this.params.coreGlowBoost);
+        }
+    }
+
+    private rebuildStarBuffer(): void {
+        if (!this.gl || !this.vbo) return;
+        const gl = this.gl;
+        this.starCount = this.params.starCount;
+        const starData = generateStarBuffer(this.params);
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.vbo);
+        gl.bufferData(gl.ARRAY_BUFFER, starData, gl.STATIC_DRAW);
+        gl.bindBuffer(gl.ARRAY_BUFFER, null);
     }
 
     private initializeStarBuffers(gl: WebGL2RenderingContext): void {
