@@ -9,6 +9,7 @@ Design specification for the project and game showcase carousel on the main land
 - **Component File:** [src/components/carousel/carousel.tsx](./carousel.tsx)
 - **Style File:** [src/components/carousel/carousel.scss](./carousel.scss)
 - **Design Document:** [src/components/carousel/design.md](./design.md)
+- **Cooperating Modal Design:** [src/components/carousel/carousel_dialog_design.md](./carousel_dialog_design.md)
 
 ---
 
@@ -139,12 +140,13 @@ export interface CarouselProps extends React.HTMLAttributes<HTMLDivElement> {
   onScrollLeft?: () => void;
   onScrollRight?: () => void;
   onSelectIndex?: (index: number) => void;
+  onOpenDialog?: (index: number) => void;
   animationDurationMs?: number; // Defaults to 400ms
   imageMode?: CarouselImageMode; // Defaults to "fit"
 }
 ```
 
-- **Controlled Props:** `selectedIndex` directly dictates the active slide. The component emits `onScrollLeft`, `onScrollRight`, and `onSelectIndex` rather than managing its own index state.
+- **Controlled Props:** `selectedIndex` directly dictates the active slide. The component emits `onScrollLeft`, `onScrollRight`, and `onSelectIndex` rather than managing its own index state. The optional `onOpenDialog` is called when the user activates fullscreen modal view.
 - **Index Validation & Fail-Fast Behavior:**
   - `selectedIndex` is strictly validated upon render rather than silently clamped or corrected, delegating bounds checking to the generic `validateIndex` utility in [src/lib/helpers.ts](../../lib/helpers.ts).
   - When `items.length > 0`: `selectedIndex` must be an integer within the valid range `0 <= selectedIndex < items.length`. If `selectedIndex < 0` or `selectedIndex >= items.length` (or is non-integer), a `RangeError` is thrown with a descriptive message indicating the provided value and the valid range `[0, items.length - 1]`.
@@ -254,3 +256,16 @@ Descendant rules are flattened directly under `.carousel` to maintain 2–3 leve
   - `.thumbnails-row` (Horizontal thumbnail list)
     - `> button`, `> button.active` (Thumbnail preview buttons)
       - `> img` (Direct child thumbnail image)
+
+---
+
+## 8. Cooperating Full-Screen Dialog
+
+- **Component Design Document:** [src/components/carousel/carousel_dialog_design.md](./carousel_dialog_design.md)
+- **Component File:** [src/components/carousel/carousel_dialog.tsx](./carousel_dialog.tsx)
+- **Style File:** [src/components/carousel/carousel_dialog.scss](./carousel_dialog.scss)
+- **Cooperation Mechanics:**
+  - `<Carousel />` and `<CarouselDialog />` share the identical controller binding from [useCarouselController](./use_carousel_controller.ts).
+  - Background auto-scrolling via [useCarouselAutoScroll](./use_carousel_auto_scroll.ts) pauses automatically when the dialog is open (`paused={isDialogOpen}`).
+  - Navigating or swiping slides inside the dialog synchronously updates the inline carousel index.
+
