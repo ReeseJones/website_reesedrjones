@@ -6,6 +6,7 @@ import { useCarouselTrack } from "./use_carousel_track";
 import { useContainedScroll } from "../../hooks/use_contained_scroll";
 import { useSwipeGestures } from "./use_swipe_gestures";
 import { validateIndex } from "../../lib/helpers";
+import { FullscreenIcon, ChevronLeftIcon, ChevronRightIcon } from "./carousel_icons";
 
 export type CarouselImageMode = "fit" | "cover";
 
@@ -25,8 +26,113 @@ export interface CarouselProps extends React.HTMLAttributes<HTMLDivElement> {
   onScrollLeft?: () => void;
   onScrollRight?: () => void;
   onSelectIndex?: (index: number) => void;
+  onOpenDialog?: (index: number) => void;
   animationDurationMs?: number; // Defaults to 400ms
   imageMode?: CarouselImageMode; // Defaults to "fit"
+}
+
+interface RenderSlideContentOptions {
+  item: CarouselItem;
+  isSelected: boolean;
+  selectedIndex: number;
+  isTransitioning: boolean;
+  onOpenDialog?: (index: number) => void;
+}
+
+function renderSlideImage(item: CarouselItem): React.ReactElement {
+  return <img src={item.fullImageUrl} alt={item.alt ?? item.title} />;
+}
+
+function renderExternalLinkSlide(
+  item: CarouselItem,
+  image: React.ReactElement,
+  isTransitioning: boolean
+): React.ReactElement {
+  return (
+    <a
+      href={item.linkUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      onClick={(e) => {
+        if (isTransitioning) e.preventDefault();
+      }}
+    >
+      {image}
+    </a>
+  );
+}
+
+function renderInternalLinkSlide(
+  item: CarouselItem,
+  image: React.ReactElement,
+  isTransitioning: boolean
+): React.ReactElement {
+  return (
+    <Link
+      to={item.linkUrl!}
+      onClick={(e) => {
+        if (isTransitioning) e.preventDefault();
+      }}
+    >
+      {image}
+    </Link>
+  );
+}
+
+function renderDialogButtonSlide(
+  item: CarouselItem,
+  image: React.ReactElement,
+  selectedIndex: number,
+  onOpenDialog: (index: number) => void,
+  isTransitioning: boolean
+): React.ReactElement {
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        if (!isTransitioning) {
+          onOpenDialog(selectedIndex);
+        }
+      }}
+      aria-label={`Open fullscreen view: ${item.title}`}
+    >
+      {image}
+    </button>
+  );
+}
+
+function renderSlideContent({
+  item,
+  isSelected,
+  selectedIndex,
+  isTransitioning,
+  onOpenDialog,
+}: RenderSlideContentOptions): React.ReactElement {
+  const image = renderSlideImage(item);
+
+  if (!isSelected) {
+    return image;
+  }
+
+  if (item.linkUrl) {
+    const isExternal = /^(https?:)?\/\//.test(item.linkUrl);
+    if (isExternal) {
+      return renderExternalLinkSlide(item, image, isTransitioning);
+    }
+    return renderInternalLinkSlide(item, image, isTransitioning);
+  }
+
+  if (onOpenDialog) {
+    return renderDialogButtonSlide(
+      item,
+      image,
+      selectedIndex,
+      onOpenDialog,
+      isTransitioning
+    );
+  }
+
+  return image;
 }
 
 export function Carousel({
@@ -35,6 +141,7 @@ export function Carousel({
   onScrollLeft,
   onScrollRight,
   onSelectIndex,
+  onOpenDialog,
   animationDurationMs = 400,
   imageMode = "fit",
   className,
@@ -157,40 +264,13 @@ export function Carousel({
                 ? slotIndex
                 : slotIndex + 1;
 
-              const isExternal = Boolean(
-                item.linkUrl && /^(https?:)?\/\//.test(item.linkUrl)
-              );
-
-              const slideImage = (
-                <img src={item.fullImageUrl} alt={item.alt ?? item.title} />
-              );
-
-              const slideContent =
-                item.linkUrl && isSelected ? (
-                  isExternal ? (
-                    <a
-                      href={item.linkUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={(e) => {
-                        if (isTransitioning) e.preventDefault();
-                      }}
-                    >
-                      {slideImage}
-                    </a>
-                  ) : (
-                    <Link
-                      to={item.linkUrl}
-                      onClick={(e) => {
-                        if (isTransitioning) e.preventDefault();
-                      }}
-                    >
-                      {slideImage}
-                    </Link>
-                  )
-                ) : (
-                  slideImage
-                );
+              const slideContent = renderSlideContent({
+                item,
+                isSelected,
+                selectedIndex,
+                isTransitioning,
+                onOpenDialog,
+              });
 
               const effectiveImageMode = item.imageMode ?? imageMode;
               const isCover = effectiveImageMode === "cover";
@@ -216,13 +296,24 @@ export function Carousel({
           </div>
         </div>
 
+        {onOpenDialog && items.length > 0 && (
+          <button
+            type="button"
+            className="expand-btn"
+            onClick={() => onOpenDialog(selectedIndex)}
+            aria-label="Open fullscreen image viewer"
+          >
+            <FullscreenIcon />
+          </button>
+        )}
+
         <button
           className="arrow prev"
           onClick={handlePrev}
           aria-label="Previous slide"
           disabled={items.length <= 1 || !onScrollLeft}
         >
-          ❮
+          <ChevronLeftIcon />
         </button>
 
         <button
@@ -231,7 +322,7 @@ export function Carousel({
           aria-label="Next slide"
           disabled={items.length <= 1 || !onScrollRight}
         >
-          ❯
+          <ChevronRightIcon />
         </button>
       </div>
 

@@ -74,13 +74,17 @@
     align-items: center;
     justify-content: center;
 
-    > a {
+    > a,
+    > button {
       display: flex;
       align-items: center;
       justify-content: center;
       width: 100%;
       height: 100%;
       cursor: pointer;
+      background: transparent;
+      border: none;
+      padding: 0;
 
       &:focus {
         outline-offset: -2px;
@@ -92,7 +96,8 @@
     }
 
     > img,
-    > a > img {
+    > a > img,
+    > button > img {
       margin: 0;
       border: none;
       border-radius: 0;
@@ -105,13 +110,52 @@
     }
 
     &.fit > img,
-    &.fit > a > img {
+    &.fit > a > img,
+    &.fit > button > img {
       object-fit: contain;
     }
 
     &.cover > img,
-    &.cover > a > img {
+    &.cover > a > img,
+    &.cover > button > img {
       object-fit: cover;
+    }
+  }
+
+  .expand-btn {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    z-index: 3;
+    background: rgba(0, 0, 0, 0.5);
+    color: shared.$font-color;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.125rem;
+    line-height: 1;
+    transition: background-color 0.2s ease, color 0.2s ease, opacity 0.2s ease, transform 0.2s ease;
+    backdrop-filter: blur(4px);
+
+    &:hover {
+      background-color: rgba(0, 0, 0, 0.8);
+      color: shared.$font-highlight-color;
+      border-color: shared.$font-highlight-color;
+    }
+
+    &:active {
+      transform: scale(0.95);
+    }
+
+    &:focus-visible {
+      outline: 2px solid shared.$font-highlight-color;
+      outline-offset: 2px;
     }
   }
 
