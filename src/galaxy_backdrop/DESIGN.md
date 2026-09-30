@@ -16,10 +16,14 @@
 This feature is isolated in its own dedicated directory to maintain modularity:
 
 *   [DESIGN.md](DESIGN.md) — Architecture and design documentation.
-*   [galaxy_parameters.ts](galaxy_parameters.ts) — Tunable parameters, style presets (`pinprick` vs `orb`), and configuration types.
+*   [galaxy_parameters.ts](galaxy_parameters.ts) — Tunable parameters, style presets, color converters, and configuration types.
 *   [galaxy_math.ts](galaxy_math.ts) — 3D transformation matrices, perspective projection, and procedural stellar distribution generators.
 *   [galaxy_shaders.ts](galaxy_shaders.ts) — GLSL ES 3.00 vertex and fragment shader sources for both pin-prick and orb rendering modes.
 *   [galaxy_renderer.ts](galaxy_renderer.ts) — Core WebGL2 engine managing buffers, shader program lifecycle, uniform state, input smoothing, and the animation loop.
+*   [galaxy_context.tsx](galaxy_context.tsx) — Ambient React context provider and hook (`useGalaxy`) managing reactive parameters, dialog visibility, and canvas lifecycle.
+*   [galaxy_settings_dialog.tsx](galaxy_settings_dialog.tsx) — Interactive settings dialog component providing categorized real-time sliders, color pickers, preset selection, JSON export, and reset functionality.
+*   [galaxy_settings_dialog.scss](galaxy_settings_dialog.scss) — Dialog styling following low-specificity CSS rules and shared theme tokens.
+*   [../components/icons/gear_icon.tsx](../components/icons/gear_icon.tsx) — SVG gear icon trigger rendered inside the main navbar.
 *   [../hooks/use_galaxy_backdrop.tsx](../hooks/use_galaxy_backdrop.tsx) — React hook managing canvas lifecycle, container attachment, and resize observation.
 
 ## 3. Types and Interfaces
@@ -142,3 +146,22 @@ For each frame at time $t$:
     *   Listen to `document.visibilityState` to halt `requestAnimationFrame` when the user switches tabs, minimizing battery consumption.
 *   **Clean Teardown:**
     *   On React unmount, detach input listeners, release VBO buffers, delete shader programs, and destroy the WebGL2 context.
+
+## 7. Dynamic Parameter Tuning & Settings Dialog
+
+*   **Design Goals:**
+    *   Eliminate the need to rebuild the project whenever tweaking visual, physical, or color parameters.
+    *   Expose a gear icon menu trigger inside the main navigation bar (`Navbar`).
+    *   Allow live adjustments to take effect on the backdrop in real-time at 60–120 FPS.
+    *   Persist user adjustments across browser sessions using `localStorage`.
+    *   Provide factory reset and one-click JSON export to facilitate committing tuned presets to code.
+*   **Update Architecture & Procedures:**
+    *   **Uniform Updates:** Parameter changes affecting camera vantage (`centerOffsetX`, `centerOffsetY`, `pitchAngle`, `yawAngle`, `rollAngle`, `cameraDistance`, `fov`), velocities (`rotationSpeed`, `differentialSpeed`, `driftSpeed`), and particle scaling (`pointScale`, `minPointSize`, `maxPointSize`, `nearFadeDistance`) are uploaded to WebGL uniforms on each animation tick with zero reallocation.
+    *   **Color Uniforms:** Color vector alterations (`coreColor`, `coreBlazeColor`, `armInnerColor`, `armOuterColor`, `accentColor`, `coreGlowBoost`) execute immediate GPU uniform uploads via `uploadColorUniforms()`.
+    *   **Geometry Regeneration:** When structural parameters change (`starCount`, `armCount`, `armWinding`, `armDispersion`, `spurFrequency`, `coreRadius`, `diskRadius`, `diskThickness`, `coreDensityRatio`), `generateStarBuffer()` regenerates the vertex array and re-populates the existing GPU `Float32Array` VBO via `rebuildStarBuffer()`, maintaining the VAO configuration without tearing down the WebGL context.
+*   **User Interface & Accessibility:**
+    *   The dialog uses native `<dialog>` modal semantics with focus trapping and backdrop dismissal.
+    *   On desktop viewports, the gear icon appears at the end of the horizontal navbar with hover rotation.
+    *   On mobile drawer viewports, the trigger presents with a descriptive label alongside site navigation links.
+    *   Categorized accordion sections (`<details>`) allow quick navigation between Render Style, Camera & Perspective, Stellar Population, Colors, Particle Sizes, and Motion Dynamics.
+
