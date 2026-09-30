@@ -16,7 +16,7 @@
 This feature is isolated in its own dedicated directory to maintain modularity:
 
 *   [DESIGN.md](DESIGN.md) — Architecture and design documentation.
-*   [galaxy_parameters.ts](galaxy_parameters.ts) — Tunable parameters, style presets, color converters, and configuration types.
+*   [galaxy_parameters.ts](galaxy_parameters.ts) — Tunable parameters, style presets, and configuration types.
 *   [galaxy_math.ts](galaxy_math.ts) — 3D transformation matrices, perspective projection, and procedural stellar distribution generators.
 *   [galaxy_shaders.ts](galaxy_shaders.ts) — GLSL ES 3.00 vertex and fragment shader sources for both pin-prick and orb rendering modes.
 *   [galaxy_renderer.ts](galaxy_renderer.ts) — Core WebGL2 engine managing buffers, shader program lifecycle, uniform state, input smoothing, and the animation loop.
@@ -24,6 +24,7 @@ This feature is isolated in its own dedicated directory to maintain modularity:
 *   [galaxy_settings_dialog.tsx](galaxy_settings_dialog.tsx) — Interactive settings dialog component providing categorized real-time sliders, color pickers, preset selection, JSON export, and reset functionality.
 *   [galaxy_settings_dialog.scss](galaxy_settings_dialog.scss) — Dialog styling following low-specificity CSS rules and shared theme tokens.
 *   [../components/icons/gear_icon.tsx](../components/icons/gear_icon.tsx) — SVG gear icon trigger rendered inside the main navbar.
+*   [../helpers/colors.ts](../helpers/colors.ts) — Color conversion utilities (hex to normalized RGB and vice-versa).
 *   [../hooks/use_galaxy_backdrop.tsx](../hooks/use_galaxy_backdrop.tsx) — React hook managing canvas lifecycle, container attachment, and resize observation.
 
 ## 3. Types and Interfaces

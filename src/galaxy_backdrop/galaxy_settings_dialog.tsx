@@ -1,11 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useGalaxy } from "./galaxy_context";
-import {
-    GALAXY_PRESETS,
-    GalaxyParameters,
-    hexToRgb,
-    rgbToHex,
-} from "./galaxy_parameters";
+import { GALAXY_PRESETS, GalaxyParameters } from "./galaxy_parameters";
+import { hexToRgb, rgbToHex } from "../helpers/colors";
 import { GearIcon } from "../components/icons/gear_icon";
 import "./galaxy_settings_dialog.scss";
 
