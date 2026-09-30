@@ -1,9 +1,8 @@
 import "../styles.scss";
-import { useState, ReactNode, useCallback, useRef } from "react";
+import { useState, ReactNode, useCallback } from "react";
 import { Footer } from "../components/footer";
 import { Header } from "../components/header";
-import { usePixiApp } from "../hooks/use_pixi_app";
-import { usePixiStarBackground } from "../hooks/use_pixi_star_background";
+import { useGalaxyBackdrop } from "../hooks/use_galaxy_backdrop";
 import { Outlet } from "react-router-dom";
 import { useResizeCallbackRef, Dimensions } from "../hooks/use_resize_callback_ref";
 import { classNameMap } from "../lib/classNameMap";
@@ -19,21 +18,8 @@ export enum DeviceSize {
 }
 
 export const Layout = (props: LayoutProps) => {
-    const [rootStarCount, setRootStarCount] = useState(100);
-    const [starDepth, setStarDepth] = useState(7);
-    const [maxEdges, setMaxEdges] = useState(3);
-    const [minEdges, setMinEdges] = useState(1);
-    const [setAppContainer, pixiAppRef, appReady] = usePixiApp();
+    const [setBackdropContainer, backdropReady] = useGalaxyBackdrop();
     const [deviceSize, setDeviceSize] = useState(DeviceSize.Mobile);
-
-    const [starField, starfieldIsReady] = usePixiStarBackground(
-        pixiAppRef,
-        appReady,
-        starDepth,
-        maxEdges,
-        minEdges,
-        rootStarCount
-    );
 
     const handleResize = useCallback((size: Dimensions, element: HTMLElement) => {
         const { width, height } = size;
@@ -50,9 +36,9 @@ export const Layout = (props: LayoutProps) => {
     const setObserveTarget = useResizeCallbackRef(handleResize);
 
     const setRootContainer = useCallback((container: HTMLDivElement | null) => {
-        setAppContainer(container);
+        setBackdropContainer(container);
         setObserveTarget(container);
-    }, []);
+    }, [setBackdropContainer, setObserveTarget]);
 
     const classMap = classNameMap({
         "anim-background": true,
