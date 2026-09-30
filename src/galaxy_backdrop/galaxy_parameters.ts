@@ -113,14 +113,43 @@ export const DEFAULT_ORB_PARAMETERS: GalaxyParameters = {
 };
 
 export const DEFAULT_PINPRICK_PARAMETERS: GalaxyParameters = {
-    ...DEFAULT_ORB_PARAMETERS,
     style: "pinprick",
-    // Crystalline pin-prick points: clamped tightly so stars never balloon into discs
-    minPointSize: 1.0,
-    maxPointSize: 2.8,
-    pointScale: 1.1,
-    coreGlowBoost: 1.20,        // Soft, delicate core luminescence that doesn't overpower text
-    nearFadeDistance: 1.1,     // Stars can sweep much closer to camera without clipping issues
+    centerOffsetX: 7,
+    centerOffsetY: 2.8,
+    starCount: 300000,
+    armCount: 3,
+    armWinding: 0.55,
+    armDispersion: 0.28,
+    spurFrequency: 0.22,
+    coreRadius: 1.8,
+    diskRadius: 21,
+    diskThickness: 0.95,
+    coreDensityRatio: 0.18,
+    coreColor: [0.09, 0, 0.925],
+    coreBlazeColor: [1, 0.88, 0.68],
+    armInnerColor: [0.89, 0.992, 0.325],
+    armOuterColor: [0.06, 0.38, 0.98],
+    accentColor: [0.65, 0.22, 0.92],
+    minPointSize: 1,
+    maxPointSize: 5,
+    pointScale: 4,
+    coreGlowBoost: 0.5,
+    rotationSpeed: 0.045,
+    differentialSpeed: 0.015,
+    driftSpeed: 0.18,
+    driftAmplitude: 0.14,
+    pitchAngle: 0.58,
+    yawAngle: 0.66,
+    rollAngle: 0.08,
+    cameraDistance: 15.4,
+    fov: 50,
+    nearPlane: 0.06,
+    farPlane: 75,
+    nearFadeDistance: 1.3,
+    mouseSensitivity: 0.15,
+    gyroSensitivity: 0.5,
+    inputDamping: 4.5,
+    dprCap: 1.5,
 };
 
 // Default active parameters (pin-prick experiment active by default)
