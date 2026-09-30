@@ -5,6 +5,7 @@
   "source": "./src/index.html",
   "scripts": {
     "start": "rimraf dist && parcel",
+    "clean": "rimraf .parcel-cache dist",
     "build": "parcel build src/index.html --public-url /",
     "deploy": "npm run build && wrangler deploy",
     "preview": "npm run build && wrangler dev"

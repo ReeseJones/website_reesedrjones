@@ -9,6 +9,7 @@
 
 ## Commands
 - `npm run start` — Local dev server with live reload / HMR (cleans `dist`) (Not for agents)
+- `npm run clean` — Deletes `.parcel-cache` and `dist` build cache -- useful when parcel gets corrupted.
 - `npm run build` — Production build to `./dist`
 - `npm run preview` — Build and run local Cloudflare preview (`wrangler dev`) (Not for agents)
 - `npm run deploy` — Build and deploy directly to Cloudflare (`wrangler deploy`) (Not for agents)
