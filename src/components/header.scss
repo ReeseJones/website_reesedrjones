@@ -61,6 +61,34 @@ header nav {
     flex-direction: column;
     gap: 2rem;
     align-items: center;
+
+    .galaxy-settings-toggle {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: transparent;
+        border: none;
+        color: #dfdfdf;
+        cursor: pointer;
+        padding: 0.5rem 0.75rem;
+        border-radius: 6px;
+        font-size: 1.25rem;
+        transition: color 0.3s ease, transform 0.3s ease;
+
+        svg {
+            width: 1.5rem;
+            height: 1.5rem;
+            transition: transform 0.4s ease;
+        }
+
+        &:hover, &:focus {
+            color: shared.$font-highlight-color;
+
+            svg {
+                transform: rotate(45deg);
+            }
+        }
+    }
 }
 
 .logo {
@@ -104,5 +132,13 @@ header .hamburger-menu {
 .desktop {
     header nav {
         flex-direction: row;
+
+        .galaxy-settings-toggle {
+            padding: 0.5rem;
+
+            .toggle-label {
+                display: none;
+            }
+        }
     }
 }
