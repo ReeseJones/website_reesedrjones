@@ -88,7 +88,7 @@ export const DEFAULT_ORB_PARAMETERS: GalaxyParameters = {
     coreGlowBoost: 1.25,    // Toned down from 2.8 to 1.25 for a gentle background presence
 
     // Dynamics: slow, majestic rotation with subtle differential spin
-    rotationSpeed: 0.045,      // Rad/sec (~140s per full rotation)
+    rotationSpeed: -0.045,     // Rad/sec (~140s per full rotation)
     differentialSpeed: 0.015,  // Inner regions slightly lead outer arms
     driftSpeed: 0.18,          // Micro-turbulence
     driftAmplitude: 0.14,
@@ -134,7 +134,7 @@ export const DEFAULT_PINPRICK_PARAMETERS: GalaxyParameters = {
     maxPointSize: 5,
     pointScale: 4,
     coreGlowBoost: 0.5,
-    rotationSpeed: 0.045,
+    rotationSpeed: -0.045,
     differentialSpeed: 0.015,
     driftSpeed: 0.18,
     driftAmplitude: 0.14,
@@ -189,7 +189,7 @@ export const GALAXY_PRESETS: GalaxyPreset[] = [
             starCount: 380000,
             coreDensityRatio: 0.30,
             coreGlowBoost: 2.0,
-            rotationSpeed: 0.055,
+            rotationSpeed: -0.055,
         },
     },
     {
@@ -209,7 +209,7 @@ export const GALAXY_PRESETS: GalaxyPreset[] = [
         name: "Slow Majestic Spiral",
         params: {
             ...DEFAULT_PINPRICK_PARAMETERS,
-            rotationSpeed: 0.018,
+            rotationSpeed: -0.018,
             armWinding: 0.65,
             spurFrequency: 0.28,
             driftSpeed: 0.10,

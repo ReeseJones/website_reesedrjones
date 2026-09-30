@@ -28,8 +28,9 @@ out float v_pointDist;
 
 void main() {
     // 1. Angular motion with differential rotation
-    // Inner stars have slightly higher angular velocity; arms rotate as a cohesive wave
-    float diffOffset = (u_differentialSpeed / max(1.2, a_radius)) * u_time;
+    // Inner stars have slightly higher angular velocity aligned with rotation direction
+    float rotDir = u_rotationSpeed < 0.0 ? -1.0 : 1.0;
+    float diffOffset = rotDir * (u_differentialSpeed / max(1.2, a_radius)) * u_time;
     float theta = a_baseAngle + (u_rotationSpeed * u_time) + diffOffset;
 
     // 2. Micro-drift and stellar scintillation
@@ -159,7 +160,8 @@ out float v_pointDist;
 
 void main() {
     // 1. Angular motion with differential rotation
-    float diffOffset = (u_differentialSpeed / max(1.2, a_radius)) * u_time;
+    float rotDir = u_rotationSpeed < 0.0 ? -1.0 : 1.0;
+    float diffOffset = rotDir * (u_differentialSpeed / max(1.2, a_radius)) * u_time;
     float theta = a_baseAngle + (u_rotationSpeed * u_time) + diffOffset;
 
     // 2. Micro-drift and stellar scintillation

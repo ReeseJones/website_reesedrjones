@@ -14,7 +14,7 @@ import {
 } from "./galaxy_parameters";
 import { GalaxyRenderer } from "./galaxy_renderer";
 
-const STORAGE_KEY = "galaxy_backdrop_parameters";
+const STORAGE_KEY = "galaxy_backdrop_parameters_v2";
 
 export interface GalaxyContextValue {
     params: GalaxyParameters;
