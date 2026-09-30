@@ -1,8 +1,9 @@
 import "../styles.scss";
 import "./main.scss";
-import React from "react";
+import React, { useState } from "react";
 import headshotPhotoFilename from "url:../images/headshot6.jpg?width=200";
 import { Carousel, CarouselItem } from "../components/carousel/carousel";
+import { CarouselDialog } from "../components/carousel/carousel_dialog";
 import { useCarouselController } from "../components/carousel/use_carousel_controller";
 import { useCarouselAutoScroll } from "../components/carousel/use_carousel_auto_scroll";
 import { Panel } from "../components/panel/panel";
@@ -52,6 +53,8 @@ const CAROUSEL_ITEMS: CarouselItem[] = [
 ];
 
 export const Main = () => {
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
+
     const carouselController = useCarouselController({
         itemCount: CAROUSEL_ITEMS.length,
     });
@@ -59,6 +62,7 @@ export const Main = () => {
     const { pauseProps } = useCarouselAutoScroll({
         onAdvance: carouselController.scrollRight,
         intervalMs: 5000,
+        paused: isDialogOpen,
     });
 
     return (
@@ -79,8 +83,15 @@ export const Main = () => {
                     items={CAROUSEL_ITEMS}
                     {...carouselController.bind}
                     {...pauseProps}
+                    onOpenDialog={() => setIsDialogOpen(true)}
                 />
             </Panel>
+            <CarouselDialog
+                items={CAROUSEL_ITEMS}
+                isOpen={isDialogOpen}
+                onClose={() => setIsDialogOpen(false)}
+                {...carouselController.bind}
+            />
         </section>
     );
 };
