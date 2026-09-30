@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useState } from "react";
 import { ArticleDetails } from "../../article_details";
 import { ArticlePageLayout } from "../../article_page_layout";
 import { Carousel, CarouselItem } from "../../../../components/carousel/carousel";
+import { CarouselDialog } from "../../../../components/carousel/carousel_dialog";
 import { useCarouselController } from "../../../../components/carousel/use_carousel_controller";
 import { useCarouselAutoScroll } from "../../../../components/carousel/use_carousel_auto_scroll";
 import VoidGuardianMdx from "./void-guardian.mdx";
@@ -119,6 +120,7 @@ export function VoidGameplayVideo() {
 }
 
 export function VoidScreenshotCarousel() {
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
     const carouselController = useCarouselController({
         itemCount: SCREENSHOT_ITEMS.length,
     });
@@ -126,6 +128,7 @@ export function VoidScreenshotCarousel() {
     const { pauseProps } = useCarouselAutoScroll({
         onAdvance: carouselController.scrollRight,
         intervalMs: 5000,
+        paused: isDialogOpen,
     });
 
     return (
@@ -135,6 +138,13 @@ export function VoidScreenshotCarousel() {
         >
             <Carousel
                 items={SCREENSHOT_ITEMS}
+                {...carouselController.bind}
+                onOpenDialog={() => setIsDialogOpen(true)}
+            />
+            <CarouselDialog
+                items={SCREENSHOT_ITEMS}
+                isOpen={isDialogOpen}
+                onClose={() => setIsDialogOpen(false)}
                 {...carouselController.bind}
             />
         </div>

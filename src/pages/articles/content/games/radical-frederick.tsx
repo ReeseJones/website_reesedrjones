@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useState } from "react";
 import { ArticleDetails } from "../../article_details";
 import { ArticlePageLayout } from "../../article_page_layout";
 import { Carousel, CarouselItem } from "../../../../components/carousel/carousel";
+import { CarouselDialog } from "../../../../components/carousel/carousel_dialog";
 import { useCarouselController } from "../../../../components/carousel/use_carousel_controller";
 import { useCarouselAutoScroll } from "../../../../components/carousel/use_carousel_auto_scroll";
 import RadicalFrederickMdx from "./radical-frederick.mdx";
@@ -63,6 +64,7 @@ export const ARTICLE_DETAILS: ArticleDetails = {
 };
 
 export function FrederickScreenshotCarousel() {
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
     const carouselController = useCarouselController({
         itemCount: SCREENSHOT_ITEMS.length,
     });
@@ -70,6 +72,7 @@ export function FrederickScreenshotCarousel() {
     const { pauseProps } = useCarouselAutoScroll({
         onAdvance: carouselController.scrollRight,
         intervalMs: 5000,
+        paused: isDialogOpen,
     });
 
     return (
@@ -79,6 +82,13 @@ export function FrederickScreenshotCarousel() {
         >
             <Carousel
                 items={SCREENSHOT_ITEMS}
+                {...carouselController.bind}
+                onOpenDialog={() => setIsDialogOpen(true)}
+            />
+            <CarouselDialog
+                items={SCREENSHOT_ITEMS}
+                isOpen={isDialogOpen}
+                onClose={() => setIsDialogOpen(false)}
                 {...carouselController.bind}
             />
         </div>

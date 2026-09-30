@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useState } from "react";
 import { ArticleDetails } from "../../article_details";
 import { ArticlePageLayout } from "../../article_page_layout";
 import { Carousel, CarouselItem } from "../../../../components/carousel/carousel";
+import { CarouselDialog } from "../../../../components/carousel/carousel_dialog";
 import { useCarouselController } from "../../../../components/carousel/use_carousel_controller";
 import { useCarouselAutoScroll } from "../../../../components/carousel/use_carousel_auto_scroll";
 import GardenGuardiansMdx from "./garden-guardians.mdx";
@@ -70,6 +71,7 @@ const CHARACTERS = [
 ];
 
 export function GardenScreenshotCarousel() {
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
     const carouselController = useCarouselController({
         itemCount: SCREENSHOT_ITEMS.length,
     });
@@ -77,6 +79,7 @@ export function GardenScreenshotCarousel() {
     const { pauseProps } = useCarouselAutoScroll({
         onAdvance: carouselController.scrollRight,
         intervalMs: 5000,
+        paused: isDialogOpen,
     });
 
     return (
@@ -86,6 +89,13 @@ export function GardenScreenshotCarousel() {
         >
             <Carousel
                 items={SCREENSHOT_ITEMS}
+                {...carouselController.bind}
+                onOpenDialog={() => setIsDialogOpen(true)}
+            />
+            <CarouselDialog
+                items={SCREENSHOT_ITEMS}
+                isOpen={isDialogOpen}
+                onClose={() => setIsDialogOpen(false)}
                 {...carouselController.bind}
             />
         </div>
