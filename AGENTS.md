@@ -23,3 +23,4 @@
 - **Barrel Files:** Do not make them.
 - **Markdown Links:** All markdown links within repository files (docs, design documents, AGENTS.md, etc.) must be repository-relative or file-relative (e.g., `[wrangler.jsonc](wrangler.jsonc)`), never local filesystem absolute paths (`file:///...`). This ensures links resolve properly on GitHub.
 - **Project Guidelines:** Check [src/project_guidelines/](src/project_guidelines/) for guidelines relevant to a given task (e.g., [css_guidelines.md](src/project_guidelines/css_guidelines.md) for CSS/SCSS styling rules and architectural intent) and read them before making changes.
+- **Clarification & Code Edits:** When the user asks a question or inquires about optimizations/refactoring, answer the question first and ask for user confirmation before modifying the codebase.

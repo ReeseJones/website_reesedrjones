@@ -3,8 +3,11 @@ import "./header.scss";
 import { HamburgerMenu } from "./hamburger_menu";
 import { useState, useCallback } from "react";
 
-export const Header = () => {
+export interface HeaderProps {
+    onOpenSettings?: () => void;
+}
 
+export const Header = ({ onOpenSettings }: HeaderProps) => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
 
     const openMenu = useCallback(() => {
@@ -15,14 +18,16 @@ export const Header = () => {
         setIsMenuOpen(false);
     }, []);
 
-    const headingContent = <div className="hamburger-menu-heading">
-        <div className="flex row">
-            <h2>Site Navigation</h2>
+    const headingContent = (
+        <div className="hamburger-menu-heading">
+            <div className="flex row">
+                <h2>Site Navigation</h2>
+            </div>
+            <button aria-label="Close Site Navigation" onClick={closeMenu}>
+                <div>✕</div>
+            </button>
         </div>
-        <button aria-label="Close Site Navigation" onClick={closeMenu}>
-            <div>✕</div>
-        </button>
-    </div>;
+    );
 
     return (
         <header>
@@ -31,8 +36,9 @@ export const Header = () => {
                 isOpen={isMenuOpen}
                 onOpenClicked={openMenu}
                 onClose={closeMenu}
-                modelHeadingContent={headingContent}>
-                <Navbar id="main-navbar"></Navbar>
+                modelHeadingContent={headingContent}
+            >
+                <Navbar id="main-navbar" onOpenSettings={onOpenSettings} />
             </HamburgerMenu>
         </header>
     );

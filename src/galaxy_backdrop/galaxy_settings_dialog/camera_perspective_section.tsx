@@ -1,13 +1,15 @@
-import React from "react";
-import { useGalaxy } from "../galaxy_context";
 import { SliderRow } from "../../components/slider_row/slider_row";
+import { GalaxyParameters } from "../parameters/index";
+
+export interface SectionProps {
+    params: GalaxyParameters;
+    onChange: (partial: Partial<GalaxyParameters>) => void;
+}
 
 /**
  * Settings section controlling camera vantage offset, distance, field of view, 3D rotations, and parallax.
  */
-export function CameraPerspectiveSection() {
-    const { params, updateParameters } = useGalaxy();
-
+export function CameraPerspectiveSection({ params, onChange }: SectionProps) {
     return (
         <details open className="settings-section">
             <summary>Camera & Perspective</summary>
@@ -18,7 +20,7 @@ export function CameraPerspectiveSection() {
                     min={-15}
                     max={15}
                     step={0.2}
-                    onChange={(val) => updateParameters({ centerOffsetX: val })}
+                    onChange={(val) => onChange({ centerOffsetX: val })}
                 />
                 <SliderRow
                     label="Vertical Offset (Eye Space Y)"
@@ -26,7 +28,7 @@ export function CameraPerspectiveSection() {
                     min={-10}
                     max={10}
                     step={0.2}
-                    onChange={(val) => updateParameters({ centerOffsetY: val })}
+                    onChange={(val) => onChange({ centerOffsetY: val })}
                 />
                 <SliderRow
                     label="Camera Vantage Distance"
@@ -34,7 +36,7 @@ export function CameraPerspectiveSection() {
                     min={5}
                     max={40}
                     step={0.5}
-                    onChange={(val) => updateParameters({ cameraDistance: val })}
+                    onChange={(val) => onChange({ cameraDistance: val })}
                 />
                 <SliderRow
                     label="Field of View (FOV)"
@@ -44,7 +46,7 @@ export function CameraPerspectiveSection() {
                     step={1}
                     unit="°"
                     displayDecimals={0}
-                    onChange={(val) => updateParameters({ fov: val })}
+                    onChange={(val) => onChange({ fov: val })}
                 />
                 <SliderRow
                     label="Pitch Cant (Grazing Tilt)"
@@ -53,7 +55,7 @@ export function CameraPerspectiveSection() {
                     max={1.5}
                     step={0.01}
                     unit=" rad"
-                    onChange={(val) => updateParameters({ pitchAngle: val })}
+                    onChange={(val) => onChange({ pitchAngle: val })}
                 />
                 <SliderRow
                     label="Yaw Angle (Azimuth)"
@@ -62,7 +64,7 @@ export function CameraPerspectiveSection() {
                     max={3.14}
                     step={0.02}
                     unit=" rad"
-                    onChange={(val) => updateParameters({ yawAngle: val })}
+                    onChange={(val) => onChange({ yawAngle: val })}
                 />
                 <SliderRow
                     label="Roll Angle"
@@ -71,7 +73,7 @@ export function CameraPerspectiveSection() {
                     max={1.5}
                     step={0.01}
                     unit=" rad"
-                    onChange={(val) => updateParameters({ rollAngle: val })}
+                    onChange={(val) => onChange({ rollAngle: val })}
                 />
                 <SliderRow
                     label="Pointer Parallax Sensitivity"
@@ -79,7 +81,7 @@ export function CameraPerspectiveSection() {
                     min={0}
                     max={1.2}
                     step={0.05}
-                    onChange={(val) => updateParameters({ mouseSensitivity: val })}
+                    onChange={(val) => onChange({ mouseSensitivity: val })}
                 />
             </div>
         </details>

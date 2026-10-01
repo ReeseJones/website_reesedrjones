@@ -1,13 +1,15 @@
-import React from "react";
-import { useGalaxy } from "../galaxy_context";
 import { SliderRow } from "../../components/slider_row/slider_row";
+import { GalaxyParameters } from "../parameters/index";
+
+export interface SectionProps {
+    params: GalaxyParameters;
+    onChange: (partial: Partial<GalaxyParameters>) => void;
+}
 
 /**
  * Settings section controlling angular pattern rotation, differential orbital shear, and micro-scintillation drift.
  */
-export function MotionDynamicsSection() {
-    const { params, updateParameters } = useGalaxy();
-
+export function MotionDynamicsSection({ params, onChange }: SectionProps) {
     return (
         <details open className="settings-section">
             <summary>Motion & Dynamics</summary>
@@ -20,7 +22,7 @@ export function MotionDynamicsSection() {
                     step={0.005}
                     unit=" rad/s"
                     displayDecimals={3}
-                    onChange={(val) => updateParameters({ rotationSpeed: val })}
+                    onChange={(val) => onChange({ rotationSpeed: val })}
                 />
                 <SliderRow
                     label="Differential Orbital Spin"
@@ -29,7 +31,7 @@ export function MotionDynamicsSection() {
                     max={0.08}
                     step={0.002}
                     displayDecimals={3}
-                    onChange={(val) => updateParameters({ differentialSpeed: val })}
+                    onChange={(val) => onChange({ differentialSpeed: val })}
                 />
                 <SliderRow
                     label="Micro-Drift Speed"
@@ -37,7 +39,7 @@ export function MotionDynamicsSection() {
                     min={0.0}
                     max={0.5}
                     step={0.01}
-                    onChange={(val) => updateParameters({ driftSpeed: val })}
+                    onChange={(val) => onChange({ driftSpeed: val })}
                 />
                 <SliderRow
                     label="Drift Amplitude"
@@ -45,7 +47,7 @@ export function MotionDynamicsSection() {
                     min={0.0}
                     max={0.4}
                     step={0.01}
-                    onChange={(val) => updateParameters({ driftAmplitude: val })}
+                    onChange={(val) => onChange({ driftAmplitude: val })}
                 />
             </div>
         </details>

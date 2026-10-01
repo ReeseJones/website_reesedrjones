@@ -1,13 +1,15 @@
-import React from "react";
-import { useGalaxy } from "../galaxy_context";
 import { SliderRow } from "../../components/slider_row/slider_row";
+import { GalaxyParameters } from "../parameters/index";
+
+export interface SectionProps {
+    params: GalaxyParameters;
+    onChange: (partial: Partial<GalaxyParameters>) => void;
+}
 
 /**
  * Settings section controlling stellar particle population count, arm winding, density, and disc geometry.
  */
-export function StellarPopulationSection() {
-    const { params, updateParameters } = useGalaxy();
-
+export function StellarPopulationSection({ params, onChange }: SectionProps) {
     return (
         <details open className="settings-section">
             <summary>Stellar Population & Spiral Arms</summary>
@@ -19,7 +21,7 @@ export function StellarPopulationSection() {
                     max={500000}
                     step={10000}
                     displayDecimals={0}
-                    onChange={(val) => updateParameters({ starCount: val })}
+                    onChange={(val) => onChange({ starCount: val })}
                 />
                 <SliderRow
                     label="Spiral Arm Count"
@@ -28,7 +30,7 @@ export function StellarPopulationSection() {
                     max={8}
                     step={1}
                     displayDecimals={0}
-                    onChange={(val) => updateParameters({ armCount: val })}
+                    onChange={(val) => onChange({ armCount: val })}
                 />
                 <SliderRow
                     label="Logarithmic Arm Winding"
@@ -36,7 +38,7 @@ export function StellarPopulationSection() {
                     min={0.1}
                     max={1.5}
                     step={0.02}
-                    onChange={(val) => updateParameters({ armWinding: val })}
+                    onChange={(val) => onChange({ armWinding: val })}
                 />
                 <SliderRow
                     label="Arm Stellar Dispersion"
@@ -44,7 +46,7 @@ export function StellarPopulationSection() {
                     min={0.05}
                     max={0.8}
                     step={0.01}
-                    onChange={(val) => updateParameters({ armDispersion: val })}
+                    onChange={(val) => onChange({ armDispersion: val })}
                 />
                 <SliderRow
                     label="Spur Bridge Frequency"
@@ -52,7 +54,7 @@ export function StellarPopulationSection() {
                     min={0.0}
                     max={0.6}
                     step={0.02}
-                    onChange={(val) => updateParameters({ spurFrequency: val })}
+                    onChange={(val) => onChange({ spurFrequency: val })}
                 />
                 <SliderRow
                     label="Core Density Ratio"
@@ -60,7 +62,7 @@ export function StellarPopulationSection() {
                     min={0.05}
                     max={0.5}
                     step={0.01}
-                    onChange={(val) => updateParameters({ coreDensityRatio: val })}
+                    onChange={(val) => onChange({ coreDensityRatio: val })}
                 />
                 <SliderRow
                     label="Nuclear Core Radius"
@@ -68,7 +70,7 @@ export function StellarPopulationSection() {
                     min={0.5}
                     max={5.0}
                     step={0.1}
-                    onChange={(val) => updateParameters({ coreRadius: val })}
+                    onChange={(val) => onChange({ coreRadius: val })}
                 />
                 <SliderRow
                     label="Galactic Disk Radius"
@@ -76,7 +78,7 @@ export function StellarPopulationSection() {
                     min={5.0}
                     max={30.0}
                     step={0.5}
-                    onChange={(val) => updateParameters({ diskRadius: val })}
+                    onChange={(val) => onChange({ diskRadius: val })}
                 />
                 <SliderRow
                     label="Disk Vertical Thickness"
@@ -84,7 +86,7 @@ export function StellarPopulationSection() {
                     min={0.2}
                     max={3.0}
                     step={0.05}
-                    onChange={(val) => updateParameters({ diskThickness: val })}
+                    onChange={(val) => onChange({ diskThickness: val })}
                 />
             </div>
         </details>

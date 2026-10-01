@@ -1,8 +1,11 @@
 import "../styles.scss";
 import { useState, ReactNode, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { Footer } from "../components/footer";
 import { Header } from "../components/header";
-import { GalaxyProvider, useGalaxy } from "../galaxy_backdrop/galaxy_context";
+import { useGalaxyController } from "../galaxy_backdrop/use_galaxy_controller";
+import { WebGLCanvas } from "../components/webgl_canvas/webgl_canvas";
+import { GalaxyPass } from "../galaxy_backdrop/galaxy_pass";
 import { GalaxySettingsDialog } from "../galaxy_backdrop/galaxy_settings_dialog/galaxy_settings_dialog";
 import { Outlet } from "react-router-dom";
 import { useResizeCallbackRef, Dimensions } from "../hooks/use_resize_callback_ref";
@@ -17,14 +20,14 @@ export enum DeviceSize {
     Desktop
 }
 
-function LayoutContent(props: LayoutProps) {
-    const { setBackdropContainer } = useGalaxy();
+export const Layout = (props: LayoutProps) => {
+    const backdropGalaxy = useGalaxyController();
+    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [deviceSize, setDeviceSize] = useState(DeviceSize.Mobile);
 
-    const handleResize = useCallback((size: Dimensions, element: HTMLElement) => {
-        const { width, height } = size;
-
-        if ( width > 600 ) {
+    const handleResize = useCallback((size: Dimensions) => {
+        const { width } = size;
+        if (width > 600) {
             setDeviceSize(DeviceSize.Desktop);
         } else {
             setDeviceSize(DeviceSize.Mobile);
@@ -34,9 +37,9 @@ function LayoutContent(props: LayoutProps) {
     const setObserveTarget = useResizeCallbackRef(handleResize);
 
     const setRootContainer = useCallback((container: HTMLDivElement | null) => {
-        setBackdropContainer(container);
+        backdropGalaxy.containerRef(container);
         setObserveTarget(container);
-    }, [setBackdropContainer, setObserveTarget]);
+    }, [backdropGalaxy, setObserveTarget]);
 
     const classMap = classNameMap({
         "anim-background": true,
@@ -45,23 +48,47 @@ function LayoutContent(props: LayoutProps) {
 
     return (
         <div className={classMap} ref={setRootContainer}>
-            <Header />
+            <Header onOpenSettings={() => setIsSettingsOpen(true)} />
             <div className="scroll-region">
                 <div className="content">
                     <Outlet />
                 </div>
                 <Footer />
             </div>
-            <GalaxySettingsDialog />
+
+            {backdropGalaxy.container &&
+                createPortal(
+                    <WebGLCanvas
+                        options={{
+                            version: "webgl2",
+                            dprCap: backdropGalaxy.params.dprCap ?? 1.5,
+                            pauseWhenOffscreen: true,
+                            pauseWhenHidden: true,
+                        }}
+                        className="hero-effect"
+                        style={{
+                            position: "absolute",
+                            top: 0,
+                            left: 0,
+                            width: "100%",
+                            height: "100%",
+                            pointerEvents: "none",
+                        }}
+                    >
+                        <GalaxyPass controller={backdropGalaxy} />
+                    </WebGLCanvas>,
+                    backdropGalaxy.container
+                )}
+
+            <GalaxySettingsDialog
+                isOpen={isSettingsOpen}
+                onClose={() => setIsSettingsOpen(false)}
+                params={backdropGalaxy.params}
+                currentPresetId={backdropGalaxy.currentPresetId}
+                onChange={backdropGalaxy.updateParameters}
+                onReset={backdropGalaxy.resetParameters}
+                onApplyPreset={backdropGalaxy.applyPreset}
+            />
         </div>
     );
-}
-
-export const Layout = (props: LayoutProps) => {
-    return (
-        <GalaxyProvider>
-            <LayoutContent {...props} />
-        </GalaxyProvider>
-    );
 };
-

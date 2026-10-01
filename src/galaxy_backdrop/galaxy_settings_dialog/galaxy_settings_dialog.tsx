@@ -1,8 +1,7 @@
 import "./galaxy_settings_dialog.scss";
 
-import React, { useCallback, useState } from "react";
-import { useGalaxy } from "../galaxy_context";
-import { GALAXY_PRESETS } from "../parameters/index";
+import { useCallback, useState } from "react";
+import { GALAXY_PRESETS, GalaxyParameters } from "../parameters/index";
 import { Dialog } from "../../components/dialog/dialog";
 import { GearIcon } from "../../components/icons/gear_icon";
 import { RenderStyleSection } from "./render_style_section";
@@ -12,19 +11,37 @@ import { ColorsGlowSection } from "./colors_glow_section";
 import { ParticleSizesSection } from "./particle_sizes_section";
 import { MotionDynamicsSection } from "./motion_dynamics_section";
 
+export interface GalaxySettingsDialogProps {
+    /** Dialog visibility state */
+    isOpen: boolean;
+    /** Callback invoked when closing the dialog modal */
+    onClose: () => void;
+    /** Current parameter configuration */
+    params: GalaxyParameters;
+    /** Currently active preset ID */
+    currentPresetId: string;
+    /** Event emitted when parameters are modified */
+    onChange: (partial: Partial<GalaxyParameters>) => void;
+    /** Callback to reset parameters to factory defaults */
+    onReset: () => void;
+    /** Callback to apply a preset by ID */
+    onApplyPreset: (presetId: string) => void;
+}
+
 /**
- * Main settings dialog modal for real-time backdrop tuning, preset selection, and parameter export.
- * Composed of modular section components for rendering style, perspective, population, color, point sizes, and dynamics.
+ * Pure prop-driven settings dialog modal for real-time 3D galaxy tuning.
+ * Emits parameter change events to its parent without depending on any custom React Context.
  */
-export function GalaxySettingsDialog() {
+export function GalaxySettingsDialog(props: GalaxySettingsDialogProps) {
     const {
+        isOpen,
+        onClose,
         params,
-        resetParameters,
-        applyPreset,
         currentPresetId,
-        isSettingsOpen,
-        closeSettings,
-    } = useGalaxy();
+        onChange,
+        onReset,
+        onApplyPreset,
+    } = props;
 
     const [copied, setCopied] = useState(false);
 
@@ -36,9 +53,9 @@ export function GalaxySettingsDialog() {
 
     return (
         <Dialog
-            isOpen={isSettingsOpen}
-            onClose={closeSettings}
-            onClick={closeSettings}
+            isOpen={isOpen}
+            onClose={onClose}
+            onClick={onClose}
             className="galaxy-settings-dialog"
         >
             {/* Header */}
@@ -50,7 +67,7 @@ export function GalaxySettingsDialog() {
                 <button
                     type="button"
                     className="close-btn"
-                    onClick={closeSettings}
+                    onClick={onClose}
                     aria-label="Close dialog"
                 >
                     ✕
@@ -62,7 +79,7 @@ export function GalaxySettingsDialog() {
                 <select
                     className="preset-select"
                     value={currentPresetId}
-                    onChange={(e) => applyPreset(e.target.value)}
+                    onChange={(e) => onApplyPreset(e.target.value)}
                     aria-label="Select Galaxy Preset"
                 >
                     {GALAXY_PRESETS.map((p) => (
@@ -78,7 +95,7 @@ export function GalaxySettingsDialog() {
                 <button
                     type="button"
                     className="action-btn"
-                    onClick={resetParameters}
+                    onClick={onReset}
                     title="Revert all parameters to factory defaults"
                 >
                     Reset Defaults
@@ -96,12 +113,12 @@ export function GalaxySettingsDialog() {
 
             {/* Settings Body */}
             <div className="settings-body">
-                <RenderStyleSection />
-                <CameraPerspectiveSection />
-                <StellarPopulationSection />
-                <ColorsGlowSection />
-                <ParticleSizesSection />
-                <MotionDynamicsSection />
+                <RenderStyleSection params={params} onChange={onChange} />
+                <CameraPerspectiveSection params={params} onChange={onChange} />
+                <StellarPopulationSection params={params} onChange={onChange} />
+                <ColorsGlowSection params={params} onChange={onChange} />
+                <ParticleSizesSection params={params} onChange={onChange} />
+                <MotionDynamicsSection params={params} onChange={onChange} />
             </div>
         </Dialog>
     );

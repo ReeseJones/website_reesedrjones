@@ -18,14 +18,18 @@ import {
     mat4Translate,
 } from "../maths/matrix";
 import {
-    GALAXY_FRAGMENT_SHADER,
     GALAXY_ORB_FRAGMENT_SHADER,
     GALAXY_ORB_VERTEX_SHADER,
     GALAXY_PINPRICK_FRAGMENT_SHADER,
     GALAXY_PINPRICK_VERTEX_SHADER,
-    GALAXY_VERTEX_SHADER,
 } from "./galaxy_shaders";
+import { CanvasDimensions, TimeInfo } from "../components/webgl_canvas/types";
 
+/**
+ * Pure WebGL2 rendering engine for the 3D spiral galaxy simulation.
+ * Manages GPU buffers, VAO setup, GLSL ES 3.00 shader programs, camera matrix calculations,
+ * and point sprite drawing passes. Context lifecycle and DOM execution are managed by WebGLCanvas.
+ */
 export class GalaxyRenderer {
     private gl: WebGL2RenderingContext | null = null;
     private program: WebGLProgram | null = null;
@@ -67,17 +71,9 @@ export class GalaxyRenderer {
     private targetYawOffset = 0;
     private currentYawOffset = 0;
 
-    // Loop & Lifecycle State
-    private rafId: number | null = null;
-    private startTime = 0;
-    private lastTime = 0;
     private isDestroyed = false;
-    private isPaused = false;
 
-    constructor(
-        public readonly canvas: HTMLCanvasElement,
-        customParams?: Partial<GalaxyParameters>
-    ) {
+    constructor(customParams?: Partial<GalaxyParameters>) {
         const isMobile =
             typeof window !== "undefined" &&
             (window.innerWidth < 768 ||
@@ -91,23 +87,13 @@ export class GalaxyRenderer {
         this.starCount = this.params.starCount;
     }
 
-    public initialize(): boolean {
-        const gl = this.canvas.getContext("webgl2", {
-            alpha: true,
-            antialias: false,
-            depth: false,
-            powerPreference: "high-performance",
-            preserveDrawingBuffer: false,
-        });
-
-        if (!gl) {
-            console.error("WebGL 2.0 is not supported in this browser.");
-            return false;
-        }
-
+    /**
+     * Initializes shader programs, VAO/VBO buffers, and blending modes with the provided WebGL2 context.
+     */
+    public init(gl: WebGL2RenderingContext, dims: CanvasDimensions): boolean {
         this.gl = gl;
+        this.isDestroyed = false;
 
-        // Compile Shader Program based on requested style (pinprick or orb)
         const vertSource =
             this.params.style === "orb"
                 ? GALAXY_ORB_VERTEX_SHADER
@@ -124,53 +110,123 @@ export class GalaxyRenderer {
         this.program = program;
         gl.useProgram(program);
 
-        // Cache Uniform Locations
         this.cacheUniformLocations(gl, program);
-
-        // Upload Static Star VBO
         this.initializeStarBuffers(gl);
 
-        // Setup Additive Blending
         gl.enable(gl.BLEND);
         gl.blendFunc(gl.ONE, gl.ONE);
         gl.disable(gl.DEPTH_TEST);
         gl.depthMask(false);
 
-        // Attach Event Listeners
         this.attachEventListeners();
-
-        // Perform initial resize
-        this.resize();
-
-        // Start Animation Loop
-        this.startTime = performance.now();
-        this.lastTime = this.startTime;
-        this.startLoop();
+        this.updateProjection(gl, dims);
 
         return true;
     }
 
-    public resize(): void {
+    /**
+     * Updates viewport and projection dimensions when canvas resolution changes.
+     */
+    public updateProjection(gl: WebGL2RenderingContext, dims: CanvasDimensions): void {
         if (!this.gl || this.isDestroyed) return;
+        gl.viewport(0, 0, dims.width, dims.height);
+    }
 
-        const dpr = Math.min(window.devicePixelRatio || 1, this.params.dprCap);
-        const rect = this.canvas.getBoundingClientRect();
-        const displayWidth = Math.max(1, Math.floor(rect.width * dpr));
-        const displayHeight = Math.max(1, Math.floor(rect.height * dpr));
+    /**
+     * Executes a single frame draw pass for the galaxy simulation.
+     */
+    public renderFrame(
+        gl: WebGL2RenderingContext,
+        timeInfo: TimeInfo,
+        dims: CanvasDimensions
+    ): void {
+        if (!gl || !this.program || !this.vao || this.isDestroyed) return;
 
-        if (
-            this.canvas.width !== displayWidth ||
-            this.canvas.height !== displayHeight
-        ) {
-            this.canvas.width = displayWidth;
-            this.canvas.height = displayHeight;
-            this.gl.viewport(0, 0, displayWidth, displayHeight);
-        }
+        this.updateInputs(timeInfo.dt);
+
+        gl.clearColor(0.0, 0.0, 0.0, 0.0);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+
+        const width = dims.width;
+        const height = dims.height;
+        const aspect = dims.aspect;
+
+        // 1. Perspective Camera Projection
+        mat4Perspective(
+            this.projMatrix,
+            this.params.fov,
+            aspect,
+            this.params.nearPlane,
+            this.params.farPlane
+        );
+
+        // 2. 3D Model-View Transformation
+        mat4Identity(this.modelViewMatrix);
+
+        const aspectScale = Math.min(1.0, aspect / 1.5);
+        const offsetX = this.params.centerOffsetX * aspectScale;
+        const offsetY = this.params.centerOffsetY;
+
+        mat4Translate(
+            this.modelViewMatrix,
+            this.modelViewMatrix,
+            offsetX,
+            offsetY,
+            -this.params.cameraDistance
+        );
+
+        const pitch =
+            this.params.pitchAngle +
+            this.currentPitchOffset * this.params.mouseSensitivity;
+        const yaw =
+            this.params.yawAngle +
+            this.currentYawOffset * this.params.mouseSensitivity;
+        const roll = this.params.rollAngle;
+
+        mat4RotateX(this.modelViewMatrix, this.modelViewMatrix, pitch);
+        mat4RotateY(this.modelViewMatrix, this.modelViewMatrix, yaw);
+        mat4RotateZ(this.modelViewMatrix, this.modelViewMatrix, roll);
+
+        mat4Multiply(
+            this.viewProjMatrix,
+            this.projMatrix,
+            this.modelViewMatrix
+        );
+
+        // 3. Upload Dynamic Frame Uniforms
+        gl.useProgram(this.program);
+        gl.uniformMatrix4fv(this.uViewProjLoc, false, this.viewProjMatrix);
+        gl.uniformMatrix4fv(this.uModelViewLoc, false, this.modelViewMatrix);
+        gl.uniform1f(this.uTimeLoc, timeInfo.time);
+        gl.uniform1f(this.uViewportHeightLoc, height);
+
+        // 4. Draw Stars
+        gl.bindVertexArray(this.vao);
+        gl.drawArrays(gl.POINTS, 0, this.starCount);
+    }
+
+    /**
+     * Clears GL object references on WebGL context loss.
+     */
+    public onContextLost(): void {
+        this.gl = null;
+        this.program = null;
+        this.vao = null;
+        this.vbo = null;
+    }
+
+    /**
+     * Re-initializes GPU resources when WebGL context is restored.
+     */
+    public onContextRestored(
+        gl: WebGL2RenderingContext,
+        dims: CanvasDimensions
+    ): void {
+        this.init(gl, dims);
     }
 
     /**
      * Switch dynamically between 'pinprick' and 'orb' styles.
-     * Recompiles the shader program and updates point uniforms accordingly.
      */
     public setStyle(style: StarRenderStyle): void {
         if (!this.gl || this.isDestroyed || this.params.style === style) return;
@@ -213,8 +269,7 @@ export class GalaxyRenderer {
     }
 
     /**
-     * Dynamically update parameters in real-time without recreating WebGL context.
-     * Geometry is regenerated only when structural parameters change.
+     * Dynamically update parameters in real-time.
      */
     public updateParameters(newParams: Partial<GalaxyParameters>): void {
         if (!this.gl || this.isDestroyed) return;
@@ -249,7 +304,7 @@ export class GalaxyRenderer {
             this.rebuildStarBuffer();
         }
 
-        this.uploadColorUniforms();
+        this.uploadStaticUniforms();
     }
 
     public getParameters(): GalaxyParameters {
@@ -258,11 +313,6 @@ export class GalaxyRenderer {
 
     public destroy(): void {
         this.isDestroyed = true;
-        if (this.rafId !== null) {
-            cancelAnimationFrame(this.rafId);
-            this.rafId = null;
-        }
-
         this.detachEventListeners();
 
         if (this.gl) {
@@ -273,113 +323,12 @@ export class GalaxyRenderer {
         }
     }
 
-    private startLoop(): void {
-        const loop = (now: number) => {
-            if (this.isDestroyed) return;
-
-            if (!this.isPaused) {
-                const dt = Math.min((now - this.lastTime) / 1000, 0.1);
-                this.lastTime = now;
-                const elapsedTime = (now - this.startTime) / 1000;
-
-                this.updateInputs(dt);
-                this.render(elapsedTime);
-            } else {
-                this.lastTime = now;
-            }
-
-            this.rafId = requestAnimationFrame(loop);
-        };
-
-        this.rafId = requestAnimationFrame(loop);
-    }
-
     private updateInputs(dt: number): void {
-        // Exponential decay for buttery smooth camera tilt
         const decay = 1.0 - Math.exp(-this.params.inputDamping * dt);
         this.currentPitchOffset +=
             (this.targetPitchOffset - this.currentPitchOffset) * decay;
         this.currentYawOffset +=
             (this.targetYawOffset - this.currentYawOffset) * decay;
-    }
-
-    private render(time: number): void {
-        const gl = this.gl;
-        if (!gl || !this.program || !this.vao) return;
-
-        gl.clearColor(0.0, 0.0, 0.0, 0.0);
-        gl.clear(gl.COLOR_BUFFER_BIT);
-
-        const width = this.canvas.width;
-        const height = this.canvas.height;
-        const aspect = width / Math.max(1, height);
-
-        // 1. Perspective Camera Projection
-        mat4Perspective(
-            this.projMatrix,
-            this.params.fov,
-            aspect,
-            this.params.nearPlane,
-            this.params.farPlane
-        );
-
-        // 2. 3D Model-View Transformation
-        mat4Identity(this.modelViewMatrix);
-
-        // Scale horizontal offset by aspect ratio so core sits reliably in the top-right quadrant
-        // across widescreen, tablet, and mobile portrait viewports
-        const aspectScale = Math.min(1.0, aspect / 1.5);
-        const offsetX = this.params.centerOffsetX * aspectScale;
-        const offsetY = this.params.centerOffsetY;
-
-        // Translate camera back and position the galactic center in the upper-right quadrant
-        mat4Translate(
-            this.modelViewMatrix,
-            this.modelViewMatrix,
-            offsetX,
-            offsetY,
-            -this.params.cameraDistance
-        );
-
-        // Canted askew orientation: combine 8-degree pitch with interactive input
-        const pitch =
-            this.params.pitchAngle +
-            this.currentPitchOffset * this.params.mouseSensitivity;
-        const yaw =
-            this.params.yawAngle +
-            this.currentYawOffset * this.params.mouseSensitivity;
-        const roll = this.params.rollAngle;
-
-        mat4RotateX(this.modelViewMatrix, this.modelViewMatrix, pitch);
-        mat4RotateY(this.modelViewMatrix, this.modelViewMatrix, yaw);
-        mat4RotateZ(this.modelViewMatrix, this.modelViewMatrix, roll);
-
-        // Combine into View-Projection Matrix
-        mat4Multiply(
-            this.viewProjMatrix,
-            this.projMatrix,
-            this.modelViewMatrix
-        );
-
-        // 3. Upload Uniforms
-        gl.useProgram(this.program);
-        gl.uniformMatrix4fv(this.uViewProjLoc, false, this.viewProjMatrix);
-        gl.uniformMatrix4fv(this.uModelViewLoc, false, this.modelViewMatrix);
-        gl.uniform1f(this.uTimeLoc, time);
-        gl.uniform1f(this.uRotationSpeedLoc, this.params.rotationSpeed);
-        gl.uniform1f(this.uDifferentialSpeedLoc, this.params.differentialSpeed);
-        gl.uniform1f(this.uDriftSpeedLoc, this.params.driftSpeed);
-        gl.uniform1f(this.uDriftAmplitudeLoc, this.params.driftAmplitude);
-        gl.uniform1f(this.uPointScaleLoc, this.params.pointScale);
-        gl.uniform1f(this.uMinPointSizeLoc, this.params.minPointSize);
-        gl.uniform1f(this.uMaxPointSizeLoc, this.params.maxPointSize);
-        gl.uniform1f(this.uViewportHeightLoc, height);
-        gl.uniform1f(this.uNearFadeDistLoc, this.params.nearFadeDistance);
-
-        // 4. Render 1M Stars in Single Draw Call
-        gl.bindVertexArray(this.vao);
-        gl.drawArrays(gl.POINTS, 0, this.starCount);
-        gl.bindVertexArray(null);
     }
 
     private cacheUniformLocations(
@@ -424,15 +373,42 @@ export class GalaxyRenderer {
             "u_coreGlowBoost"
         );
 
-        // Upload color uniforms
-        this.uploadColorUniforms();
+        this.uploadStaticUniforms();
     }
 
-    private uploadColorUniforms(): void {
+    private uploadStaticUniforms(): void {
         const gl = this.gl;
         if (!gl || !this.program) return;
 
         gl.useProgram(this.program);
+
+        // Upload static scalar parameters
+        if (this.uRotationSpeedLoc) {
+            gl.uniform1f(this.uRotationSpeedLoc, this.params.rotationSpeed);
+        }
+        if (this.uDifferentialSpeedLoc) {
+            gl.uniform1f(this.uDifferentialSpeedLoc, this.params.differentialSpeed);
+        }
+        if (this.uDriftSpeedLoc) {
+            gl.uniform1f(this.uDriftSpeedLoc, this.params.driftSpeed);
+        }
+        if (this.uDriftAmplitudeLoc) {
+            gl.uniform1f(this.uDriftAmplitudeLoc, this.params.driftAmplitude);
+        }
+        if (this.uPointScaleLoc) {
+            gl.uniform1f(this.uPointScaleLoc, this.params.pointScale);
+        }
+        if (this.uMinPointSizeLoc) {
+            gl.uniform1f(this.uMinPointSizeLoc, this.params.minPointSize);
+        }
+        if (this.uMaxPointSizeLoc) {
+            gl.uniform1f(this.uMaxPointSizeLoc, this.params.maxPointSize);
+        }
+        if (this.uNearFadeDistLoc) {
+            gl.uniform1f(this.uNearFadeDistLoc, this.params.nearFadeDistance);
+        }
+
+        // Upload color parameters
         if (this.uCoreColorLoc) {
             gl.uniform3fv(this.uCoreColorLoc, this.params.coreColor);
         }
@@ -475,11 +451,9 @@ export class GalaxyRenderer {
 
         const stride = 6 * Float32Array.BYTES_PER_ELEMENT;
 
-        // 0: a_radius (1 float)
         gl.enableVertexAttribArray(0);
         gl.vertexAttribPointer(0, 1, gl.FLOAT, false, stride, 0);
 
-        // 1: a_baseAngle (1 float)
         gl.enableVertexAttribArray(1);
         gl.vertexAttribPointer(
             1,
@@ -490,7 +464,6 @@ export class GalaxyRenderer {
             1 * Float32Array.BYTES_PER_ELEMENT
         );
 
-        // 2: a_zOffset (1 float)
         gl.enableVertexAttribArray(2);
         gl.vertexAttribPointer(
             2,
@@ -501,7 +474,6 @@ export class GalaxyRenderer {
             2 * Float32Array.BYTES_PER_ELEMENT
         );
 
-        // 3: a_size (1 float)
         gl.enableVertexAttribArray(3);
         gl.vertexAttribPointer(
             3,
@@ -512,7 +484,6 @@ export class GalaxyRenderer {
             3 * Float32Array.BYTES_PER_ELEMENT
         );
 
-        // 4: a_spectralType (1 float)
         gl.enableVertexAttribArray(4);
         gl.vertexAttribPointer(
             4,
@@ -523,7 +494,6 @@ export class GalaxyRenderer {
             4 * Float32Array.BYTES_PER_ELEMENT
         );
 
-        // 5: a_driftPhase (1 float)
         gl.enableVertexAttribArray(5);
         gl.vertexAttribPointer(
             5,
@@ -593,12 +563,10 @@ export class GalaxyRenderer {
         return shader;
     }
 
-    // Input & Interaction Listeners
     private onPointerMove = (e: PointerEvent): void => {
         const x = (e.clientX / window.innerWidth) * 2.0 - 1.0;
         const y = (e.clientY / window.innerHeight) * 2.0 - 1.0;
 
-        // Invert Y for natural perspective tilt
         this.targetYawOffset = x * 0.5;
         this.targetPitchOffset = -y * 0.4;
     };
@@ -606,8 +574,6 @@ export class GalaxyRenderer {
     private onDeviceOrientation = (e: DeviceOrientationEvent): void => {
         if (e.beta === null || e.gamma === null) return;
 
-        // beta: [-180, 180] (normal holding phone is ~45 deg pitch)
-        // gamma: [-90, 90] (roll left/right)
         const normalizedBeta = Math.max(
             -1.0,
             Math.min(1.0, (e.beta - 45.0) / 35.0)
@@ -616,10 +582,6 @@ export class GalaxyRenderer {
 
         this.targetPitchOffset = -normalizedBeta * 0.45;
         this.targetYawOffset = normalizedGamma * 0.55;
-    };
-
-    private onVisibilityChange = (): void => {
-        this.isPaused = document.hidden;
     };
 
     private attachEventListeners(): void {
@@ -636,12 +598,6 @@ export class GalaxyRenderer {
                 { passive: true }
             );
         }
-
-        document.addEventListener(
-            "visibilitychange",
-            this.onVisibilityChange,
-            false
-        );
     }
 
     private detachEventListeners(): void {
@@ -651,10 +607,6 @@ export class GalaxyRenderer {
         window.removeEventListener(
             "deviceorientation",
             this.onDeviceOrientation
-        );
-        document.removeEventListener(
-            "visibilitychange",
-            this.onVisibilityChange
         );
     }
 }

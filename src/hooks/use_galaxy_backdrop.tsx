@@ -1,10 +1,9 @@
-import { useGalaxy } from "../galaxy_backdrop/galaxy_context";
+import { useGalaxyController } from "../galaxy_backdrop/use_galaxy_controller";
 
 /**
- * Hook to access the galaxy backdrop container setter and readiness state.
- * Connects directly to the ambient GalaxyProvider context.
+ * Hook to create an independent galaxy backdrop controller instance.
  */
 export const useGalaxyBackdrop = () => {
-    const { setBackdropContainer, isReady } = useGalaxy();
-    return [setBackdropContainer, isReady] as const;
+    const controller = useGalaxyController();
+    return controller;
 };
