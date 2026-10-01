@@ -6,6 +6,8 @@ import {
     WebGLSubscriber,
 } from "./types";
 
+import { WebGLContextManager } from "../../webgl/context_manager";
+
 const DEFAULT_OPTIONS: Required<WebGLContextOptions> = {
     version: "webgl2",
     dprCap: 1.5,
@@ -52,6 +54,7 @@ export function useWebGLCanvas(config?: UseWebGLCanvasOptions) {
     });
 
     const glRef = useRef<WebGL2RenderingContext | null>(null);
+    const contextManagerRef = useRef<WebGLContextManager>(new WebGLContextManager());
     const dimensionsRef = useRef<CanvasDimensions>(dimensions);
     dimensionsRef.current = dimensions;
 
@@ -179,6 +182,7 @@ export function useWebGLCanvas(config?: UseWebGLCanvasOptions) {
         }
 
         glRef.current = gl;
+        contextManagerRef.current.setContext(gl);
         setIsSupported(true);
         setIsContextLost(false);
 
@@ -199,6 +203,7 @@ export function useWebGLCanvas(config?: UseWebGLCanvasOptions) {
                 rafIdRef.current = null;
             }
             setIsContextLost(true);
+            contextManagerRef.current.handleContextLost();
             for (const sub of subscribersRef.current.values()) {
                 sub.onContextLost?.(e as WebGLContextEvent);
             }
@@ -206,6 +211,7 @@ export function useWebGLCanvas(config?: UseWebGLCanvasOptions) {
 
         const handleContextRestored = () => {
             setIsContextLost(false);
+            contextManagerRef.current.handleContextRestored(gl);
             const restoredDims = updateDimensions(canvasNode, gl);
             for (const sub of subscribersRef.current.values()) {
                 sub.onContextRestored?.(gl, restoredDims);
@@ -316,6 +322,9 @@ export function useWebGLCanvas(config?: UseWebGLCanvasOptions) {
                 sub.destroy?.();
             }
 
+            // Destroy context manager resources
+            contextManagerRef.current.destroy();
+
             // Explicitly force context loss on unmount to free the browser's context quota slot immediately
             if (glRef.current) {
                 const loseExt = glRef.current.getExtension("WEBGL_lose_context");
@@ -338,6 +347,7 @@ export function useWebGLCanvas(config?: UseWebGLCanvasOptions) {
     return {
         canvasRef,
         gl: glRef.current,
+        contextManager: contextManagerRef.current,
         isSupported,
         isContextLost,
         dimensions,

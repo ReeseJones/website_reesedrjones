@@ -24,6 +24,7 @@ export function WebGLCanvas(props: WebGLCanvasProps): React.JSX.Element | null {
     const {
         canvasRef: internalCanvasRef,
         gl,
+        contextManager,
         isSupported,
         isContextLost,
         dimensions,
@@ -51,13 +52,14 @@ export function WebGLCanvas(props: WebGLCanvasProps): React.JSX.Element | null {
     const contextValue = useMemo<WebGLCanvasContextValue>(
         () => ({
             gl,
+            contextManager,
             isSupported,
             isContextLost,
             dimensions,
             subscribe,
             requestRender,
         }),
-        [gl, isSupported, isContextLost, dimensions, subscribe, requestRender]
+        [gl, contextManager, isSupported, isContextLost, dimensions, subscribe, requestRender]
     );
 
     if (!isSupported) {
