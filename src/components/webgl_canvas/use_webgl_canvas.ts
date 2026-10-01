@@ -297,8 +297,41 @@ export function useWebGLCanvas(config?: UseWebGLCanvasOptions) {
         };
         document.addEventListener("visibilitychange", handleVisibilityChange, false);
 
-        // 7. Cleanup & Deterministic Context Disposal
+        // 7. Debug Helper: Context Loss Simulator (Alt+Shift+L or window.simulateContextLoss(delayMs))
+        const simulateContextLoss = (delayMs: number = 1500) => {
+            const currentGl = glRef.current;
+            if (!currentGl) {
+                console.warn("[WebGL Debug] Cannot lose context: WebGL context is not active.");
+                return;
+            }
+            const loseExt = currentGl.getExtension("WEBGL_lose_context");
+            if (!loseExt) {
+                console.warn("[WebGL Debug] WEBGL_lose_context extension is not supported.");
+                return;
+            }
+            console.log(`[WebGL Debug] Forcing WebGL context loss... Will restore in ${delayMs}ms.`);
+            loseExt.loseContext();
+            setTimeout(() => {
+                console.log("[WebGL Debug] Restoring WebGL context...");
+                loseExt.restoreContext();
+            }, delayMs);
+        };
+
+        (window as any).simulateContextLoss = simulateContextLoss;
+
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.altKey && e.shiftKey && e.code === "KeyL") {
+                e.preventDefault();
+                simulateContextLoss(1500);
+            }
+        };
+        window.addEventListener("keydown", handleKeyDown);
+
+        // 8. Cleanup & Deterministic Context Disposal
         return () => {
+            window.removeEventListener("keydown", handleKeyDown);
+            delete (window as any).simulateContextLoss;
+
             if (rafIdRef.current !== null) {
                 cancelAnimationFrame(rafIdRef.current);
                 rafIdRef.current = null;
