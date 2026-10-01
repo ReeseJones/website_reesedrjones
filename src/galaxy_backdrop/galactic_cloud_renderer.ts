@@ -13,7 +13,6 @@ import { WebGLContextManager } from "../webgl/context_manager";
  */
 export class GalacticCloudRenderer {
     private gl: WebGL2RenderingContext | null = null;
-    private contextManager: WebGLContextManager;
 
     private shaderProgram: ShaderProgram | null = null;
     private quadBuffer: VertexBuffer | null = null;
@@ -29,8 +28,8 @@ export class GalacticCloudRenderer {
     private isDestroyed = false;
 
     constructor(
-        customParams?: Partial<GalaxyParameters>,
-        contextManager?: WebGLContextManager
+        private contextManager: WebGLContextManager,
+        customParams?: Partial<GalaxyParameters>
     ) {
         const isMobile =
             typeof window !== "undefined" &&
@@ -41,13 +40,11 @@ export class GalacticCloudRenderer {
             ...(isMobile ? MOBILE_GALAXY_PARAMETERS : {}),
             ...customParams,
         };
-        this.contextManager = contextManager ?? new WebGLContextManager();
     }
 
     public init(gl: WebGL2RenderingContext, dims: CanvasDimensions): boolean {
         this.gl = gl;
         this.isDestroyed = false;
-        this.contextManager.setContext(gl);
 
         this.shaderProgram = this.contextManager.getOrCreateShader("galactic_cloud", {
             vertSource: GALACTIC_CLOUD_VERTEX_SHADER,
@@ -98,6 +95,10 @@ export class GalacticCloudRenderer {
         gl.viewport(0, 0, dims.width, dims.height);
     }
 
+    /**
+     * Executes a single frame draw pass for the celestial horizon pass.
+     * Asserts explicit pass state ownership (blending and depth settings) prior to drawing.
+     */
     public renderFrame(
         gl: WebGL2RenderingContext,
         timeInfo: TimeInfo,
@@ -128,7 +129,7 @@ export class GalacticCloudRenderer {
         this.shaderProgram.setFloat("uPitchOffset", effectivePitchOffset);
         this.shaderProgram.setFloat("uYawOffset", effectiveYawOffset);
 
-        // Draw Fullscreen Quad
+        // Assert Explicit Pass Pipeline State & Draw Fullscreen Quad
         gl.disable(gl.DEPTH_TEST);
         gl.depthMask(false);
         gl.enable(gl.BLEND);
@@ -148,12 +149,10 @@ export class GalacticCloudRenderer {
 
     public onContextLost(): void {
         this.gl = null;
-        this.contextManager.handleContextLost();
     }
 
     public onContextRestored(gl: WebGL2RenderingContext, dims: CanvasDimensions): void {
         this.gl = gl;
-        this.contextManager.handleContextRestored(gl);
         this.uploadStaticUniforms();
         this.updateProjection(gl, dims);
     }

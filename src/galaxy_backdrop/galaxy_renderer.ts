@@ -37,7 +37,6 @@ import { WebGLContextManager } from "../webgl/context_manager";
  */
 export class GalaxyRenderer {
     private gl: WebGL2RenderingContext | null = null;
-    private contextManager: WebGLContextManager;
 
     private pinprickShader: ShaderProgram | null = null;
     private orbShader: ShaderProgram | null = null;
@@ -61,8 +60,8 @@ export class GalaxyRenderer {
     private isDestroyed = false;
 
     constructor(
-        customParams?: Partial<GalaxyParameters>,
-        contextManager?: WebGLContextManager
+        private contextManager: WebGLContextManager,
+        customParams?: Partial<GalaxyParameters>
     ) {
         const isMobile =
             typeof window !== "undefined" &&
@@ -75,16 +74,14 @@ export class GalaxyRenderer {
             ...customParams,
         };
         this.starCount = this.params.starCount;
-        this.contextManager = contextManager ?? new WebGLContextManager();
     }
 
     /**
-     * Initializes rendering dependencies and GPU buffers using WebGLContextManager.
+     * Initializes rendering dependencies and GPU buffers using the injected WebGLContextManager.
      */
     public init(gl: WebGL2RenderingContext, dims: CanvasDimensions): boolean {
         this.gl = gl;
         this.isDestroyed = false;
-        this.contextManager.setContext(gl);
 
         // Retrieve persistent ShaderProgram instances from ContextManager
         this.pinprickShader = this.contextManager.getOrCreateShader("galaxy_pinprick", {
@@ -112,12 +109,6 @@ export class GalaxyRenderer {
         this.starBuffer.setData(generateStarBuffer(this.params));
 
         this.uploadStaticUniforms();
-
-        gl.enable(gl.BLEND);
-        gl.blendFunc(gl.ONE, gl.ONE);
-        gl.disable(gl.DEPTH_TEST);
-        gl.depthMask(false);
-
         this.attachEventListeners();
         this.updateProjection(gl, dims);
 
@@ -155,6 +146,7 @@ export class GalaxyRenderer {
 
     /**
      * Executes a single frame draw pass for the galaxy simulation.
+     * Asserts explicit pass state ownership (blending and depth settings) prior to drawing.
      */
     public renderFrame(
         gl: WebGL2RenderingContext,
@@ -218,30 +210,31 @@ export class GalaxyRenderer {
         this.activeShader.setFloat("u_time", timeInfo.time);
         this.activeShader.setFloat("u_viewportHeight", height);
 
-        // 4. Draw Stars with Additive Blending
+        // 4. Assert Explicit Pass Pipeline State & Draw Stars with Additive Blending
         gl.enable(gl.BLEND);
         gl.blendFunc(gl.ONE, gl.ONE);
+        gl.disable(gl.DEPTH_TEST);
+        gl.depthMask(false);
+
         this.starBuffer.bind();
         gl.drawArrays(gl.POINTS, 0, this.starCount);
     }
 
     /**
-     * Delegates context loss handling to WebGLContextManager.
+     * Context loss callback invoked when WebGL context is lost.
      */
     public onContextLost(): void {
         this.gl = null;
-        this.contextManager.handleContextLost();
     }
 
     /**
-     * Delegates automated 2-phase context restoration to WebGLContextManager.
+     * Context restoration callback invoked after WebGLContextManager restores GPU resources.
      */
     public onContextRestored(
         gl: WebGL2RenderingContext,
         dims: CanvasDimensions
     ): void {
         this.gl = gl;
-        this.contextManager.handleContextRestored(gl);
         this.uploadStaticUniforms();
         this.updateProjection(gl, dims);
     }

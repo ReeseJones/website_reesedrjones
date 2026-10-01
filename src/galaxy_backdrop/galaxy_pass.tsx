@@ -27,7 +27,7 @@ export function GalaxyPass(props: GalaxyPassProps): null {
     useWebGLPass({
         priority,
         init: (gl, dims) => {
-            const renderer = new GalaxyRenderer(activeParams, contextManager);
+            const renderer = new GalaxyRenderer(contextManager, activeParams);
             renderer.init(gl, dims);
             rendererRef.current = renderer;
         },

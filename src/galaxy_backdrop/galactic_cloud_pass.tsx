@@ -27,7 +27,7 @@ export function GalacticCloudPass(props: GalacticCloudPassProps): null {
     useWebGLPass({
         priority,
         init: (gl, dims) => {
-            const renderer = new GalacticCloudRenderer(activeParams, contextManager);
+            const renderer = new GalacticCloudRenderer(contextManager, activeParams);
             renderer.init(gl, dims);
             rendererRef.current = renderer;
         },
