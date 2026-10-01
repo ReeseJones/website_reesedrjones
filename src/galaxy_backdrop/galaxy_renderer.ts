@@ -24,41 +24,28 @@ import {
     GALAXY_PINPRICK_VERTEX_SHADER,
 } from "./galaxy_shaders";
 import { CanvasDimensions, TimeInfo } from "../components/webgl_canvas/types";
+import { STAR_VERTEX_LAYOUT, GALAXY_UNIFORM_DECLARATIONS } from "./galaxy_layout";
+import { ShaderProgram } from "../webgl/shader_program";
+import { VertexBuffer } from "../webgl/vertex_buffer";
+import { WebGLContextManager } from "../webgl/context_manager";
 
 /**
  * Pure WebGL2 rendering engine for the 3D spiral galaxy simulation.
- * Manages GPU buffers, VAO setup, GLSL ES 3.00 shader programs, camera matrix calculations,
- * and point sprite drawing passes. Context lifecycle and DOM execution are managed by WebGLCanvas.
+ * Decoupled domain renderer focusing on transform matrix computations, particle parameters,
+ * and draw call issuance. GPU shader compilation and buffer memory management are delegated
+ * to WebGLContextManager via Dependency Injection.
  */
 export class GalaxyRenderer {
     private gl: WebGL2RenderingContext | null = null;
-    private program: WebGLProgram | null = null;
-    private vao: WebGLVertexArrayObject | null = null;
-    private vbo: WebGLBuffer | null = null;
+    private contextManager: WebGLContextManager;
+
+    private pinprickShader: ShaderProgram | null = null;
+    private orbShader: ShaderProgram | null = null;
+    private activeShader: ShaderProgram | null = null;
+    private starBuffer: VertexBuffer | null = null;
 
     private params: GalaxyParameters;
     private starCount: number;
-
-    // Uniform Locations
-    private uViewProjLoc: WebGLUniformLocation | null = null;
-    private uModelViewLoc: WebGLUniformLocation | null = null;
-    private uTimeLoc: WebGLUniformLocation | null = null;
-    private uRotationSpeedLoc: WebGLUniformLocation | null = null;
-    private uDifferentialSpeedLoc: WebGLUniformLocation | null = null;
-    private uDriftSpeedLoc: WebGLUniformLocation | null = null;
-    private uDriftAmplitudeLoc: WebGLUniformLocation | null = null;
-    private uPointScaleLoc: WebGLUniformLocation | null = null;
-    private uMinPointSizeLoc: WebGLUniformLocation | null = null;
-    private uMaxPointSizeLoc: WebGLUniformLocation | null = null;
-    private uViewportHeightLoc: WebGLUniformLocation | null = null;
-    private uNearFadeDistLoc: WebGLUniformLocation | null = null;
-
-    private uCoreColorLoc: WebGLUniformLocation | null = null;
-    private uCoreBlazeColorLoc: WebGLUniformLocation | null = null;
-    private uArmInnerColorLoc: WebGLUniformLocation | null = null;
-    private uArmOuterColorLoc: WebGLUniformLocation | null = null;
-    private uAccentColorLoc: WebGLUniformLocation | null = null;
-    private uCoreGlowBoostLoc: WebGLUniformLocation | null = null;
 
     // Cached Transformation Matrices
     private projMatrix = createMat4();
@@ -73,7 +60,10 @@ export class GalaxyRenderer {
 
     private isDestroyed = false;
 
-    constructor(customParams?: Partial<GalaxyParameters>) {
+    constructor(
+        customParams?: Partial<GalaxyParameters>,
+        contextManager?: WebGLContextManager
+    ) {
         const isMobile =
             typeof window !== "undefined" &&
             (window.innerWidth < 768 ||
@@ -85,33 +75,43 @@ export class GalaxyRenderer {
             ...customParams,
         };
         this.starCount = this.params.starCount;
+        this.contextManager = contextManager ?? new WebGLContextManager();
     }
 
     /**
-     * Initializes shader programs, VAO/VBO buffers, and blending modes with the provided WebGL2 context.
+     * Initializes rendering dependencies and GPU buffers using WebGLContextManager.
      */
     public init(gl: WebGL2RenderingContext, dims: CanvasDimensions): boolean {
         this.gl = gl;
         this.isDestroyed = false;
+        this.contextManager.setContext(gl);
 
-        const vertSource =
-            this.params.style === "orb"
-                ? GALAXY_ORB_VERTEX_SHADER
-                : GALAXY_PINPRICK_VERTEX_SHADER;
-        const fragSource =
-            this.params.style === "orb"
-                ? GALAXY_ORB_FRAGMENT_SHADER
-                : GALAXY_PINPRICK_FRAGMENT_SHADER;
+        // Retrieve persistent ShaderProgram instances from ContextManager
+        this.pinprickShader = this.contextManager.getOrCreateShader("galaxy_pinprick", {
+            vertSource: GALAXY_PINPRICK_VERTEX_SHADER,
+            fragSource: GALAXY_PINPRICK_FRAGMENT_SHADER,
+            declaredUniforms: GALAXY_UNIFORM_DECLARATIONS,
+            label: "GalaxyPinprickShader",
+        });
 
-        const program = this.createProgram(gl, vertSource, fragSource);
-        if (!program) {
-            return false;
+        this.orbShader = this.contextManager.getOrCreateShader("galaxy_orb", {
+            vertSource: GALAXY_ORB_VERTEX_SHADER,
+            fragSource: GALAXY_ORB_FRAGMENT_SHADER,
+            declaredUniforms: GALAXY_UNIFORM_DECLARATIONS,
+            label: "GalaxyOrbShader",
+        });
+
+        this.activeShader =
+            this.params.style === "orb" ? this.orbShader : this.pinprickShader;
+        this.activeShader.use();
+
+        // Request managed VertexBuffer resource
+        if (!this.starBuffer) {
+            this.starBuffer = this.contextManager.createVertexBuffer(STAR_VERTEX_LAYOUT);
         }
-        this.program = program;
-        gl.useProgram(program);
+        this.starBuffer.setData(generateStarBuffer(this.params));
 
-        this.cacheUniformLocations(gl, program);
-        this.initializeStarBuffers(gl);
+        this.uploadStaticUniforms();
 
         gl.enable(gl.BLEND);
         gl.blendFunc(gl.ONE, gl.ONE);
@@ -122,6 +122,27 @@ export class GalaxyRenderer {
         this.updateProjection(gl, dims);
 
         return true;
+    }
+
+    public uploadStaticUniforms(): void {
+        if (!this.activeShader) return;
+        this.activeShader.use();
+
+        this.activeShader.setFloat("u_rotationSpeed", this.params.rotationSpeed);
+        this.activeShader.setFloat("u_differentialSpeed", this.params.differentialSpeed);
+        this.activeShader.setFloat("u_driftSpeed", this.params.driftSpeed);
+        this.activeShader.setFloat("u_driftAmplitude", this.params.driftAmplitude);
+        this.activeShader.setFloat("u_pointScale", this.params.pointScale);
+        this.activeShader.setFloat("u_minPointSize", this.params.minPointSize);
+        this.activeShader.setFloat("u_maxPointSize", this.params.maxPointSize);
+        this.activeShader.setFloat("u_nearFadeDistance", this.params.nearFadeDistance);
+
+        this.activeShader.setVec3("u_coreColor", this.params.coreColor);
+        this.activeShader.setVec3("u_coreBlazeColor", this.params.coreBlazeColor);
+        this.activeShader.setVec3("u_armInnerColor", this.params.armInnerColor);
+        this.activeShader.setVec3("u_armOuterColor", this.params.armOuterColor);
+        this.activeShader.setVec3("u_accentColor", this.params.accentColor);
+        this.activeShader.setFloat("u_coreGlowBoost", this.params.coreGlowBoost);
     }
 
     /**
@@ -140,7 +161,7 @@ export class GalaxyRenderer {
         timeInfo: TimeInfo,
         dims: CanvasDimensions
     ): void {
-        if (!gl || !this.program || !this.vao || this.isDestroyed) return;
+        if (!gl || !this.activeShader || !this.starBuffer || this.isDestroyed) return;
 
         this.updateInputs(timeInfo.dt);
 
@@ -191,37 +212,38 @@ export class GalaxyRenderer {
         );
 
         // 3. Upload Dynamic Frame Uniforms
-        gl.useProgram(this.program);
-        gl.uniformMatrix4fv(this.uViewProjLoc, false, this.viewProjMatrix);
-        gl.uniformMatrix4fv(this.uModelViewLoc, false, this.modelViewMatrix);
-        gl.uniform1f(this.uTimeLoc, timeInfo.time);
-        gl.uniform1f(this.uViewportHeightLoc, height);
+        this.activeShader.use();
+        this.activeShader.setMat4("u_viewProjectionMatrix", this.viewProjMatrix);
+        this.activeShader.setMat4("u_modelViewMatrix", this.modelViewMatrix);
+        this.activeShader.setFloat("u_time", timeInfo.time);
+        this.activeShader.setFloat("u_viewportHeight", height);
 
         // 4. Draw Stars with Additive Blending
         gl.enable(gl.BLEND);
         gl.blendFunc(gl.ONE, gl.ONE);
-        gl.bindVertexArray(this.vao);
+        this.starBuffer.bind();
         gl.drawArrays(gl.POINTS, 0, this.starCount);
     }
 
     /**
-     * Clears GL object references on WebGL context loss.
+     * Delegates context loss handling to WebGLContextManager.
      */
     public onContextLost(): void {
         this.gl = null;
-        this.program = null;
-        this.vao = null;
-        this.vbo = null;
+        this.contextManager.handleContextLost();
     }
 
     /**
-     * Re-initializes GPU resources when WebGL context is restored.
+     * Delegates automated 2-phase context restoration to WebGLContextManager.
      */
     public onContextRestored(
         gl: WebGL2RenderingContext,
         dims: CanvasDimensions
     ): void {
-        this.init(gl, dims);
+        this.gl = gl;
+        this.contextManager.handleContextRestored(gl);
+        this.uploadStaticUniforms();
+        this.updateProjection(gl, dims);
     }
 
     /**
@@ -242,25 +264,13 @@ export class GalaxyRenderer {
         this.params.coreGlowBoost = defaults.coreGlowBoost;
         this.params.nearFadeDistance = defaults.nearFadeDistance;
 
-        const gl = this.gl;
-        const vertSource =
-            style === "orb"
-                ? GALAXY_ORB_VERTEX_SHADER
-                : GALAXY_PINPRICK_VERTEX_SHADER;
-        const fragSource =
-            style === "orb"
-                ? GALAXY_ORB_FRAGMENT_SHADER
-                : GALAXY_PINPRICK_FRAGMENT_SHADER;
+        this.activeShader =
+            style === "orb" ? this.orbShader : this.pinprickShader;
 
-        const newProgram = this.createProgram(gl, vertSource, fragSource);
-        if (!newProgram) return;
-
-        if (this.program) {
-            gl.deleteProgram(this.program);
+        if (this.activeShader) {
+            this.activeShader.use();
+            this.uploadStaticUniforms();
         }
-        this.program = newProgram;
-        gl.useProgram(newProgram);
-        this.cacheUniformLocations(gl, newProgram);
     }
 
     public getStyle(): StarRenderStyle {
@@ -314,12 +324,29 @@ export class GalaxyRenderer {
         this.isDestroyed = true;
         this.detachEventListeners();
 
-        if (this.gl) {
-            if (this.vbo) this.gl.deleteBuffer(this.vbo);
-            if (this.vao) this.gl.deleteVertexArray(this.vao);
-            if (this.program) this.gl.deleteProgram(this.program);
-            this.gl = null;
+        if (this.starBuffer) {
+            this.contextManager.releaseVertexBuffer(this.starBuffer);
+            this.starBuffer = null;
         }
+
+        if (this.pinprickShader) {
+            this.contextManager.releaseShader("galaxy_pinprick");
+            this.pinprickShader = null;
+        }
+        if (this.orbShader) {
+            this.contextManager.releaseShader("galaxy_orb");
+            this.orbShader = null;
+        }
+        this.activeShader = null;
+
+        this.gl = null;
+    }
+
+    private rebuildStarBuffer(): void {
+        if (!this.gl || !this.starBuffer) return;
+        this.starCount = this.params.starCount;
+        const starData = generateStarBuffer(this.params);
+        this.starBuffer.setData(starData);
     }
 
     private updateInputs(dt: number): void {
@@ -328,238 +355,6 @@ export class GalaxyRenderer {
             (this.targetPitchOffset - this.currentPitchOffset) * decay;
         this.currentYawOffset +=
             (this.targetYawOffset - this.currentYawOffset) * decay;
-    }
-
-    private cacheUniformLocations(
-        gl: WebGL2RenderingContext,
-        program: WebGLProgram
-    ): void {
-        this.uViewProjLoc = gl.getUniformLocation(program, "u_viewProjectionMatrix");
-        this.uModelViewLoc = gl.getUniformLocation(program, "u_modelViewMatrix");
-        this.uTimeLoc = gl.getUniformLocation(program, "u_time");
-        this.uRotationSpeedLoc = gl.getUniformLocation(program, "u_rotationSpeed");
-        this.uDifferentialSpeedLoc = gl.getUniformLocation(
-            program,
-            "u_differentialSpeed"
-        );
-        this.uDriftSpeedLoc = gl.getUniformLocation(program, "u_driftSpeed");
-        this.uDriftAmplitudeLoc = gl.getUniformLocation(
-            program,
-            "u_driftAmplitude"
-        );
-        this.uPointScaleLoc = gl.getUniformLocation(program, "u_pointScale");
-        this.uMinPointSizeLoc = gl.getUniformLocation(program, "u_minPointSize");
-        this.uMaxPointSizeLoc = gl.getUniformLocation(program, "u_maxPointSize");
-        this.uViewportHeightLoc = gl.getUniformLocation(
-            program,
-            "u_viewportHeight"
-        );
-        this.uNearFadeDistLoc = gl.getUniformLocation(
-            program,
-            "u_nearFadeDistance"
-        );
-
-        this.uCoreColorLoc = gl.getUniformLocation(program, "u_coreColor");
-        this.uCoreBlazeColorLoc = gl.getUniformLocation(
-            program,
-            "u_coreBlazeColor"
-        );
-        this.uArmInnerColorLoc = gl.getUniformLocation(program, "u_armInnerColor");
-        this.uArmOuterColorLoc = gl.getUniformLocation(program, "u_armOuterColor");
-        this.uAccentColorLoc = gl.getUniformLocation(program, "u_accentColor");
-        this.uCoreGlowBoostLoc = gl.getUniformLocation(
-            program,
-            "u_coreGlowBoost"
-        );
-
-        this.uploadStaticUniforms();
-    }
-
-    private uploadStaticUniforms(): void {
-        const gl = this.gl;
-        if (!gl || !this.program) return;
-
-        gl.useProgram(this.program);
-
-        // Upload static scalar parameters
-        if (this.uRotationSpeedLoc) {
-            gl.uniform1f(this.uRotationSpeedLoc, this.params.rotationSpeed);
-        }
-        if (this.uDifferentialSpeedLoc) {
-            gl.uniform1f(this.uDifferentialSpeedLoc, this.params.differentialSpeed);
-        }
-        if (this.uDriftSpeedLoc) {
-            gl.uniform1f(this.uDriftSpeedLoc, this.params.driftSpeed);
-        }
-        if (this.uDriftAmplitudeLoc) {
-            gl.uniform1f(this.uDriftAmplitudeLoc, this.params.driftAmplitude);
-        }
-        if (this.uPointScaleLoc) {
-            gl.uniform1f(this.uPointScaleLoc, this.params.pointScale);
-        }
-        if (this.uMinPointSizeLoc) {
-            gl.uniform1f(this.uMinPointSizeLoc, this.params.minPointSize);
-        }
-        if (this.uMaxPointSizeLoc) {
-            gl.uniform1f(this.uMaxPointSizeLoc, this.params.maxPointSize);
-        }
-        if (this.uNearFadeDistLoc) {
-            gl.uniform1f(this.uNearFadeDistLoc, this.params.nearFadeDistance);
-        }
-
-        // Upload color parameters
-        if (this.uCoreColorLoc) {
-            gl.uniform3fv(this.uCoreColorLoc, this.params.coreColor);
-        }
-        if (this.uCoreBlazeColorLoc) {
-            gl.uniform3fv(this.uCoreBlazeColorLoc, this.params.coreBlazeColor);
-        }
-        if (this.uArmInnerColorLoc) {
-            gl.uniform3fv(this.uArmInnerColorLoc, this.params.armInnerColor);
-        }
-        if (this.uArmOuterColorLoc) {
-            gl.uniform3fv(this.uArmOuterColorLoc, this.params.armOuterColor);
-        }
-        if (this.uAccentColorLoc) {
-            gl.uniform3fv(this.uAccentColorLoc, this.params.accentColor);
-        }
-        if (this.uCoreGlowBoostLoc) {
-            gl.uniform1f(this.uCoreGlowBoostLoc, this.params.coreGlowBoost);
-        }
-    }
-
-    private rebuildStarBuffer(): void {
-        if (!this.gl || !this.vbo) return;
-        const gl = this.gl;
-        this.starCount = this.params.starCount;
-        const starData = generateStarBuffer(this.params);
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.vbo);
-        gl.bufferData(gl.ARRAY_BUFFER, starData, gl.STATIC_DRAW);
-        gl.bindBuffer(gl.ARRAY_BUFFER, null);
-    }
-
-    private initializeStarBuffers(gl: WebGL2RenderingContext): void {
-        const starData = generateStarBuffer(this.params);
-
-        this.vao = gl.createVertexArray();
-        this.vbo = gl.createBuffer();
-
-        gl.bindVertexArray(this.vao);
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.vbo);
-        gl.bufferData(gl.ARRAY_BUFFER, starData, gl.STATIC_DRAW);
-
-        const stride = 6 * Float32Array.BYTES_PER_ELEMENT;
-
-        gl.enableVertexAttribArray(0);
-        gl.vertexAttribPointer(0, 1, gl.FLOAT, false, stride, 0);
-
-        gl.enableVertexAttribArray(1);
-        gl.vertexAttribPointer(
-            1,
-            1,
-            gl.FLOAT,
-            false,
-            stride,
-            1 * Float32Array.BYTES_PER_ELEMENT
-        );
-
-        gl.enableVertexAttribArray(2);
-        gl.vertexAttribPointer(
-            2,
-            1,
-            gl.FLOAT,
-            false,
-            stride,
-            2 * Float32Array.BYTES_PER_ELEMENT
-        );
-
-        gl.enableVertexAttribArray(3);
-        gl.vertexAttribPointer(
-            3,
-            1,
-            gl.FLOAT,
-            false,
-            stride,
-            3 * Float32Array.BYTES_PER_ELEMENT
-        );
-
-        gl.enableVertexAttribArray(4);
-        gl.vertexAttribPointer(
-            4,
-            1,
-            gl.FLOAT,
-            false,
-            stride,
-            4 * Float32Array.BYTES_PER_ELEMENT
-        );
-
-        gl.enableVertexAttribArray(5);
-        gl.vertexAttribPointer(
-            5,
-            1,
-            gl.FLOAT,
-            false,
-            stride,
-            5 * Float32Array.BYTES_PER_ELEMENT
-        );
-
-        gl.bindVertexArray(null);
-    }
-
-    private createProgram(
-        gl: WebGL2RenderingContext,
-        vsSource: string,
-        fsSource: string
-    ): WebGLProgram | null {
-        const vs = this.compileShader(gl, gl.VERTEX_SHADER, vsSource);
-        const fs = this.compileShader(gl, gl.FRAGMENT_SHADER, fsSource);
-        if (!vs || !fs) return null;
-
-        const program = gl.createProgram();
-        if (!program) return null;
-
-        gl.attachShader(program, vs);
-        gl.attachShader(program, fs);
-        gl.linkProgram(program);
-
-        gl.deleteShader(vs);
-        gl.deleteShader(fs);
-
-        if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-            console.error(
-                "Unable to link WebGL2 program:",
-                gl.getProgramInfoLog(program)
-            );
-            gl.deleteProgram(program);
-            return null;
-        }
-
-        return program;
-    }
-
-    private compileShader(
-        gl: WebGL2RenderingContext,
-        type: number,
-        source: string
-    ): WebGLShader | null {
-        const shader = gl.createShader(type);
-        if (!shader) return null;
-
-        gl.shaderSource(shader, source);
-        gl.compileShader(shader);
-
-        if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-            console.error(
-                `Shader compilation error (${
-                    type === gl.VERTEX_SHADER ? "VERTEX" : "FRAGMENT"
-                }):`,
-                gl.getShaderInfoLog(shader)
-            );
-            gl.deleteShader(shader);
-            return null;
-        }
-
-        return shader;
     }
 
     private onPointerMove = (e: PointerEvent): void => {

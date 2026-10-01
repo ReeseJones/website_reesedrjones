@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useWebGLPass } from "../components/webgl_canvas/use_webgl_pass";
+import { useWebGLContext } from "../components/webgl_canvas/webgl_context";
 import { GalaxyRenderer } from "./galaxy_renderer";
 import { GalaxyParameters } from "./parameters/index";
 import { GalaxyController } from "./use_galaxy_controller";
@@ -19,13 +20,14 @@ export interface GalaxyPassProps {
 export function GalaxyPass(props: GalaxyPassProps): null {
     const { controller, params: rawParams, priority = 0 } = props;
     const activeParams = controller?.params ?? rawParams;
+    const { contextManager } = useWebGLContext();
 
     const rendererRef = useRef<GalaxyRenderer | null>(null);
 
     useWebGLPass({
         priority,
         init: (gl, dims) => {
-            const renderer = new GalaxyRenderer(activeParams);
+            const renderer = new GalaxyRenderer(activeParams, contextManager);
             renderer.init(gl, dims);
             rendererRef.current = renderer;
         },
