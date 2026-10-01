@@ -1,4 +1,4 @@
-import { GalaxyParameters } from "./galaxy_parameters";
+import { GalaxyParameters } from "./parameters/types";
 import { randomGaussian } from "../maths/random";
 
 /**

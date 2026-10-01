@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useGalaxy } from "./galaxy_context";
-import { GALAXY_PRESETS, GalaxyParameters } from "./galaxy_parameters";
+import { GALAXY_PRESETS } from "./parameters/index";
 import { GearIcon } from "../components/icons/gear_icon";
 import { SliderRow } from "../components/slider_row/slider_row";
 import { ColorItem } from "../components/color_item/color_item";

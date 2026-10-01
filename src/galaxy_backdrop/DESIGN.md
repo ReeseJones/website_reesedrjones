@@ -16,7 +16,7 @@
 This feature is isolated in its own dedicated directory to maintain modularity:
 
 *   [DESIGN.md](DESIGN.md) — Architecture and design documentation.
-*   [galaxy_parameters.ts](galaxy_parameters.ts) — Tunable parameters, style presets, and configuration types.
+*   [parameters/index.ts](parameters/index.ts) — Tunable parameters, style presets assembly, and configuration types ([parameters/types.ts](parameters/types.ts)).
 *   [galaxy_math.ts](galaxy_math.ts) — Procedural stellar distribution generator for galactic core and logarithmic spiral arms.
 *   [../maths/matrix.ts](../maths/matrix.ts) — Column-major 4x4 transformation matrices, perspective projection, and Euler rotation utilities.
 *   [../maths/random.ts](../maths/random.ts) — Box-Muller Gaussian sampling and random distribution utilities.
@@ -161,7 +161,7 @@ For each frame at time $t$:
     *   Provide factory reset and one-click JSON export to facilitate committing tuned presets to code.
 *   **State & Storage Policy (CRITICAL):**
     *   **No Versioned Keys:** Do NOT make new versioned keys for `localStorage` settings just keep clobbering.
-    *   **Updating Defaults:** When changing defaults, modify `DEFAULT_ORB_PARAMETERS` or `DEFAULT_PINPRICK_PARAMETERS` directly in [galaxy_parameters.ts](galaxy_parameters.ts).
+    *   **Updating Defaults:** When changing defaults, modify `DEFAULT_ORB_PARAMETERS` or `DEFAULT_PINPRICK_PARAMETERS` directly in [parameters/presets/orb.ts](parameters/presets/orb.ts) or [parameters/presets/pinprick.ts](parameters/presets/pinprick.ts).
 *   **Update Architecture & Procedures:**
     *   **Uniform Updates:** Parameter changes affecting camera vantage (`centerOffsetX`, `centerOffsetY`, `pitchAngle`, `yawAngle`, `rollAngle`, `cameraDistance`, `fov`), velocities (`rotationSpeed`, `differentialSpeed`, `driftSpeed`), and particle scaling (`pointScale`, `minPointSize`, `maxPointSize`, `nearFadeDistance`) are uploaded to WebGL uniforms on each animation tick with zero reallocation.
     *   **Color Uniforms:** Color vector alterations (`coreColor`, `coreBlazeColor`, `armInnerColor`, `armOuterColor`, `accentColor`, `coreGlowBoost`) execute immediate GPU uniform uploads via `uploadColorUniforms()`.

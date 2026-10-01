@@ -11,7 +11,7 @@ import {
     GALAXY_PRESETS,
     GalaxyParameters,
     MOBILE_GALAXY_PARAMETERS,
-} from "./galaxy_parameters";
+} from "./parameters/index";
 import { GalaxyRenderer } from "./galaxy_renderer";
 
 const STORAGE_KEY = "galaxy_backdrop_parameters";

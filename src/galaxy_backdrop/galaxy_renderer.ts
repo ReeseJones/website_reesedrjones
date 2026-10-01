@@ -5,7 +5,7 @@ import {
     GalaxyParameters,
     MOBILE_GALAXY_PARAMETERS,
     StarRenderStyle,
-} from "./galaxy_parameters";
+} from "./parameters/index";
 import { generateStarBuffer } from "./galaxy_math";
 import {
     createMat4,
