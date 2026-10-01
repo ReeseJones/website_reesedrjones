@@ -1,4 +1,4 @@
-import { GalaxyParameters, GalaxyPreset } from "./types";
+import { GalacticCloudParameters, GalaxyParameters, GalaxyPreset } from "./types";
 import { DEFAULT_ORB_PARAMETERS, orbPreset } from "./presets/orb";
 import { DEFAULT_PINPRICK_PARAMETERS, pinprickPreset } from "./presets/pinprick";
 import { denseCorePreset } from "./presets/dense_core";
@@ -6,7 +6,7 @@ import { deepNebulaPreset } from "./presets/deep_nebula";
 import { slowMajesticPreset } from "./presets/slow_majestic";
 import { MOBILE_GALAXY_PARAMETERS } from "./mobile";
 
-export type { StarRenderStyle, GalaxyParameters, GalaxyPreset } from "./types";
+export type { StarRenderStyle, GalacticCloudParameters, GalaxyParameters, GalaxyPreset } from "./types";
 
 export {
     DEFAULT_ORB_PARAMETERS,

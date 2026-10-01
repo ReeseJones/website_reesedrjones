@@ -1,6 +1,33 @@
 export type StarRenderStyle = "pinprick" | "orb";
 
-export interface GalaxyParameters {
+export interface GalacticCloudParameters {
+    /** Whether the background cloud/horizon pass is active */
+    cloudEnabled: boolean;
+    /** Density threshold and contrast multiplier for background nebula gas */
+    cloudDensity: number;
+    /** Spatial scale/frequency of procedural cloud noise */
+    cloudScale: number;
+    /** Speed multiplier for slow background gas animation drift */
+    cloudSpeed: number;
+    /** Parallax scale factor relative to camera pitch/yaw offset (0.0 to 1.0) */
+    cloudParallaxFactor: number;
+    /** Brightness intensity of the infinite horizon line band */
+    horizonIntensity: number;
+    /** Vertical spread/thickness of the celestial horizon glow */
+    horizonThickness: number;
+    /** RGB triplet for the central equator horizon line */
+    horizonColorCenter: [number, number, number];
+    /** RGB triplet for the outer horizon atmospheric band */
+    horizonColorOuter: [number, number, number];
+    /** Legacy RGB triplet for backward compatibility */
+    horizonColor?: [number, number, number];
+    /** RGB triplet for dense inner nebula clouds */
+    cloudColorPrimary: [number, number, number];
+    /** RGB triplet for outer diffuse dust clouds */
+    cloudColorSecondary: [number, number, number];
+}
+
+export interface GalaxyParameters extends GalacticCloudParameters {
     // Render Style ("pinprick" = crystalline micro-points, "orb" = soft volumetric bokeh discs)
     style: StarRenderStyle;
 
@@ -62,3 +89,4 @@ export interface GalaxyPreset {
     name: string;
     params: Partial<GalaxyParameters>;
 }
+

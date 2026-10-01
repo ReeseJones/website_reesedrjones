@@ -1,6 +1,18 @@
 import { GalaxyParameters, GalaxyPreset } from "../types";
 
 export const DEFAULT_ORB_PARAMETERS: GalaxyParameters = {
+    cloudEnabled: true,
+    cloudDensity: 0.65,
+    cloudScale: 1.8,
+    cloudSpeed: 0.05,
+    cloudParallaxFactor: 0.25,
+    horizonIntensity: 0.85,
+    horizonThickness: 0.22,
+    horizonColorCenter: [1.0, 0.84, 0.66],
+    horizonColorOuter: [0.15, 0.25, 0.85],
+    horizonColor: [0.15, 0.45, 0.95],
+    cloudColorPrimary: [0.12, 0.22, 0.55],
+    cloudColorSecondary: [0.35, 0.12, 0.48],
     style: "orb",
     centerOffsetX: 4.2,
     centerOffsetY: 1.6,
