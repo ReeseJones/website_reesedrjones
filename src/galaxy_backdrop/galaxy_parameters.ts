@@ -59,56 +59,41 @@ export interface GalaxyParameters {
 
 export const DEFAULT_ORB_PARAMETERS: GalaxyParameters = {
     style: "orb",
-    // Position: Center offset to top-right quadrant so it doesn't collide with page content
-    centerOffsetX: 6.0,
-    centerOffsetY: 3.5,
-
-    // Stellar Population: 5 spiral arms with spur bridges
-    starCount: 300000,
-    armCount: 5,
-    armWinding: 0.55,       // Logarithmic pitch factor
-    armDispersion: 0.28,    // Cloud thickness around arms
-    spurFrequency: 0.22,    // Minor spur bridges between arms
-    coreRadius: 1.8,        // Compact, dense nuclear core
-    diskRadius: 16.0,       // Broad stellar disk
-    diskThickness: 1.1,     // Flared scale height
-    coreDensityRatio: 0.18, // Reduced from 0.35 to 0.18: core is delicate and airy, letting arms shine
-
-    // Colors: Warm celestial amber, toned down to be gentle as a background
-    coreColor: [1.0, 0.80, 0.50],        // Warm golden peach
-    coreBlazeColor: [1.0, 0.88, 0.68],   // Soft champagne amber (toned down from blazing white)
-    armInnerColor: [0.12, 0.82, 1.0],    // Electric cyan
-    armOuterColor: [0.06, 0.38, 0.98],   // Cobalt blue
-    accentColor: [0.65, 0.22, 0.92],     // Deep interstellar violet
-
-    // Luminosity & Discs
-    minPointSize: 1.2,
-    maxPointSize: 96.0,     // Dramatic large soft glowing discs for foreground flybys
-    pointScale: 42.0,
-    coreGlowBoost: 1.25,    // Toned down from 2.8 to 1.25 for a gentle background presence
-
-    // Dynamics: slow, majestic rotation with subtle differential spin
-    rotationSpeed: -0.045,     // Rad/sec (~140s per full rotation)
-    differentialSpeed: 0.015,  // Inner regions slightly lead outer arms
-    driftSpeed: 0.18,          // Micro-turbulence
+    centerOffsetX: 4.2,
+    centerOffsetY: 1.6,
+    starCount: 220000,
+    armCount: 4,
+    armWinding: 0.4,
+    armDispersion: 0.21,
+    spurFrequency: 0.28,
+    coreRadius: 2.2,
+    diskRadius: 30,
+    diskThickness: 0.5,
+    coreDensityRatio: 0.29,
+    coreColor: [1, 0.996, 0.984],
+    coreBlazeColor: [1, 0.69, 0.69],
+    armInnerColor: [0.945, 0.471, 0.471],
+    armOuterColor: [0.06, 0.38, 0.98],
+    accentColor: [0.65, 0.22, 0.92],
+    minPointSize: 3,
+    maxPointSize: 5,
+    pointScale: 3,
+    coreGlowBoost: 0.5,
+    rotationSpeed: -0.045,
+    differentialSpeed: 0,
+    driftSpeed: 0.08,
     driftAmplitude: 0.14,
-
-    // 3D Perspective & Orientation (8-degree ultra-shallow canted askew view)
-    pitchAngle: 0.140,         // ~8 degrees tilt (arms sweep right into camera)
-    yawAngle: 0.16,            // ~9 degrees askew azimuth
-    rollAngle: 0.05,           // ~3 degrees cant
-    cameraDistance: 15.4,      // Vantage point
-    fov: 65.0,                 // Wide angle for cinematic depth
+    pitchAngle: 0.24,
+    yawAngle: 0.14,
+    rollAngle: 0.3,
+    cameraDistance: 10.5,
+    fov: 36,
     nearPlane: 0.06,
-    farPlane: 75.0,
-    nearFadeDistance: 2.2,     // Smooth dissolve as stars sweep within 2.2 units of lens
-
-    // Input responsiveness
-    mouseSensitivity: 0.35,
+    farPlane: 75,
+    nearFadeDistance: 4.9,
+    mouseSensitivity: 0.05,
     gyroSensitivity: 0.5,
-    inputDamping: 4.5,         // Smooth exponential lerp
-
-    // Retina / 4K safeguard
+    inputDamping: 4.5,
     dprCap: 1.5,
 };
 
@@ -152,8 +137,8 @@ export const DEFAULT_PINPRICK_PARAMETERS: GalaxyParameters = {
     dprCap: 1.5,
 };
 
-// Default active parameters (pin-prick experiment active by default)
-export const DEFAULT_GALAXY_PARAMETERS: GalaxyParameters = DEFAULT_PINPRICK_PARAMETERS;
+// Default active parameters (volumetric orb style active by default)
+export const DEFAULT_GALAXY_PARAMETERS: GalaxyParameters = DEFAULT_ORB_PARAMETERS;
 
 export const MOBILE_GALAXY_PARAMETERS: Partial<GalaxyParameters> = {
     starCount: 110000,
@@ -172,14 +157,14 @@ export interface GalaxyPreset {
 
 export const GALAXY_PRESETS: GalaxyPreset[] = [
     {
-        id: "pinprick_default",
-        name: "Pin-prick Crystalline (Default)",
-        params: DEFAULT_PINPRICK_PARAMETERS,
+        id: "orb_default",
+        name: "Volumetric Orb (Default)",
+        params: DEFAULT_ORB_PARAMETERS,
     },
     {
-        id: "orb_bokeh",
-        name: "Volumetric Orb Bokeh",
-        params: DEFAULT_ORB_PARAMETERS,
+        id: "pinprick",
+        name: "Pin-prick Crystalline",
+        params: DEFAULT_PINPRICK_PARAMETERS,
     },
     {
         id: "dense_core",

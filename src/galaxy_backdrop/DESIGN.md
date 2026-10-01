@@ -154,8 +154,10 @@ For each frame at time $t$:
     *   Eliminate the need to rebuild the project whenever tweaking visual, physical, or color parameters.
     *   Expose a gear icon menu trigger inside the main navigation bar (`Navbar`).
     *   Allow live adjustments to take effect on the backdrop in real-time at 60–120 FPS.
-    *   Persist user adjustments across browser sessions using `localStorage`.
     *   Provide factory reset and one-click JSON export to facilitate committing tuned presets to code.
+*   **State & Storage Policy (CRITICAL):**
+    *   **No Versioned Keys:** Do NOT make new versioned keys for `localStorage` settings just keep clobbering.
+    *   **Updating Defaults:** When changing defaults, modify `DEFAULT_ORB_PARAMETERS` or `DEFAULT_PINPRICK_PARAMETERS` directly in [galaxy_parameters.ts](galaxy_parameters.ts).
 *   **Update Architecture & Procedures:**
     *   **Uniform Updates:** Parameter changes affecting camera vantage (`centerOffsetX`, `centerOffsetY`, `pitchAngle`, `yawAngle`, `rollAngle`, `cameraDistance`, `fov`), velocities (`rotationSpeed`, `differentialSpeed`, `driftSpeed`), and particle scaling (`pointScale`, `minPointSize`, `maxPointSize`, `nearFadeDistance`) are uploaded to WebGL uniforms on each animation tick with zero reallocation.
     *   **Color Uniforms:** Color vector alterations (`coreColor`, `coreBlazeColor`, `armInnerColor`, `armOuterColor`, `accentColor`, `coreGlowBoost`) execute immediate GPU uniform uploads via `uploadColorUniforms()`.
@@ -165,4 +167,3 @@ For each frame at time $t$:
     *   On desktop viewports, the gear icon appears at the end of the horizontal navbar with hover rotation.
     *   On mobile drawer viewports, the trigger presents with a descriptive label alongside site navigation links.
     *   Categorized accordion sections (`<details>`) allow quick navigation between Render Style, Camera & Perspective, Stellar Population, Colors, Particle Sizes, and Motion Dynamics.
-
