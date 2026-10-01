@@ -144,9 +144,6 @@ export class GalaxyRenderer {
 
         this.updateInputs(timeInfo.dt);
 
-        gl.clearColor(0.0, 0.0, 0.0, 0.0);
-        gl.clear(gl.COLOR_BUFFER_BIT);
-
         const width = dims.width;
         const height = dims.height;
         const aspect = dims.aspect;
@@ -200,7 +197,9 @@ export class GalaxyRenderer {
         gl.uniform1f(this.uTimeLoc, timeInfo.time);
         gl.uniform1f(this.uViewportHeightLoc, height);
 
-        // 4. Draw Stars
+        // 4. Draw Stars with Additive Blending
+        gl.enable(gl.BLEND);
+        gl.blendFunc(gl.ONE, gl.ONE);
         gl.bindVertexArray(this.vao);
         gl.drawArrays(gl.POINTS, 0, this.starCount);
     }
