@@ -1,6 +1,5 @@
 import "../styles.scss";
 import { useState, ReactNode, useCallback } from "react";
-import { createPortal } from "react-dom";
 import { Footer } from "../components/footer";
 import { Header } from "../components/header";
 import { useGalaxyController } from "../galaxy_backdrop/use_galaxy_controller";
@@ -26,20 +25,10 @@ export const Layout = (props: LayoutProps) => {
     const [deviceSize, setDeviceSize] = useState(DeviceSize.Mobile);
 
     const handleResize = useCallback((size: Dimensions) => {
-        const { width } = size;
-        if (width > 600) {
-            setDeviceSize(DeviceSize.Desktop);
-        } else {
-            setDeviceSize(DeviceSize.Mobile);
-        }
+        setDeviceSize(size.width > 600 ? DeviceSize.Desktop : DeviceSize.Mobile);
     }, []);
 
     const setObserveTarget = useResizeCallbackRef(handleResize);
-
-    const setRootContainer = useCallback((container: HTMLDivElement | null) => {
-        backdropGalaxy.containerRef(container);
-        setObserveTarget(container);
-    }, [backdropGalaxy, setObserveTarget]);
 
     const classMap = classNameMap({
         "anim-background": true,
@@ -47,7 +36,27 @@ export const Layout = (props: LayoutProps) => {
     });
 
     return (
-        <div className={classMap} ref={setRootContainer}>
+        <div className={classMap} ref={setObserveTarget}>
+            <WebGLCanvas
+                options={{
+                    version: "webgl2",
+                    dprCap: backdropGalaxy.params.dprCap ?? 1.5,
+                    pauseWhenOffscreen: true,
+                    pauseWhenHidden: true,
+                }}
+                className="hero-effect"
+                style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    width: "100%",
+                    height: "100%",
+                    pointerEvents: "none",
+                }}
+            >
+                <GalaxyPass controller={backdropGalaxy} />
+            </WebGLCanvas>
+
             <Header onOpenSettings={() => setIsSettingsOpen(true)} />
             <div className="scroll-region">
                 <div className="content">
@@ -55,30 +64,6 @@ export const Layout = (props: LayoutProps) => {
                 </div>
                 <Footer />
             </div>
-
-            {backdropGalaxy.container &&
-                createPortal(
-                    <WebGLCanvas
-                        options={{
-                            version: "webgl2",
-                            dprCap: backdropGalaxy.params.dprCap ?? 1.5,
-                            pauseWhenOffscreen: true,
-                            pauseWhenHidden: true,
-                        }}
-                        className="hero-effect"
-                        style={{
-                            position: "absolute",
-                            top: 0,
-                            left: 0,
-                            width: "100%",
-                            height: "100%",
-                            pointerEvents: "none",
-                        }}
-                    >
-                        <GalaxyPass controller={backdropGalaxy} />
-                    </WebGLCanvas>,
-                    backdropGalaxy.container
-                )}
 
             <GalaxySettingsDialog
                 isOpen={isSettingsOpen}

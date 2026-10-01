@@ -26,12 +26,6 @@ export interface GalaxyController {
     applyPreset: (presetId: string) => void;
     /** Currently active preset ID, or "custom" if parameters diverged */
     currentPresetId: string;
-    /** Callback ref to attach to the container element hosting the WebGL canvas */
-    containerRef: (node: HTMLElement | null) => void;
-    /** Connected container element node */
-    container: HTMLElement | null;
-    /** Whether the container is connected and ready for WebGL rendering */
-    isReady: boolean;
 }
 
 function getInitialParameters(
@@ -64,7 +58,7 @@ function getInitialParameters(
 }
 
 /**
- * Encapsulated hook managing parameters, persistence, presets, and container attachment
+ * Encapsulated hook managing parameter state, localStorage persistence, and preset switching
  * for an independent 3D galaxy simulation instance.
  */
 export function useGalaxyController(
@@ -77,16 +71,6 @@ export function useGalaxyController(
     );
     const paramsRef = useRef<GalaxyParameters>(params);
     paramsRef.current = params;
-
-    const [container, setContainer] = useState<HTMLElement | null>(null);
-
-    const containerRef = useCallback((node: HTMLElement | null) => {
-        if (node && node.isConnected) {
-            setContainer(node);
-        } else {
-            setContainer(null);
-        }
-    }, []);
 
     const updateParameters = useCallback(
         (partial: Partial<GalaxyParameters>) => {
@@ -158,8 +142,5 @@ export function useGalaxyController(
         resetParameters,
         applyPreset,
         currentPresetId,
-        containerRef,
-        container,
-        isReady: Boolean(container),
     };
 }
