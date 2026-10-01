@@ -16,6 +16,7 @@
 This feature is isolated in its own dedicated directory to maintain modularity:
 
 *   [DESIGN.md](DESIGN.md) — Architecture and design documentation.
+*   [galaxy_controller_design.md](galaxy_controller_design.md) — Design specification for the encapsulated hook-based Galaxy Controller and multi-galaxy architecture.
 *   [parameters/index.ts](parameters/index.ts) — Tunable parameters, style presets assembly, and configuration types ([parameters/types.ts](parameters/types.ts)).
 *   [galaxy_math.ts](galaxy_math.ts) — Procedural stellar distribution generator for galactic core and logarithmic spiral arms.
 *   [../maths/matrix.ts](../maths/matrix.ts) — Column-major 4x4 transformation matrices, perspective projection, and Euler rotation utilities.
