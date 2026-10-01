@@ -22,5 +22,6 @@
 - **Design Docs:** Should use minimal code, but should feature the API, Types, Interfaces and design goals, as well as steps algorithms and procedures.
 - **Barrel Files:** Do not make them.
 - **Markdown Links:** All markdown links within repository files (docs, design documents, AGENTS.md, etc.) must be repository-relative or file-relative (e.g., `[wrangler.jsonc](wrangler.jsonc)`), never local filesystem absolute paths (`file:///...`). This ensures links resolve properly on GitHub.
-- **Project Guidelines:** Check [src/project_guidelines/](src/project_guidelines/) for guidelines relevant to a given task (e.g., [css_guidelines.md](src/project_guidelines/css_guidelines.md) for CSS/SCSS styling rules and architectural intent) and read them before making changes.
+- **Project Guidelines:** Check [src/project_guidelines/](src/project_guidelines/) for guidelines relevant to a given task (e.g., [css_guidelines.md](src/project_guidelines/css_guidelines.md) for CSS rules, [git_guidelines.md](src/project_guidelines/git_guidelines.md) for Git/branch workflow) and read them before making changes.
+- **Develop on Staging:** Always perform active development, feature edits, and initial commits on the `staging` branch. Never edit or commit directly on `main`. Only merge `staging` into `main` when ready for production release.
 - **Clarification & Code Edits:** When the user asks a question or inquires about optimizations/refactoring, answer the question first and ask for user confirmation before modifying the codebase.
