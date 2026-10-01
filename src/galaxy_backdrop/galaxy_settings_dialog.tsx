@@ -1,6 +1,7 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useState } from "react";
 import { useGalaxy } from "./galaxy_context";
 import { GALAXY_PRESETS } from "./parameters/index";
+import { Dialog } from "../components/dialog/dialog";
 import { GearIcon } from "../components/icons/gear_icon";
 import { SliderRow } from "../components/slider_row/slider_row";
 import { ColorItem } from "../components/color_item/color_item";
@@ -17,23 +18,7 @@ export function GalaxySettingsDialog() {
         closeSettings,
     } = useGalaxy();
 
-    const dialogRef = useRef<HTMLDialogElement>(null);
     const [copied, setCopied] = useState(false);
-
-    useEffect(() => {
-        const dialog = dialogRef.current;
-        if (!dialog) return;
-
-        if (isSettingsOpen) {
-            if (!dialog.open) {
-                dialog.showModal();
-            }
-        } else {
-            if (dialog.open) {
-                dialog.close();
-            }
-        }
-    }, [isSettingsOpen]);
 
     const handleCopyJson = useCallback(() => {
         navigator.clipboard.writeText(JSON.stringify(params, null, 2));
@@ -42,16 +27,12 @@ export function GalaxySettingsDialog() {
     }, [params]);
 
     return (
-        <dialog
-            ref={dialogRef}
-            className="galaxy-settings-dialog"
+        <Dialog
+            isOpen={isSettingsOpen}
             onClose={closeSettings}
             onClick={closeSettings}
+            className="galaxy-settings-dialog"
         >
-            <div
-                className="dialog-content"
-                onClick={(e) => e.stopPropagation()}
-            >
                 {/* Header */}
                 <div className="header-row">
                     <h3 className="header-title">
@@ -478,7 +459,6 @@ export function GalaxySettingsDialog() {
                         </div>
                     </details>
                 </div>
-            </div>
-        </dialog>
+        </Dialog>
     );
 }

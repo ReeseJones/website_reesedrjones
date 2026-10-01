@@ -1,7 +1,7 @@
 import "./hamburger_menu.scss";
 
 import {useId, useState} from "react";
-import { Dialog } from "./dialog";
+import { Dialog } from "./dialog/dialog";
 
 
 export interface HamburgerMenuProps extends React.ComponentPropsWithoutRef<'div'> {
