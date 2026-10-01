@@ -23,8 +23,8 @@ This feature is isolated in its own dedicated directory to maintain modularity:
 *   [galaxy_shaders.ts](galaxy_shaders.ts) — GLSL ES 3.00 vertex and fragment shader sources for both pin-prick and orb rendering modes.
 *   [galaxy_renderer.ts](galaxy_renderer.ts) — Core WebGL2 engine managing buffers, shader program lifecycle, uniform state, input smoothing, and the animation loop.
 *   [galaxy_context.tsx](galaxy_context.tsx) — Ambient React context provider and hook (`useGalaxy`) managing reactive parameters, dialog visibility, and canvas lifecycle.
-*   [galaxy_settings_dialog.tsx](galaxy_settings_dialog.tsx) — Interactive settings dialog component providing categorized real-time sliders, color pickers, preset selection, JSON export, and reset functionality.
-*   [galaxy_settings_dialog.scss](galaxy_settings_dialog.scss) — Dialog styling following low-specificity CSS rules and shared theme tokens.
+*   [galaxy_settings_dialog/galaxy_settings_dialog.tsx](galaxy_settings_dialog/galaxy_settings_dialog.tsx) — Interactive settings dialog component composed of modular section components for real-time sliders, color pickers, preset selection, JSON export, and reset functionality ([galaxy_settings_dialog/design.md](galaxy_settings_dialog/design.md)).
+*   [galaxy_settings_dialog/galaxy_settings_dialog.scss](galaxy_settings_dialog/galaxy_settings_dialog.scss) — Dialog styling following low-specificity CSS rules and shared theme tokens.
 *   [../components/slider_row/design.md](../components/slider_row/design.md) — Reusable labeled numeric slider control component.
 *   [../components/color_item/design.md](../components/color_item/design.md) — Reusable color picker swatch and hex readout component.
 *   [../components/icons/gear_icon.tsx](../components/icons/gear_icon.tsx) — SVG gear icon trigger rendered inside the main navbar.
