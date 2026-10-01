@@ -33,3 +33,24 @@ declare module "*.mdx" {
     const fileName: string;
     export = fileName;
 }
+
+declare module "bundle-text:*" {
+    const content: string;
+    export default content;
+}
+
+declare module "*.vert" {
+    const content: string;
+    export default content;
+}
+
+declare module "*.frag" {
+    const content: string;
+    export default content;
+}
+
+declare module "*.glsl" {
+    const content: string;
+    export default content;
+}
+

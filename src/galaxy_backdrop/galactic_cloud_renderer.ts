@@ -120,14 +120,13 @@ export class GalacticCloudRenderer {
             this.isStaticUniformsDirty = false;
         }
 
-        // 3. Single Draw Call (Fullscreen Quad)
+        // 3. Draw Fullscreen Quad
         gl.disable(gl.DEPTH_TEST);
         gl.depthMask(false);
         gl.enable(gl.BLEND);
         gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-        // Note per WebGL Guidelines: bindVertexArray(null) is intentionally omitted at end of frame
     }
 
     public updateParameters(newParams: Partial<GalaxyParameters>): void {

@@ -19,6 +19,7 @@
   },
   "devDependencies": {
     "@parcel/resolver-glob": "^2.16.4",
+    "@parcel/transformer-glsl": "^2.16.4",
     "@parcel/transformer-sass": "^2.16.4",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
