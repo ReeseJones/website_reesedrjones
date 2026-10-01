@@ -5,6 +5,7 @@ import { QUAD_VERTEX_LAYOUT, GALACTIC_CLOUD_UNIFORM_DECLARATIONS } from "./galac
 import { ShaderProgram } from "../webgl/shader_program";
 import { VertexBuffer } from "../webgl/vertex_buffer";
 import { WebGLContextManager } from "../webgl/context_manager";
+import { OrientationInputController } from "./orientation_input";
 
 /**
  * Pure WebGL2 rendering engine for the Celestial Horizon background pass.
@@ -24,6 +25,7 @@ export class GalacticCloudRenderer {
     private currentPitchOffset = 0;
     private targetYawOffset = 0;
     private currentYawOffset = 0;
+    private orientationController: OrientationInputController;
 
     private isDestroyed = false;
 
@@ -40,6 +42,13 @@ export class GalacticCloudRenderer {
             ...(isMobile ? MOBILE_GALAXY_PARAMETERS : {}),
             ...customParams,
         };
+
+        this.orientationController = new OrientationInputController({
+            onUpdate: (pitch, yaw) => {
+                this.targetPitchOffset = pitch;
+                this.targetYawOffset = yaw;
+            },
+        });
     }
 
     public init(gl: WebGL2RenderingContext, dims: CanvasDimensions): boolean {
@@ -180,39 +189,11 @@ export class GalacticCloudRenderer {
         this.currentYawOffset += (this.targetYawOffset - this.currentYawOffset) * factor;
     }
 
-    private onPointerMove = (e: PointerEvent): void => {
-        const x = (e.clientX / window.innerWidth) * 2.0 - 1.0;
-        const y = (e.clientY / window.innerHeight) * 2.0 - 1.0;
-
-        this.targetYawOffset = x * 0.5;
-        this.targetPitchOffset = -y * 0.4;
-    };
-
-    private onDeviceOrientation = (e: DeviceOrientationEvent): void => {
-        if (e.beta === null || e.gamma === null) return;
-
-        const normalizedBeta = Math.max(-1.0, Math.min(1.0, (e.beta - 45.0) / 35.0));
-        const normalizedGamma = Math.max(-1.0, Math.min(1.0, e.gamma / 35.0));
-
-        this.targetPitchOffset = -normalizedBeta * 0.45;
-        this.targetYawOffset = normalizedGamma * 0.55;
-    };
-
     private attachEventListeners(): void {
-        if (typeof window === "undefined") return;
-
-        window.addEventListener("pointermove", this.onPointerMove, { passive: true });
-        if (window.DeviceOrientationEvent) {
-            window.addEventListener("deviceorientation", this.onDeviceOrientation, { passive: true });
-        }
+        this.orientationController.attach();
     }
 
     private detachEventListeners(): void {
-        if (typeof window === "undefined") return;
-
-        window.removeEventListener("pointermove", this.onPointerMove);
-        if (window.DeviceOrientationEvent) {
-            window.removeEventListener("deviceorientation", this.onDeviceOrientation);
-        }
+        this.orientationController.detach();
     }
 }
