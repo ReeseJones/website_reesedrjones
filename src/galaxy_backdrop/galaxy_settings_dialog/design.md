@@ -11,7 +11,7 @@ Design specification for the `GalaxySettingsDialog` interactive configuration si
 - **Context Provider:** [../galaxy_context.tsx](../galaxy_context.tsx)
 - **Parameters & Presets:** [../parameters/index.ts](../parameters/index.ts)
 - **Design Document:** [design.md](./design.md)
-- **System Architecture:** [../DESIGN.md](../DESIGN.md)
+- **System Architecture:** [../galaxy_backdrop_design.md](../galaxy_backdrop_design.md)
 
 ---
 

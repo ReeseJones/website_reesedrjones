@@ -9,20 +9,22 @@
 *   **Palette:** Brilliant warm golden core transitioning into deep cyan and cobalt blue arms, interspersed with subtle violet dust accents.
 *   **Performance:** Butter-smooth 60–120 FPS on desktop and mobile devices via a single GPU draw call using WebGL2 point primitives (`gl.POINTS`).
 *   **Input Reactivity:** Subtle, smooth parallax response to pointer movement on desktop and device accelerometer tilt (`DeviceOrientation`) on mobile.
-*   **Clean Architecture:** Zero external dependencies. Self-contained TypeScript + GLSL ES 3.00 implementation that replaces the PixiJS starfield without introducing heavyweight 3D engine overhead.
+*   **Clean Architecture:** Zero external dependencies. Self-contained TypeScript + GLSL ES 3.00 implementation integrated with the reusable [`<WebGLCanvas />`](../components/webgl_canvas/webgl_canvas.tsx) host and [`useWebGLPass`](../components/webgl_canvas/use_webgl_pass.ts) subscriber pipeline.
+
+---
 
 ## 2. Directory & Module Structure
 
 This feature is isolated in its own dedicated directory to maintain modularity:
 
-*   [DESIGN.md](DESIGN.md) — Architecture and design documentation.
+*   [galaxy_backdrop_design.md](galaxy_backdrop_design.md) — Architecture and design documentation.
 *   [galaxy_controller_design.md](galaxy_controller_design.md) — Design specification for the encapsulated hook-based Galaxy Controller and multi-galaxy architecture.
 *   [parameters/index.ts](parameters/index.ts) — Tunable parameters, style presets assembly, and configuration types ([parameters/types.ts](parameters/types.ts)).
 *   [galaxy_math.ts](galaxy_math.ts) — Procedural stellar distribution generator for galactic core and logarithmic spiral arms.
 *   [../maths/matrix.ts](../maths/matrix.ts) — Column-major 4x4 transformation matrices, perspective projection, and Euler rotation utilities.
 *   [../maths/random.ts](../maths/random.ts) — Box-Muller Gaussian sampling and random distribution utilities.
 *   [galaxy_shaders.ts](galaxy_shaders.ts) — GLSL ES 3.00 vertex and fragment shader sources for both pin-prick and orb rendering modes.
-*   [galaxy_renderer.ts](galaxy_renderer.ts) — Core WebGL2 engine managing buffers, shader program lifecycle, uniform state, input smoothing, and the animation loop.
+*   [galaxy_renderer.ts](galaxy_renderer.ts) — Core WebGL2 engine managing buffers, shader program lifecycle, uniform state, and point sprite rasterization.
 *   [galaxy_context.tsx](galaxy_context.tsx) — Ambient React context provider and hook (`useGalaxy`) managing reactive parameters, dialog visibility, and canvas lifecycle.
 *   [galaxy_settings_dialog/galaxy_settings_dialog.tsx](galaxy_settings_dialog/galaxy_settings_dialog.tsx) — Interactive settings dialog component composed of modular section components for real-time sliders, color pickers, preset selection, JSON export, and reset functionality ([galaxy_settings_dialog/design.md](galaxy_settings_dialog/design.md)).
 *   [galaxy_settings_dialog/galaxy_settings_dialog.scss](galaxy_settings_dialog/galaxy_settings_dialog.scss) — Dialog styling following low-specificity CSS rules and shared theme tokens.
@@ -32,7 +34,31 @@ This feature is isolated in its own dedicated directory to maintain modularity:
 *   [../helpers/colors.ts](../helpers/colors.ts) — Color conversion utilities (hex to normalized RGB and vice-versa).
 *   [../hooks/use_galaxy_backdrop.tsx](../hooks/use_galaxy_backdrop.tsx) — React hook managing canvas lifecycle, container attachment, and resize observation.
 
-## 3. Types and Interfaces
+---
+
+## 3. WebGL Canvas & Subscriber Pipeline Integration
+
+```
+                    <WebGLCanvas> (Host & Context Manager)
+                                      │
+                                      ├── Scoped WebGL Context
+                                      │
+              ┌───────────────────────┴───────────────────────┐
+              ▼                                               ▼
+      <GalaxyPass />                                  <ForegroundOverlays />
+   (Priority: 0 - BG)                              (Priority: 10 - HUD)
+   • Pure WebGL2 Draw Engine                       • Subscribed via useWebGLFrame
+   • Subscribed via useWebGLPass
+```
+
+### Delegation of Responsibilities
+*   **[`<WebGLCanvas />`](../components/webgl_canvas/webgl_canvas.tsx):** Hosts the `<canvas>` DOM element, handles DPR-capped buffer allocation (`dprCap`), manages context loss/recovery, throttles off-screen rendering via `IntersectionObserver` / `visibilityState`, and drives the single continuous `requestAnimationFrame` loop.
+*   **[`GalaxyRenderer`](galaxy_renderer.ts):** Acts as a pure drawing pass. It receives an existing `WebGL2RenderingContext` instance and `CanvasDimensions` rather than creating its own context or managing DOM event listeners.
+*   **`<GalaxyPass />`:** Renderless React pass component living inside [`<WebGLCanvas />`](../components/webgl_canvas/webgl_canvas.tsx). Registers [`GalaxyRenderer`](galaxy_renderer.ts)'s lifecycle callbacks (`init`, `render`, `resize`, `onContextLost`, `onContextRestored`, `destroy`) via [`useWebGLPass`](../components/webgl_canvas/use_webgl_pass.ts).
+
+---
+
+## 4. Types and Interfaces
 
 ### Configuration Parameters (`GalaxyParameters`)
 
@@ -89,7 +115,9 @@ Each star is stored in a single contiguous `Float32Array` VBO using 6 floats per
 *   `a_spectralType` (Float32): Color population blend index (0.0 = core golden, 0.5 = cyan, 0.8 = cobalt, 1.0 = violet).
 *   `a_driftPhase` (Float32): Randomized time phase for individual stellar drift.
 
-## 4. Mathematical Modeling & Procedures
+---
+
+## 5. Mathematical Modeling & Procedures
 
 ### Stellar Distribution Algorithm
 
@@ -131,27 +159,31 @@ For each frame at time $t$:
     *   Points scale by $1 / \text{dist}$ up to 96.0px, expanding into large soft glowing discs.
     *   Fragment profile blends a wide outer halo with a luminous center.
 
-## 5. Input Handling Procedure
+---
 
-*   **Pointer Interaction:**
-    *   Capture normalized pointer coordinates $(x, y) \in [-1, 1]$.
-    *   In the animation tick, interpolate current target rotation toward target pointer offset using exponential decay:
-        $$\text{current} += (\text{target} - \text{current}) \cdot (1 - e^{-\lambda \cdot \Delta t})$$
-*   **Mobile Gyroscope Tilt:**
-    *   Listen to `deviceorientation` events for `beta` (pitch) and `gamma` (roll).
-    *   Clamp and map values to normalized offsets in $[-1, 1]$.
-    *   Smooth via the same damping pipeline.
+## 6. Lifecycle & Integration Procedures
 
-## 6. Lifecycle & Integration
+### Procedure 1: Pass Mounting & Initialization
+1.  `<WebGLCanvas />` mounts in the React DOM, creates the `<canvas>` element, and acquires the `WebGL2RenderingContext`.
+2.  `<WebGLCanvas />` calculates backing store resolution based on bounding box and `dprCap`.
+3.  `<GalaxyPass />` calls `useWebGLPass()`, registering subscriber callbacks into [`<WebGLCanvas />`](../components/webgl_canvas/webgl_canvas.tsx)'s queue.
+4.  [`<WebGLCanvas />`](../components/webgl_canvas/webgl_canvas.tsx) invokes `subscriber.init(gl, dims)`:
+    *   `GalaxyRenderer.init()` compiles vertex and fragment shaders ([galaxy_shaders.ts](galaxy_shaders.ts)).
+    *   Generates stellar procedural coordinates ([galaxy_math.ts](galaxy_math.ts)).
+    *   Uploads initial Float32Array VBO and configures VAO bindings.
+    *   Enables additive alpha blending (`gl.blendFunc(gl.ONE, gl.ONE)`).
 
-*   **Mounting:**
-    *   The React hook initializes the WebGL2 context onto a full-screen canvas element with CSS class `.hero-effect` placed behind page content.
-*   **Style Switching:**
-    *   `GalaxyRenderer.setStyle("pinprick" | "orb")` allows hot-swapping the active shader program and tuning uniforms at runtime.
-*   **Pause on Inactive Tab:**
-    *   Listen to `document.visibilityState` to halt `requestAnimationFrame` when the user switches tabs, minimizing battery consumption.
-*   **Clean Teardown:**
-    *   On React unmount, detach input listeners, release VBO buffers, delete shader programs, and destroy the WebGL2 context.
+### Procedure 2: Context Loss & Restoration Protocol
+1.  Browser emits `webglcontextlost` on `<canvas>`.
+2.  [`<WebGLCanvas />`](../components/webgl_canvas/webgl_canvas.tsx) calls `event.preventDefault()` and halts `requestAnimationFrame`.
+3.  [`<WebGLCanvas />`](../components/webgl_canvas/webgl_canvas.tsx) notifies subscribers via `onContextLost()`:
+    *   `GalaxyRenderer` clears internal `gl`, `program`, `vao`, and `vbo` references.
+4.  Browser emits `webglcontextrestored`.
+5.  [`<WebGLCanvas />`](../components/webgl_canvas/webgl_canvas.tsx) notifies subscribers via `onContextRestored(gl, dims)`:
+    *   `GalaxyRenderer` re-compiles shader programs and re-allocates VBO buffers.
+6.  [`<WebGLCanvas />`](../components/webgl_canvas/webgl_canvas.tsx) resets animation clock and resumes the frame loop.
+
+---
 
 ## 7. Dynamic Parameter Tuning & Settings Dialog
 
@@ -167,8 +199,3 @@ For each frame at time $t$:
     *   **Uniform Updates:** Parameter changes affecting camera vantage (`centerOffsetX`, `centerOffsetY`, `pitchAngle`, `yawAngle`, `rollAngle`, `cameraDistance`, `fov`), velocities (`rotationSpeed`, `differentialSpeed`, `driftSpeed`), and particle scaling (`pointScale`, `minPointSize`, `maxPointSize`, `nearFadeDistance`) are uploaded to WebGL uniforms on each animation tick with zero reallocation.
     *   **Color Uniforms:** Color vector alterations (`coreColor`, `coreBlazeColor`, `armInnerColor`, `armOuterColor`, `accentColor`, `coreGlowBoost`) execute immediate GPU uniform uploads via `uploadColorUniforms()`.
     *   **Geometry Regeneration:** When structural parameters change (`starCount`, `armCount`, `armWinding`, `armDispersion`, `spurFrequency`, `coreRadius`, `diskRadius`, `diskThickness`, `coreDensityRatio`), `generateStarBuffer()` regenerates the vertex array and re-populates the existing GPU `Float32Array` VBO via `rebuildStarBuffer()`, maintaining the VAO configuration without tearing down the WebGL context.
-*   **User Interface & Accessibility:**
-    *   The dialog uses native `<dialog>` modal semantics with focus trapping and backdrop dismissal.
-    *   On desktop viewports, the gear icon appears at the end of the horizontal navbar with hover rotation.
-    *   On mobile drawer viewports, the trigger presents with a descriptive label alongside site navigation links.
-    *   Categorized accordion sections (`<details>`) allow quick navigation between Render Style, Camera & Perspective, Stellar Population, Colors, Particle Sizes, and Motion Dynamics.
