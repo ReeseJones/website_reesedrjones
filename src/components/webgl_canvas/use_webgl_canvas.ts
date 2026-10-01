@@ -12,6 +12,8 @@ const DEFAULT_OPTIONS: Required<WebGLContextOptions> = {
     renderMode: "continuous",
     pauseWhenOffscreen: true,
     pauseWhenHidden: true,
+    autoClear: true,
+    clearColor: [0, 0, 0, 0],
     attributes: {
         alpha: true,
         antialias: false,
@@ -119,6 +121,12 @@ export function useWebGLCanvas(config?: UseWebGLCanvasOptions) {
             dt,
             frameCount: frameCountRef.current,
         };
+
+        if (options.autoClear) {
+            const cc = options.clearColor;
+            gl.clearColor(cc[0], cc[1], cc[2], cc[3]);
+            gl.clear(gl.COLOR_BUFFER_BIT);
+        }
 
         const sorted = Array.from(subscribersRef.current.values()).sort(
             (a, b) => a.priority - b.priority

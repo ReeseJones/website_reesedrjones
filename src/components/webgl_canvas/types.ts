@@ -59,6 +59,10 @@ export interface WebGLContextOptions {
     pauseWhenOffscreen?: boolean;
     /** Automatically pause the render loop when the browser tab is hidden. Defaults to true. */
     pauseWhenHidden?: boolean;
+    /** Automatically clear the color buffer before executing passes every frame. Defaults to true. */
+    autoClear?: boolean;
+    /** Clear color RGBA tuple (0.0 to 1.0) used when autoClear is enabled. Defaults to [0, 0, 0, 0]. */
+    clearColor?: [number, number, number, number];
 }
 
 export interface WebGLCanvasContextValue {
