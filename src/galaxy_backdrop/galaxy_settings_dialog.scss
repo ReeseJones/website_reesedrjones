@@ -189,34 +189,6 @@
         }
     }
 
-    .control-row {
-        display: flex;
-        flex-direction: column;
-        gap: 0.35rem;
-
-        > .label-container {
-            display: flex;
-            justify-content: space-between;
-            font-size: 0.85rem;
-
-            > .control-label {
-                color: #ccc;
-            }
-
-            > .control-value {
-                color: shared.$font-highlight-color;
-                font-family: monospace;
-                font-size: 0.85rem;
-            }
-        }
-
-        > .slider-input {
-            width: 100%;
-            accent-color: shared.$font-highlight-color;
-            cursor: pointer;
-            height: 6px;
-        }
-    }
 
     .style-toggle-row {
         display: flex;
@@ -251,48 +223,5 @@
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
         gap: 0.75rem;
-    }
-
-    .color-item {
-        display: flex;
-        flex-direction: column;
-        gap: 0.35rem;
-
-        > .color-label {
-            font-size: 0.8rem;
-            color: #ccc;
-        }
-
-        > .color-input-wrapper {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-
-            > .color-swatch {
-                -webkit-appearance: none;
-                border: 1px solid rgba(255, 255, 255, 0.2);
-                border-radius: 4px;
-                width: 32px;
-                height: 28px;
-                cursor: pointer;
-                background: transparent;
-                padding: 0;
-
-                &::-webkit-color-swatch-wrapper {
-                    padding: 0;
-                }
-
-                &::-webkit-color-swatch {
-                    border: none;
-                    border-radius: 3px;
-                }
-            }
-
-            > .color-hex {
-                font-family: monospace;
-                font-size: 0.8rem;
-                color: #aaa;
-            }
-        }
     }
 }

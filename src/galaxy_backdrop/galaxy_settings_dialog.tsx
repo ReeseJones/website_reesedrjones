@@ -1,78 +1,10 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useGalaxy } from "./galaxy_context";
 import { GALAXY_PRESETS, GalaxyParameters } from "./galaxy_parameters";
-import { hexToRgb, rgbToHex } from "../helpers/colors";
 import { GearIcon } from "../components/icons/gear_icon";
+import { SliderRow } from "../components/slider_row/slider_row";
+import { ColorItem } from "../components/color_item/color_item";
 import "./galaxy_settings_dialog.scss";
-
-interface SliderRowProps {
-    label: string;
-    value: number;
-    min: number;
-    max: number;
-    step: number;
-    unit?: string;
-    displayDecimals?: number;
-    onChange: (val: number) => void;
-}
-
-function SliderRow({
-    label,
-    value,
-    min,
-    max,
-    step,
-    unit = "",
-    displayDecimals = 2,
-    onChange,
-}: SliderRowProps) {
-    const formatted =
-        step >= 1
-            ? `${Math.round(value).toLocaleString()}${unit}`
-            : `${value.toFixed(displayDecimals)}${unit}`;
-
-    return (
-        <div className="control-row">
-            <div className="label-container">
-                <span className="control-label">{label}</span>
-                <span className="control-value">{formatted}</span>
-            </div>
-            <input
-                type="range"
-                className="slider-input"
-                min={min}
-                max={max}
-                step={step}
-                value={value}
-                onChange={(e) => onChange(parseFloat(e.target.value))}
-            />
-        </div>
-    );
-}
-
-interface ColorItemProps {
-    label: string;
-    rgb: [number, number, number];
-    onChange: (rgb: [number, number, number]) => void;
-}
-
-function ColorItem({ label, rgb, onChange }: ColorItemProps) {
-    const hex = rgbToHex(rgb);
-    return (
-        <div className="color-item">
-            <span className="color-label">{label}</span>
-            <div className="color-input-wrapper">
-                <input
-                    type="color"
-                    className="color-swatch"
-                    value={hex}
-                    onChange={(e) => onChange(hexToRgb(e.target.value))}
-                />
-                <span className="color-hex">{hex.toUpperCase()}</span>
-            </div>
-        </div>
-    );
-}
 
 export function GalaxySettingsDialog() {
     const {

@@ -1,0 +1,60 @@
+@use "../../shared";
+
+.color-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    box-sizing: border-box;
+
+    > .color-label,
+    > .label {
+        font-size: 0.8rem;
+        color: #ccc;
+    }
+
+    > .color-input-wrapper,
+    > .input-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+
+        > .color-swatch,
+        > .swatch {
+            -webkit-appearance: none;
+            appearance: none;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            width: 32px;
+            height: 28px;
+            cursor: pointer;
+            background: transparent;
+            padding: 0;
+
+            &::-webkit-color-swatch-wrapper {
+                padding: 0;
+            }
+
+            &::-webkit-color-swatch {
+                border: none;
+                border-radius: 3px;
+            }
+
+            &::-moz-color-swatch {
+                border: none;
+                border-radius: 3px;
+            }
+
+            &:focus-visible {
+                outline: 2px solid shared.$font-highlight-color;
+                outline-offset: 2px;
+            }
+        }
+
+        > .color-hex,
+        > .hex {
+            font-family: monospace;
+            font-size: 0.8rem;
+            color: #aaa;
+        }
+    }
+}

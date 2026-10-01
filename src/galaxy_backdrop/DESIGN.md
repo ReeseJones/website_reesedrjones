@@ -23,6 +23,8 @@ This feature is isolated in its own dedicated directory to maintain modularity:
 *   [galaxy_context.tsx](galaxy_context.tsx) — Ambient React context provider and hook (`useGalaxy`) managing reactive parameters, dialog visibility, and canvas lifecycle.
 *   [galaxy_settings_dialog.tsx](galaxy_settings_dialog.tsx) — Interactive settings dialog component providing categorized real-time sliders, color pickers, preset selection, JSON export, and reset functionality.
 *   [galaxy_settings_dialog.scss](galaxy_settings_dialog.scss) — Dialog styling following low-specificity CSS rules and shared theme tokens.
+*   [../components/slider_row/design.md](../components/slider_row/design.md) — Reusable labeled numeric slider control component.
+*   [../components/color_item/design.md](../components/color_item/design.md) — Reusable color picker swatch and hex readout component.
 *   [../components/icons/gear_icon.tsx](../components/icons/gear_icon.tsx) — SVG gear icon trigger rendered inside the main navbar.
 *   [../helpers/colors.ts](../helpers/colors.ts) — Color conversion utilities (hex to normalized RGB and vice-versa).
 *   [../hooks/use_galaxy_backdrop.tsx](../hooks/use_galaxy_backdrop.tsx) — React hook managing canvas lifecycle, container attachment, and resize observation.
