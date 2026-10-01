@@ -17,7 +17,9 @@ This feature is isolated in its own dedicated directory to maintain modularity:
 
 *   [DESIGN.md](DESIGN.md) — Architecture and design documentation.
 *   [galaxy_parameters.ts](galaxy_parameters.ts) — Tunable parameters, style presets, and configuration types.
-*   [galaxy_math.ts](galaxy_math.ts) — 3D transformation matrices, perspective projection, and procedural stellar distribution generators.
+*   [galaxy_math.ts](galaxy_math.ts) — Procedural stellar distribution generator for galactic core and logarithmic spiral arms.
+*   [../maths/matrix.ts](../maths/matrix.ts) — Column-major 4x4 transformation matrices, perspective projection, and Euler rotation utilities.
+*   [../maths/random.ts](../maths/random.ts) — Box-Muller Gaussian sampling and random distribution utilities.
 *   [galaxy_shaders.ts](galaxy_shaders.ts) — GLSL ES 3.00 vertex and fragment shader sources for both pin-prick and orb rendering modes.
 *   [galaxy_renderer.ts](galaxy_renderer.ts) — Core WebGL2 engine managing buffers, shader program lifecycle, uniform state, input smoothing, and the animation loop.
 *   [galaxy_context.tsx](galaxy_context.tsx) — Ambient React context provider and hook (`useGalaxy`) managing reactive parameters, dialog visibility, and canvas lifecycle.

@@ -6,9 +6,9 @@ import {
     MOBILE_GALAXY_PARAMETERS,
     StarRenderStyle,
 } from "./galaxy_parameters";
+import { generateStarBuffer } from "./galaxy_math";
 import {
     createMat4,
-    generateStarBuffer,
     mat4Identity,
     mat4Multiply,
     mat4Perspective,
@@ -16,7 +16,7 @@ import {
     mat4RotateY,
     mat4RotateZ,
     mat4Translate,
-} from "./galaxy_math";
+} from "../maths/matrix";
 import {
     GALAXY_FRAGMENT_SHADER,
     GALAXY_ORB_FRAGMENT_SHADER,
