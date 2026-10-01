@@ -10,6 +10,7 @@ import { StellarPopulationSection } from "./stellar_population_section";
 import { ColorsGlowSection } from "./colors_glow_section";
 import { ParticleSizesSection } from "./particle_sizes_section";
 import { MotionDynamicsSection } from "./motion_dynamics_section";
+import { GalacticCloudSection } from "./galactic_cloud_section";
 
 export interface GalaxySettingsDialogProps {
     /** Dialog visibility state */
@@ -115,6 +116,7 @@ export function GalaxySettingsDialog(props: GalaxySettingsDialogProps) {
             <div className="settings-body">
                 <RenderStyleSection params={params} onChange={onChange} />
                 <CameraPerspectiveSection params={params} onChange={onChange} />
+                <GalacticCloudSection params={params} onChange={onChange} />
                 <StellarPopulationSection params={params} onChange={onChange} />
                 <ColorsGlowSection params={params} onChange={onChange} />
                 <ParticleSizesSection params={params} onChange={onChange} />
