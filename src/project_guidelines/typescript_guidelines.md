@@ -34,3 +34,11 @@ Principles, standards, and typing patterns for TypeScript code in this repositor
 - **Interface Augmentation:** Extend global browser types (e.g., `interface Window`) via ambient or module declarations rather than casting `window as any`.
 - **CSS Custom Properties:** In React `style` objects, type CSS variables using template literals (`[name as `--${string}`]: value`) rather than `[name as any]: value`.
 - **React Event Targets:** Type React synthetic events to their concrete DOM node types (e.g., `React.FocusEvent<HTMLElement>`) instead of `React.FocusEvent<any>`.
+
+---
+
+## 5. Separation of Interfaces & Types from Implementations
+- **Dedicated Type Modules:** Separate type interfaces and type declarations into dedicated type files (e.g., `types.ts`, `*_types.ts`) away from class, function, and variable definitions.
+- **Dependency Isolation & Tree-Shaking:** Consumers that only need types for annotations or contracts should never be forced to import runtime implementation code, heavyweight third-party libraries (e.g., PixiJS, WebGL runtime), or module side-effects.
+- **Cycle Prevention:** Splitting interfaces from concrete classes eliminates circular dependency graphs between collaborating components or managers.
+- **No Barrel Files:** Even when types are split into separate files, do not create barrel files (`index.ts` re-exporting types and classes together). Import types directly from their respective type files using `import type { ... } from "./..._types"`.
