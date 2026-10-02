@@ -1,6 +1,10 @@
 /**
  * Centralized orientation & pointer/touch input manager for 3D galaxy backdrop passes.
  * Handles device tilt via DeviceOrientationEvent with iOS requestPermission gating and touch/pointer fallbacks.
+ *
+ * Scoped behavior:
+ * - On desktop devices, device orientation listeners are bypassed completely, preventing Chromium deprecation warnings.
+ * - On mobile devices, device orientation sensor data (or touch gesture fallbacks) are used for camera parallax.
  */
 
 export interface OrientationInputOptions {
@@ -30,19 +34,36 @@ export class OrientationInputController {
         if (typeof window === "undefined") return;
 
         this.detectMobile();
-        this.setupDeviceOrientation();
 
-        // Attach pointermove and touchmove for interactive tracking
+        // Only register orientation sensors on mobile devices to avoid desktop Chrome deprecation logs
+        if (this.isMobile) {
+            this.setupDeviceOrientation();
+            window.addEventListener("touchmove", this.onTouchMove, { passive: true });
+        }
+
+        // Pointermove for mouse tracking on desktop (or fallback when gyro is inactive)
         window.addEventListener("pointermove", this.onPointerMove, { passive: true });
-        window.addEventListener("touchmove", this.onTouchMove, { passive: true });
     }
 
     private setupDeviceOrientation(): void {
         if (typeof window === "undefined") return;
 
         const win = window as any;
-        const DeviceOrientation = win.DeviceOrientationEvent;
 
+        // Try Generic Sensor API first on modern mobile browsers
+        if ("RelativeOrientationSensor" in win || "AbsoluteOrientationSensor" in win) {
+            try {
+                const SensorClass = win.RelativeOrientationSensor || win.AbsoluteOrientationSensor;
+                this.relativeSensor = new SensorClass({ frequency: 60 });
+                this.relativeSensor.addEventListener("reading", this.onSensorReading);
+                this.relativeSensor.addEventListener("error", this.onSensorError);
+                this.relativeSensor.start();
+                return;
+            } catch {}
+        }
+
+        // Fallback to DeviceOrientationEvent
+        const DeviceOrientation = win.DeviceOrientationEvent;
         if (DeviceOrientation) {
             if (typeof DeviceOrientation.requestPermission === "function") {
                 // iOS 13+ requires DeviceOrientationEvent.requestPermission() inside a user gesture
@@ -64,21 +85,12 @@ export class OrientationInputController {
 
                 this.addGestureListeners(handleUserGesture);
             } else {
-                // Android / Standard browsers without permission gating
+                // Android / Standard mobile browsers without permission gating
                 try {
                     window.addEventListener("deviceorientation", this.onDeviceOrientation, { passive: true });
                     window.addEventListener("deviceorientationabsolute" as any, this.onDeviceOrientation, { passive: true });
                 } catch {}
             }
-        } else if ("RelativeOrientationSensor" in win || "AbsoluteOrientationSensor" in win) {
-            // Generic Sensor API fallback
-            try {
-                const SensorClass = win.RelativeOrientationSensor || win.AbsoluteOrientationSensor;
-                this.relativeSensor = new SensorClass({ frequency: 60 });
-                this.relativeSensor.addEventListener("reading", this.onSensorReading);
-                this.relativeSensor.addEventListener("error", this.onSensorError);
-                this.relativeSensor.start();
-            } catch {}
         }
     }
 
@@ -183,3 +195,4 @@ export class OrientationInputController {
         this.permissionRequested = false;
     }
 }
+
