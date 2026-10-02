@@ -7,13 +7,39 @@
  * - On mobile devices, device orientation sensor data (or touch gesture fallbacks) are used for camera parallax.
  */
 
+interface OrientationSensorLike {
+    quaternion?: [number, number, number, number];
+    start(): void;
+    stop(): void;
+    addEventListener(type: string, listener: () => void): void;
+    removeEventListener(type: string, listener: () => void): void;
+}
+
+interface SensorConstructor {
+    new (options?: { frequency?: number }): OrientationSensorLike;
+}
+
+interface SensorWindow extends Window {
+    RelativeOrientationSensor?: SensorConstructor;
+    AbsoluteOrientationSensor?: SensorConstructor;
+    DeviceOrientationEvent?: typeof DeviceOrientationEvent & {
+        requestPermission?: () => Promise<string>;
+    };
+}
+
+declare global {
+    interface WindowEventMap {
+        deviceorientationabsolute: DeviceOrientationEvent;
+    }
+}
+
 export interface OrientationInputOptions {
     onUpdate: (pitchOffset: number, yawOffset: number) => void;
 }
 
 export class OrientationInputController {
     private onUpdate: (pitchOffset: number, yawOffset: number) => void;
-    private relativeSensor: any = null;
+    private relativeSensor: OrientationSensorLike | null = null;
     private isSensorActive = false;
     private isMobile = false;
     private permissionRequested = false;
@@ -48,17 +74,19 @@ export class OrientationInputController {
     private setupDeviceOrientation(): void {
         if (typeof window === "undefined") return;
 
-        const win = window as any;
+        const win = window as unknown as SensorWindow;
 
         // Try Generic Sensor API first on modern mobile browsers
         if ("RelativeOrientationSensor" in win || "AbsoluteOrientationSensor" in win) {
             try {
                 const SensorClass = win.RelativeOrientationSensor || win.AbsoluteOrientationSensor;
-                this.relativeSensor = new SensorClass({ frequency: 60 });
-                this.relativeSensor.addEventListener("reading", this.onSensorReading);
-                this.relativeSensor.addEventListener("error", this.onSensorError);
-                this.relativeSensor.start();
-                return;
+                if (SensorClass) {
+                    this.relativeSensor = new SensorClass({ frequency: 60 });
+                    this.relativeSensor.addEventListener("reading", this.onSensorReading);
+                    this.relativeSensor.addEventListener("error", this.onSensorError);
+                    this.relativeSensor.start();
+                    return;
+                }
             } catch {}
         }
 
@@ -71,7 +99,7 @@ export class OrientationInputController {
                     if (this.permissionRequested) return;
                     this.permissionRequested = true;
 
-                    DeviceOrientation.requestPermission()
+                    DeviceOrientation.requestPermission!()
                         .then((permissionState: string) => {
                             if (permissionState === "granted") {
                                 window.addEventListener("deviceorientation", this.onDeviceOrientation, { passive: true });
@@ -88,7 +116,7 @@ export class OrientationInputController {
                 // Android / Standard mobile browsers without permission gating
                 try {
                     window.addEventListener("deviceorientation", this.onDeviceOrientation, { passive: true });
-                    window.addEventListener("deviceorientationabsolute" as any, this.onDeviceOrientation, { passive: true });
+                    window.addEventListener("deviceorientationabsolute", this.onDeviceOrientation, { passive: true });
                 } catch {}
             }
         }
@@ -188,7 +216,7 @@ export class OrientationInputController {
         }
 
         window.removeEventListener("deviceorientation", this.onDeviceOrientation);
-        window.removeEventListener("deviceorientationabsolute" as any, this.onDeviceOrientation);
+        window.removeEventListener("deviceorientationabsolute", this.onDeviceOrientation);
         window.removeEventListener("pointermove", this.onPointerMove);
         window.removeEventListener("touchmove", this.onTouchMove);
         this.isSensorActive = false;

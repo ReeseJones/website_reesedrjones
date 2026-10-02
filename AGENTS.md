@@ -30,6 +30,7 @@
   - WebGL & shaders: [webgl_guidelines.md](src/project_guidelines/webgl_guidelines.md)
   - CSS & SCSS styling: [css_guidelines.md](src/project_guidelines/css_guidelines.md)
   - HTML & layout: [html_layout_guidelines.md](src/project_guidelines/html_layout_guidelines.md)
+  - TypeScript & typing standards: [typescript_guidelines.md](src/project_guidelines/typescript_guidelines.md)
   - Parcel imports & asset indexing: [using_parcel_guideline.md](src/project_guidelines/using_parcel_guideline.md)
 
 ## Rules

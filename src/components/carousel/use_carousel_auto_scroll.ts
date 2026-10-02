@@ -4,7 +4,7 @@ export interface CarouselPauseProps {
   onMouseEnter: () => void;
   onMouseLeave: () => void;
   onFocus: () => void;
-  onBlur: (e: React.FocusEvent<any>) => void;
+  onBlur: (e: React.FocusEvent<HTMLElement>) => void;
 }
 
 export interface UseCarouselAutoScrollOptions {
@@ -56,7 +56,7 @@ export function useCarouselAutoScroll({
     setIsInternalPaused(true);
   }, []);
 
-  const handleBlur = useCallback((e: React.FocusEvent<any>) => {
+  const handleBlur = useCallback((e: React.FocusEvent<HTMLElement>) => {
     // Only resume if focus leaves the container entirely
     if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
       setIsInternalPaused(false);

@@ -2,7 +2,7 @@ import { ShaderProgram, ShaderProgramOptions } from "./shader_program";
 import { VertexBuffer } from "./vertex_buffer";
 import { VertexLayoutSpec } from "./vertex_layout";
 
-export interface ShaderEntry<TUniforms extends Record<string, any> = Record<string, any>> {
+export interface ShaderEntry<TUniforms extends object = Record<string, unknown>> {
     shader: ShaderProgram<TUniforms>;
     refCount: number;
 }
@@ -15,10 +15,10 @@ export interface ShaderEntry<TUniforms extends Record<string, any> = Record<stri
  */
 export class WebGLContextManager {
     private gl: WebGL2RenderingContext | null = null;
-    private shaderRegistry = new Map<string, ShaderEntry<any>>();
+    private shaderRegistry = new Map<string, ShaderEntry<never>>();
     private activeBuffers = new Set<VertexBuffer>();
     private currentProgram: WebGLProgram | null = null;
-    private currentShader: ShaderProgram<any> | null = null;
+    private currentShader: ShaderProgram<never> | null = null;
 
     constructor(gl?: WebGL2RenderingContext) {
         if (gl) {
@@ -52,7 +52,7 @@ export class WebGLContextManager {
     /**
      * Retrieves the currently active ShaderProgram instance, if any.
      */
-    public getCurrentShader(): ShaderProgram<any> | null {
+    public getCurrentShader(): ShaderProgram<never> | null {
         return this.currentShader;
     }
 
@@ -60,7 +60,7 @@ export class WebGLContextManager {
      * Binds the specified ShaderProgram to the WebGL context and updates tracked state.
      * Skips redundant GPU driver calls if the shader is already active.
      */
-    public useShader(shader: ShaderProgram<any> | null): void {
+    public useShader(shader: ShaderProgram<never> | null): void {
         if (this.currentShader === shader) return;
 
         const program = shader ? shader.getProgram() : null;
@@ -89,7 +89,7 @@ export class WebGLContextManager {
      * Factory & Registry: Retrieves a shared ShaderProgram (incrementing refCount) or
      * compiles and caches a new one (refCount = 1) with strong uniform typing.
      */
-    public getOrCreateShader<TUniforms extends Record<string, any> = Record<string, any>>(
+    public getOrCreateShader<TUniforms extends object = Record<string, unknown>>(
         key: string,
         options: ShaderProgramOptions
     ): ShaderProgram<TUniforms> {
@@ -99,18 +99,18 @@ export class WebGLContextManager {
                 throw new Error(`WebGLContextManager: Cannot create shader '${key}' before context is set.`);
             }
             const shader = new ShaderProgram<TUniforms>(this.gl, options, this);
-            entry = { shader, refCount: 0 };
+            entry = { shader: shader as unknown as ShaderProgram<never>, refCount: 0 };
             this.shaderRegistry.set(key, entry);
         }
         entry.refCount++;
-        return entry.shader as ShaderProgram<TUniforms>;
+        return entry.shader as unknown as ShaderProgram<TUniforms>;
     }
 
     /**
      * Release Pattern: Decrements a ShaderProgram's reference count.
      * When refCount reaches 0 (no renderers are using it), destroys the GPU program and unregisters it.
      */
-    public releaseShader<TUniforms extends Record<string, any> = Record<string, any>>(
+    public releaseShader<TUniforms extends object = Record<string, unknown>>(
         keyOrInstance: string | ShaderProgram<TUniforms>
     ): void {
         let targetKey: string | null = null;
@@ -118,7 +118,7 @@ export class WebGLContextManager {
             targetKey = keyOrInstance;
         } else {
             for (const [k, entry] of this.shaderRegistry.entries()) {
-                if (entry.shader === keyOrInstance) {
+                if ((entry.shader as unknown) === keyOrInstance) {
                     targetKey = k;
                     break;
                 }
@@ -144,7 +144,7 @@ export class WebGLContextManager {
      * Factory Request: Allocates a new managed VertexBuffer tracking VBO and VAO GPU resources.
      * Optionally accepts an associated ShaderProgram or WebGLProgram for dynamic symbol location lookups.
      */
-    public createVertexBuffer<TUniforms extends Record<string, any> = Record<string, any>>(
+    public createVertexBuffer<TUniforms extends object = Record<string, unknown>>(
         layout: VertexLayoutSpec,
         shader?: ShaderProgram<TUniforms> | WebGLProgram
     ): VertexBuffer {

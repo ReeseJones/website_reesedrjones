@@ -94,7 +94,7 @@ export function CarouselDialog({
   const rootStyle: React.CSSProperties = {
     ...style,
     ...(animationDurationMs != null
-      ? { ["--carousel-duration" as any]: `${animationDurationMs}ms` }
+      ? { ["--carousel-duration" as `--${string}`]: `${animationDurationMs}ms` }
       : {}),
   };
 

@@ -8,6 +8,12 @@ import {
 
 import { WebGLContextManager } from "../../webgl/context_manager";
 
+declare global {
+    interface Window {
+        simulateContextLoss?: (delayMs?: number) => void;
+    }
+}
+
 const DEFAULT_OPTIONS: Required<WebGLContextOptions> = {
     version: "webgl2",
     dprCap: 1.5,
@@ -317,7 +323,7 @@ export function useWebGLCanvas(config?: UseWebGLCanvasOptions) {
             }, delayMs);
         };
 
-        (window as any).simulateContextLoss = simulateContextLoss;
+        window.simulateContextLoss = simulateContextLoss;
 
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.altKey && e.shiftKey && e.code === "KeyL") {
@@ -330,7 +336,7 @@ export function useWebGLCanvas(config?: UseWebGLCanvasOptions) {
         // 8. Cleanup & Deterministic Context Disposal
         return () => {
             window.removeEventListener("keydown", handleKeyDown);
-            delete (window as any).simulateContextLoss;
+            delete window.simulateContextLoss;
 
             if (rafIdRef.current !== null) {
                 cancelAnimationFrame(rafIdRef.current);

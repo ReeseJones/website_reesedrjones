@@ -213,7 +213,7 @@ export function Carousel({
   const rootClasses = ["carousel", className].filter(Boolean).join(" ");
   const rootStyle: React.CSSProperties = {
     ...style,
-    ["--carousel-duration" as any]: `${animationDurationMs}ms`,
+    ["--carousel-duration" as `--${string}`]: `${animationDurationMs}ms`,
   };
 
   const hasMultipleItems = items && items.length > 1;

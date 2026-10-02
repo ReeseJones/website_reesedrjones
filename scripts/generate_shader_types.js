@@ -28,7 +28,7 @@ function mapGLSLTypeToTS(glslType) {
         case "samplerCube":
             return "number";
         default:
-            return "any";
+            return "unknown";
     }
 }
 

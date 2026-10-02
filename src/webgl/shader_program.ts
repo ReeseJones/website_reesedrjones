@@ -18,7 +18,7 @@ export type UniformType =
     | "mat4";
 
 export interface ShaderContextManager {
-    useShader(shader: ShaderProgram<any> | null): void;
+    useShader(shader: ShaderProgram<never> | null): void;
 }
 
 export interface ShaderProgramOptions {
@@ -40,7 +40,7 @@ interface CachedUniform {
  * Manages GLSL shader compilation, link status checking, location caching, redundant upload elimination,
  * client-side uniform memory caching, and automated context restoration.
  */
-export class ShaderProgram<TUniforms extends Record<string, any> = Record<string, any>> {
+export class ShaderProgram<TUniforms extends object = Record<string, unknown>> {
     public readonly label: string;
     public readonly vertSource: string;
     public readonly fragSource: string;
@@ -77,10 +77,26 @@ export class ShaderProgram<TUniforms extends Record<string, any> = Record<string
             } else if (typeof val === "boolean") {
                 this.setFloat(name, val ? 1.0 : 0.0);
             } else if (Array.isArray(val) || val instanceof Float32Array) {
-                if (val.length === 2) this.setVec2(name, val[0], val[1]);
-                else if (val.length === 3) this.setVec3(name, val[0], val[1], val[2]);
-                else if (val.length === 4) this.setVec4(name, val[0], val[1], val[2], val[3]);
-                else if (val.length === 16) this.setMat4(name, val instanceof Float32Array ? val : new Float32Array(val));
+                if (val.length === 2 && typeof val[0] === "number" && typeof val[1] === "number") {
+                    this.setVec2(name, val[0], val[1]);
+                } else if (
+                    val.length === 3 &&
+                    typeof val[0] === "number" &&
+                    typeof val[1] === "number" &&
+                    typeof val[2] === "number"
+                ) {
+                    this.setVec3(name, val[0], val[1], val[2]);
+                } else if (
+                    val.length === 4 &&
+                    typeof val[0] === "number" &&
+                    typeof val[1] === "number" &&
+                    typeof val[2] === "number" &&
+                    typeof val[3] === "number"
+                ) {
+                    this.setVec4(name, val[0], val[1], val[2], val[3]);
+                } else if (val.length === 16) {
+                    this.setMat4(name, val instanceof Float32Array ? val : new Float32Array(val as number[]));
+                }
             }
         }
     }
