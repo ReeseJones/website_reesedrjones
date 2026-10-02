@@ -1,11 +1,6 @@
 /**
- * Centralized orientation & pointer input manager for 3D galaxy backdrop passes.
- * Handles device tilt via DeviceOrientationEvent and Generic Sensor API with iOS requestPermission gating.
- *
- * Behavior:
- * - On mobile devices with active gyro sensors, orientation tilt controls camera parallax.
- * - On iOS 13+, requests sensor permission upon first user interaction (tap/touch).
- * - On desktop or when sensors are inactive/unsupported, pointer/mouse movement controls parallax.
+ * Centralized orientation & pointer/touch input manager for 3D galaxy backdrop passes.
+ * Handles device tilt via DeviceOrientationEvent with iOS requestPermission gating and touch/pointer fallbacks.
  */
 
 export interface OrientationInputOptions {
@@ -37,8 +32,9 @@ export class OrientationInputController {
         this.detectMobile();
         this.setupDeviceOrientation();
 
-        // Attach pointermove for mouse/touch interaction (active when rotation sensor is inactive)
+        // Attach pointermove and touchmove for interactive tracking
         window.addEventListener("pointermove", this.onPointerMove, { passive: true });
+        window.addEventListener("touchmove", this.onTouchMove, { passive: true });
     }
 
     private setupDeviceOrientation(): void {
@@ -49,7 +45,7 @@ export class OrientationInputController {
 
         if (DeviceOrientation) {
             if (typeof DeviceOrientation.requestPermission === "function") {
-                // iOS 13+ requires DeviceOrientationEvent.requestPermission() inside a user gesture handler
+                // iOS 13+ requires DeviceOrientationEvent.requestPermission() inside a user gesture
                 const handleUserGesture = () => {
                     if (this.permissionRequested) return;
                     this.permissionRequested = true;
@@ -71,6 +67,7 @@ export class OrientationInputController {
                 // Android / Standard browsers without permission gating
                 try {
                     window.addEventListener("deviceorientation", this.onDeviceOrientation, { passive: true });
+                    window.addEventListener("deviceorientationabsolute" as any, this.onDeviceOrientation, { passive: true });
                 } catch {}
             }
         } else if ("RelativeOrientationSensor" in win || "AbsoluteOrientationSensor" in win) {
@@ -98,7 +95,14 @@ export class OrientationInputController {
     }
 
     private onDeviceOrientation = (e: DeviceOrientationEvent): void => {
-        if (e.beta === null || e.gamma === null) return;
+        if (
+            typeof e.beta !== "number" ||
+            typeof e.gamma !== "number" ||
+            Number.isNaN(e.beta) ||
+            Number.isNaN(e.gamma)
+        ) {
+            return;
+        }
 
         this.isSensorActive = true;
         const normalizedBeta = Math.max(-1.0, Math.min(1.0, (e.beta - 45.0) / 35.0));
@@ -110,6 +114,8 @@ export class OrientationInputController {
     private onSensorReading = (): void => {
         if (!this.relativeSensor || !this.relativeSensor.quaternion) return;
         const [x, y, z, w] = this.relativeSensor.quaternion;
+
+        if (Number.isNaN(x) || Number.isNaN(y) || Number.isNaN(z) || Number.isNaN(w)) return;
 
         const sinPitch = 2 * (w * x - y * z);
         const pitch = Math.asin(Math.max(-1.0, Math.min(1.0, sinPitch)));
@@ -135,11 +141,24 @@ export class OrientationInputController {
     };
 
     private onPointerMove = (e: PointerEvent): void => {
-        // If device rotation sensor is actively providing readings, suppress pointer moves
         if (this.isSensorActive) return;
 
         const x = (e.clientX / window.innerWidth) * 2.0 - 1.0;
         const y = (e.clientY / window.innerHeight) * 2.0 - 1.0;
+
+        if (Number.isNaN(x) || Number.isNaN(y)) return;
+
+        this.onUpdate(-y * 0.4, x * 0.5);
+    };
+
+    private onTouchMove = (e: TouchEvent): void => {
+        if (this.isSensorActive || e.touches.length === 0) return;
+
+        const touch = e.touches[0];
+        const x = (touch.clientX / window.innerWidth) * 2.0 - 1.0;
+        const y = (touch.clientY / window.innerHeight) * 2.0 - 1.0;
+
+        if (Number.isNaN(x) || Number.isNaN(y)) return;
 
         this.onUpdate(-y * 0.4, x * 0.5);
     };
@@ -157,7 +176,9 @@ export class OrientationInputController {
         }
 
         window.removeEventListener("deviceorientation", this.onDeviceOrientation);
+        window.removeEventListener("deviceorientationabsolute" as any, this.onDeviceOrientation);
         window.removeEventListener("pointermove", this.onPointerMove);
+        window.removeEventListener("touchmove", this.onTouchMove);
         this.isSensorActive = false;
         this.permissionRequested = false;
     }
