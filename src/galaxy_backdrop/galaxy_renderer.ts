@@ -17,18 +17,18 @@ import {
     mat4RotateZ,
     mat4Translate,
 } from "../maths/matrix";
-import {
-    GALAXY_ORB_FRAGMENT_SHADER,
-    GALAXY_ORB_VERTEX_SHADER,
-    GALAXY_PINPRICK_FRAGMENT_SHADER,
-    GALAXY_PINPRICK_VERTEX_SHADER,
-} from "./galaxy_shaders";
+import galaxyPinprickVert, { GalaxyPinprickUniforms } from "./shaders/galaxy_pinprick.vert";
+import galaxyPinprickFrag from "./shaders/galaxy_pinprick.frag";
+import galaxyOrbVert, { GalaxyOrbUniforms } from "./shaders/galaxy_orb.vert";
+import galaxyOrbFrag from "./shaders/galaxy_orb.frag";
 import { CanvasDimensions, TimeInfo } from "../components/webgl_canvas/types";
-import { STAR_VERTEX_LAYOUT, GALAXY_UNIFORM_DECLARATIONS } from "./galaxy_layout";
 import { ShaderProgram } from "../webgl/shader_program";
 import { VertexBuffer } from "../webgl/vertex_buffer";
+import { parseVertexLayoutFromGLSL } from "../webgl/vertex_layout";
 import { WebGLContextManager } from "../webgl/context_manager";
 import { OrientationInputController } from "./orientation_input";
+
+type GalaxyShaderUniforms = GalaxyPinprickUniforms | GalaxyOrbUniforms;
 
 /**
  * Pure WebGL2 rendering engine for the 3D spiral galaxy simulation.
@@ -39,9 +39,9 @@ import { OrientationInputController } from "./orientation_input";
 export class GalaxyRenderer {
     private gl: WebGL2RenderingContext | null = null;
 
-    private pinprickShader: ShaderProgram | null = null;
-    private orbShader: ShaderProgram | null = null;
-    private activeShader: ShaderProgram | null = null;
+    private pinprickShader: ShaderProgram<GalaxyPinprickUniforms> | null = null;
+    private orbShader: ShaderProgram<GalaxyOrbUniforms> | null = null;
+    private activeShader: ShaderProgram<GalaxyShaderUniforms> | null = null;
     private starBuffer: VertexBuffer | null = null;
 
     private params: GalaxyParameters;
@@ -93,27 +93,26 @@ export class GalaxyRenderer {
         this.isDestroyed = false;
 
         // Retrieve persistent ShaderProgram instances from ContextManager
-        this.pinprickShader = this.contextManager.getOrCreateShader("galaxy_pinprick", {
-            vertSource: GALAXY_PINPRICK_VERTEX_SHADER,
-            fragSource: GALAXY_PINPRICK_FRAGMENT_SHADER,
-            declaredUniforms: GALAXY_UNIFORM_DECLARATIONS,
+        this.pinprickShader = this.contextManager.getOrCreateShader<GalaxyPinprickUniforms>("galaxy_pinprick", {
+            vertSource: galaxyPinprickVert,
+            fragSource: galaxyPinprickFrag,
             label: "GalaxyPinprickShader",
         });
 
-        this.orbShader = this.contextManager.getOrCreateShader("galaxy_orb", {
-            vertSource: GALAXY_ORB_VERTEX_SHADER,
-            fragSource: GALAXY_ORB_FRAGMENT_SHADER,
-            declaredUniforms: GALAXY_UNIFORM_DECLARATIONS,
+        this.orbShader = this.contextManager.getOrCreateShader<GalaxyOrbUniforms>("galaxy_orb", {
+            vertSource: galaxyOrbVert,
+            fragSource: galaxyOrbFrag,
             label: "GalaxyOrbShader",
         });
 
         this.activeShader =
             this.params.style === "orb" ? this.orbShader : this.pinprickShader;
-        this.activeShader.use();
+        this.contextManager.useShader(this.activeShader);
 
         // Request managed VertexBuffer resource
         if (!this.starBuffer) {
-            this.starBuffer = this.contextManager.createVertexBuffer(STAR_VERTEX_LAYOUT);
+            const layout = parseVertexLayoutFromGLSL(galaxyPinprickVert);
+            this.starBuffer = this.contextManager.createVertexBuffer(layout);
         }
         this.starBuffer.setData(generateStarBuffer(this.params));
 
@@ -126,23 +125,23 @@ export class GalaxyRenderer {
 
     public uploadStaticUniforms(): void {
         if (!this.activeShader) return;
-        this.activeShader.use();
 
-        this.activeShader.setFloat("u_rotationSpeed", this.params.rotationSpeed);
-        this.activeShader.setFloat("u_differentialSpeed", this.params.differentialSpeed);
-        this.activeShader.setFloat("u_driftSpeed", this.params.driftSpeed);
-        this.activeShader.setFloat("u_driftAmplitude", this.params.driftAmplitude);
-        this.activeShader.setFloat("u_pointScale", this.params.pointScale);
-        this.activeShader.setFloat("u_minPointSize", this.params.minPointSize);
-        this.activeShader.setFloat("u_maxPointSize", this.params.maxPointSize);
-        this.activeShader.setFloat("u_nearFadeDistance", this.params.nearFadeDistance);
-
-        this.activeShader.setVec3("u_coreColor", this.params.coreColor);
-        this.activeShader.setVec3("u_coreBlazeColor", this.params.coreBlazeColor);
-        this.activeShader.setVec3("u_armInnerColor", this.params.armInnerColor);
-        this.activeShader.setVec3("u_armOuterColor", this.params.armOuterColor);
-        this.activeShader.setVec3("u_accentColor", this.params.accentColor);
-        this.activeShader.setFloat("u_coreGlowBoost", this.params.coreGlowBoost);
+        this.activeShader.setUniforms({
+            u_rotationSpeed: this.params.rotationSpeed,
+            u_differentialSpeed: this.params.differentialSpeed,
+            u_driftSpeed: this.params.driftSpeed,
+            u_driftAmplitude: this.params.driftAmplitude,
+            u_pointScale: this.params.pointScale,
+            u_minPointSize: this.params.minPointSize,
+            u_maxPointSize: this.params.maxPointSize,
+            u_nearFadeDistance: this.params.nearFadeDistance,
+            u_coreColor: this.params.coreColor,
+            u_coreBlazeColor: this.params.coreBlazeColor,
+            u_armInnerColor: this.params.armInnerColor,
+            u_armOuterColor: this.params.armOuterColor,
+            u_accentColor: this.params.accentColor,
+            u_coreGlowBoost: this.params.coreGlowBoost,
+        });
     }
 
     /**
@@ -212,12 +211,13 @@ export class GalaxyRenderer {
             this.modelViewMatrix
         );
 
-        // 3. Upload Dynamic Frame Uniforms
-        this.activeShader.use();
-        this.activeShader.setMat4("u_viewProjectionMatrix", this.viewProjMatrix);
-        this.activeShader.setMat4("u_modelViewMatrix", this.modelViewMatrix);
-        this.activeShader.setFloat("u_time", timeInfo.time);
-        this.activeShader.setFloat("u_viewportHeight", height);
+        // 3. Upload Dynamic Frame Uniforms with compile-time type safety
+        this.activeShader.setUniforms({
+            u_viewProjectionMatrix: this.viewProjMatrix,
+            u_modelViewMatrix: this.modelViewMatrix,
+            u_time: timeInfo.time,
+            u_viewportHeight: height,
+        });
 
         // 4. Assert Explicit Pass Pipeline State & Draw Stars with Additive Blending
         gl.enable(gl.BLEND);
@@ -270,7 +270,7 @@ export class GalaxyRenderer {
             style === "orb" ? this.orbShader : this.pinprickShader;
 
         if (this.activeShader) {
-            this.activeShader.use();
+            this.contextManager.useShader(this.activeShader);
             this.uploadStaticUniforms();
         }
     }

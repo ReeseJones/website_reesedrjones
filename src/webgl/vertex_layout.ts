@@ -109,3 +109,33 @@ export function configureVAO(
     gl.bindVertexArray(null);
     gl.bindBuffer(gl.ARRAY_BUFFER, null);
 }
+
+/**
+ * Dynamically parses GLSL vertex shader source code to generate a VertexLayoutSpec.
+ * Scans for `layout(location = N) in <type> <name>;` declarations.
+ */
+export function parseVertexLayoutFromGLSL(vertSource: string): VertexLayoutSpec {
+    const attributeRegex = /layout\s*\(\s*location\s*=\s*(\d+)\s*\)\s*in\s+(\w+)\s+(\w+)\s*;/g;
+    const attributes: AttributeSpec[] = [];
+    let match: RegExpExecArray | null;
+
+    while ((match = attributeRegex.exec(vertSource)) !== null) {
+        const location = parseInt(match[1], 10);
+        const glslType = match[2];
+        const name = match[3];
+
+        let size = 1;
+        if (glslType === "vec2") size = 2;
+        else if (glslType === "vec3") size = 3;
+        else if (glslType === "vec4") size = 4;
+
+        attributes.push({
+            nameOrLocation: location,
+            description: `${name} (${glslType})`,
+            size,
+        });
+    }
+
+    return { attributes };
+}
+

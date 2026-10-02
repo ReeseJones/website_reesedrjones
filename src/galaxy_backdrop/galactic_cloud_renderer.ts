@@ -1,9 +1,10 @@
 import { GalaxyParameters, DEFAULT_GALAXY_PARAMETERS, MOBILE_GALAXY_PARAMETERS } from "./parameters/index";
-import { GALACTIC_CLOUD_FRAGMENT_SHADER, GALACTIC_CLOUD_VERTEX_SHADER } from "./galactic_cloud_shaders";
+import galacticCloudVert, { GalacticCloudUniforms } from "./shaders/galactic_cloud.vert";
+import galacticCloudFrag from "./shaders/galactic_cloud.frag";
 import { CanvasDimensions, TimeInfo } from "../components/webgl_canvas/types";
-import { QUAD_VERTEX_LAYOUT, GALACTIC_CLOUD_UNIFORM_DECLARATIONS } from "./galactic_cloud_layout";
 import { ShaderProgram } from "../webgl/shader_program";
 import { VertexBuffer } from "../webgl/vertex_buffer";
+import { parseVertexLayoutFromGLSL } from "../webgl/vertex_layout";
 import { WebGLContextManager } from "../webgl/context_manager";
 import { OrientationInputController } from "./orientation_input";
 
@@ -15,7 +16,7 @@ import { OrientationInputController } from "./orientation_input";
 export class GalacticCloudRenderer {
     private gl: WebGL2RenderingContext | null = null;
 
-    private shaderProgram: ShaderProgram | null = null;
+    private shaderProgram: ShaderProgram<GalacticCloudUniforms> | null = null;
     private quadBuffer: VertexBuffer | null = null;
 
     private params: GalaxyParameters;
@@ -55,18 +56,18 @@ export class GalacticCloudRenderer {
         this.gl = gl;
         this.isDestroyed = false;
 
-        this.shaderProgram = this.contextManager.getOrCreateShader("galactic_cloud", {
-            vertSource: GALACTIC_CLOUD_VERTEX_SHADER,
-            fragSource: GALACTIC_CLOUD_FRAGMENT_SHADER,
-            declaredUniforms: GALACTIC_CLOUD_UNIFORM_DECLARATIONS,
+        this.shaderProgram = this.contextManager.getOrCreateShader<GalacticCloudUniforms>("galactic_cloud", {
+            vertSource: galacticCloudVert,
+            fragSource: galacticCloudFrag,
             label: "GalacticCloudShader",
         });
 
         if (!this.shaderProgram.isValid()) return false;
-        this.shaderProgram.use();
+        this.contextManager.useShader(this.shaderProgram);
 
         if (!this.quadBuffer) {
-            this.quadBuffer = this.contextManager.createVertexBuffer(QUAD_VERTEX_LAYOUT);
+            const layout = parseVertexLayoutFromGLSL(galacticCloudVert);
+            this.quadBuffer = this.contextManager.createVertexBuffer(layout);
         }
 
         // Triangle strip unit quad positions: [ -1,-1,  1,-1,  -1,1,  1,1 ]
@@ -87,16 +88,16 @@ export class GalacticCloudRenderer {
 
     public uploadStaticUniforms(): void {
         if (!this.shaderProgram) return;
-        this.shaderProgram.use();
-
-        this.shaderProgram.setFloat("uHorizonIntensity", this.params.horizonIntensity);
-        this.shaderProgram.setFloat("uHorizonThickness", this.params.horizonThickness);
 
         const centerColor = this.params.horizonColorCenter ?? [1.0, 0.84, 0.66];
         const outerColor = this.params.horizonColorOuter ?? [0.15, 0.25, 0.85];
 
-        this.shaderProgram.setVec3("uHorizonColorCenter", centerColor);
-        this.shaderProgram.setVec3("uHorizonColorOuter", outerColor);
+        this.shaderProgram.setUniforms({
+            uHorizonIntensity: this.params.horizonIntensity,
+            uHorizonThickness: this.params.horizonThickness,
+            uHorizonColorCenter: centerColor,
+            uHorizonColorOuter: outerColor,
+        });
     }
 
     public updateProjection(gl: WebGL2RenderingContext, dims: CanvasDimensions): void {
@@ -117,26 +118,27 @@ export class GalacticCloudRenderer {
 
         this.updateInputs(timeInfo.dt);
 
-        this.shaderProgram.use();
+        this.contextManager.useShader(this.shaderProgram);
         this.quadBuffer.bind();
 
         // Calculate FOV scale factor for view-ray reconstruction
         const fovRad = (this.params.fov * Math.PI) / 180.0;
         const fovScale = Math.tan(fovRad * 0.5);
 
-        // Upload Per-Frame Dynamic Uniforms
-        this.shaderProgram.setFloat("uAspect", dims.aspect);
-        this.shaderProgram.setFloat("uFovScale", fovScale);
-        this.shaderProgram.setFloat("uPitch", this.params.pitchAngle);
-        this.shaderProgram.setFloat("uYaw", this.params.yawAngle);
-        this.shaderProgram.setFloat("uRoll", this.params.rollAngle);
-
         const parallax = this.params.cloudParallaxFactor ?? 0.25;
         const effectivePitchOffset = this.currentPitchOffset * this.params.mouseSensitivity * parallax;
         const effectiveYawOffset = this.currentYawOffset * this.params.mouseSensitivity * parallax;
 
-        this.shaderProgram.setFloat("uPitchOffset", effectivePitchOffset);
-        this.shaderProgram.setFloat("uYawOffset", effectiveYawOffset);
+        // Upload Per-Frame Dynamic Uniforms with compile-time type safety
+        this.shaderProgram.setUniforms({
+            uAspect: dims.aspect,
+            uFovScale: fovScale,
+            uPitch: this.params.pitchAngle,
+            uYaw: this.params.yawAngle,
+            uRoll: this.params.rollAngle,
+            uPitchOffset: effectivePitchOffset,
+            uYawOffset: effectiveYawOffset,
+        });
 
         // Assert Explicit Pass Pipeline State & Draw Fullscreen Quad
         gl.disable(gl.DEPTH_TEST);

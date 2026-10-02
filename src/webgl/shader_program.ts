@@ -1,3 +1,14 @@
+export type UniformValue =
+    | number
+    | boolean
+    | [number, number]
+    | [number, number, number]
+    | [number, number, number, number]
+    | Float32Array
+    | number[];
+
+export type UniformRecord = Record<string, UniformValue>;
+
 export type UniformType =
     | "float"
     | "int"
@@ -6,13 +17,8 @@ export type UniformType =
     | "vec4"
     | "mat4";
 
-export interface UniformDeclaration {
-    /** Exact GLSL uniform symbol name in shader source (e.g. "u_time") */
-    name: string;
-    /** Uniform data type */
-    type: UniformType;
-    /** Description explaining the uniform's purpose */
-    description: string;
+export interface ShaderContextManager {
+    useShader(shader: ShaderProgram<any> | null): void;
 }
 
 export interface ShaderProgramOptions {
@@ -20,8 +26,6 @@ export interface ShaderProgramOptions {
     vertSource: string;
     /** Fragment shader GLSL source code */
     fragSource: string;
-    /** Optional array of declared uniform specifications for documentation and validation */
-    declaredUniforms?: UniformDeclaration[];
     /** Debug label used in console log diagnostic messages */
     label?: string;
 }
@@ -36,32 +40,58 @@ interface CachedUniform {
  * Manages GLSL shader compilation, link status checking, location caching, redundant upload elimination,
  * client-side uniform memory caching, and automated context restoration.
  */
-export class ShaderProgram {
+export class ShaderProgram<TUniforms extends Record<string, any> = Record<string, any>> {
     public readonly label: string;
     public readonly vertSource: string;
     public readonly fragSource: string;
-    public readonly declaredUniforms: readonly UniformDeclaration[];
 
     private gl: WebGL2RenderingContext;
     private program: WebGLProgram | null = null;
     private uniformLocations = new Map<string, WebGLUniformLocation>();
     private uniformCache = new Map<string, CachedUniform>();
+    private contextManager?: ShaderContextManager;
 
-    constructor(gl: WebGL2RenderingContext, options: ShaderProgramOptions) {
+    constructor(
+        gl: WebGL2RenderingContext,
+        options: ShaderProgramOptions,
+        contextManager?: ShaderContextManager
+    ) {
         this.gl = gl;
         this.vertSource = options.vertSource;
         this.fragSource = options.fragSource;
-        this.declaredUniforms = options.declaredUniforms ?? [];
         this.label = options.label ?? "ShaderProgram";
+        this.contextManager = contextManager;
 
         this.build();
+    }
+
+    /**
+     * Batch uploads a strongly typed dictionary of uniform values.
+     */
+    public setUniforms(uniforms: Partial<TUniforms>): void {
+        this.use();
+        for (const [name, val] of Object.entries(uniforms)) {
+            if (val === undefined || val === null) continue;
+            if (typeof val === "number") {
+                this.setFloat(name, val);
+            } else if (typeof val === "boolean") {
+                this.setFloat(name, val ? 1.0 : 0.0);
+            } else if (Array.isArray(val) || val instanceof Float32Array) {
+                if (val.length === 2) this.setVec2(name, val[0], val[1]);
+                else if (val.length === 3) this.setVec3(name, val[0], val[1], val[2]);
+                else if (val.length === 4) this.setVec4(name, val[0], val[1], val[2], val[3]);
+                else if (val.length === 16) this.setMat4(name, val instanceof Float32Array ? val : new Float32Array(val));
+            }
+        }
     }
 
     /**
      * Binds the underlying GPU program (gl.useProgram).
      */
     public use(): void {
-        if (this.program) {
+        if (this.contextManager) {
+            this.contextManager.useShader(this);
+        } else if (this.program) {
             this.gl.useProgram(this.program);
         }
     }
@@ -267,12 +297,22 @@ export class ShaderProgram {
 
         this.program = program;
 
-        // Cache declared uniform locations immediately
-        for (const decl of this.declaredUniforms) {
-            this.getUniformLocation(decl.name);
-        }
+        // Auto-reflect and cache all active GLSL uniform locations directly from the GPU handle
+        this.reflectActiveUniforms();
 
         return true;
+    }
+
+    private reflectActiveUniforms(): void {
+        if (!this.program) return;
+        const count = this.gl.getProgramParameter(this.program, this.gl.ACTIVE_UNIFORMS);
+        for (let i = 0; i < count; i++) {
+            const info = this.gl.getActiveUniform(this.program, i);
+            if (info) {
+                const cleanName = info.name.replace(/\[0\]$/, "");
+                this.getUniformLocation(cleanName);
+            }
+        }
     }
 
     private restoreCachedUniforms(): void {

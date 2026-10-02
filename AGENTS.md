@@ -14,6 +14,24 @@
 - `npm run preview` — Build and run local Cloudflare preview (`wrangler dev`) (Not for agents)
 - `npm run deploy` — Build and deploy directly to Cloudflare (`wrangler deploy`) (Not for agents)
 
+## Interaction Protocol: Inquiries vs. Implementation
+- **Never edit code on inquiries:** Treat any message containing a question mark (`?`) or phrasing like *"Can we..."*, *"Could we..."*, *"Should we..."*, *"What if..."*, or inquiring about possibilities, optimizations, or refactoring strictly as an **inquiry**, NOT authorization to edit files.
+- **Forbidden tools during inquiries:** Do NOT invoke file edit tools (`replace_file_content`, `write_to_file`) in response to an inquiry.
+- **Required response protocol:**
+  - 1. Directly answer the question or analyze the inquiry first.
+  - 2. Outline the specific implementation plan, trade-offs, and affected files.
+  - 3. Stop and explicitly ask for user confirmation to proceed.
+- **Authorization requirement:** Only modify codebase files after the user explicitly replies with approval (e.g., *"Yes, proceed"*, *"Go ahead"*, *"Do it"*, or gives an explicit imperative command with no question mark).
+
+## Mandatory Project Guidelines: Read Before Acting
+- **Pre-action requirement:** Always inspect and read the relevant guidelines in [src/project_guidelines/](src/project_guidelines/) before planning, designing, writing, or editing code. Never assume conventions or invent ad-hoc patterns when an established project guideline exists.
+- **Guideline reference index:**
+  - Git & branch management: [git_guidelines.md](src/project_guidelines/git_guidelines.md) (Always work on `staging`)
+  - WebGL & shaders: [webgl_guidelines.md](src/project_guidelines/webgl_guidelines.md)
+  - CSS & SCSS styling: [css_guidelines.md](src/project_guidelines/css_guidelines.md)
+  - HTML & layout: [html_layout_guidelines.md](src/project_guidelines/html_layout_guidelines.md)
+  - Parcel imports & asset indexing: [using_parcel_guideline.md](src/project_guidelines/using_parcel_guideline.md)
+
 ## Rules
 - **Verify builds:** The main agent does not need to run `npm run build` after every step. This work will typically be delegated to subagents and instructed to do so as part of making their design.
 - **Client-only:** Never import Node built-in modules (`fs`, `path`, `process`) in app code.
@@ -22,7 +40,5 @@
 - **Design Docs:** Should use minimal code, but should feature the API, Types, Interfaces and design goals, as well as steps algorithms and procedures.
 - **Barrel Files:** Do not make them.
 - **Markdown Links:** All markdown links within repository files (docs, design documents, AGENTS.md, etc.) must be repository-relative or file-relative (e.g., `[wrangler.jsonc](wrangler.jsonc)`), never local filesystem absolute paths (`file:///...`). This ensures links resolve properly on GitHub.
-- **Project Guidelines:** Check [src/project_guidelines/](src/project_guidelines/) for guidelines relevant to a given task (e.g., [css_guidelines.md](src/project_guidelines/css_guidelines.md) for CSS rules, [git_guidelines.md](src/project_guidelines/git_guidelines.md) for Git/branch workflow, [using_parcel_guideline.md](src/project_guidelines/using_parcel_guideline.md) for Parcel imports & dynamic indexing) and read them before making changes.
 - **Develop on Staging:** Always perform active development, feature edits, and initial commits on the `staging` branch. Never edit or commit directly on `main`. Only merge `staging` into `main` when ready for production release.
-- **Clarification & Code Edits:** When the user asks a question or inquires about optimizations/refactoring, answer the question first and ask for user confirmation before modifying the codebase.
 - **File & Inspection Tools:** Always use native inspection tools (`view_file`) and file edit tools (`replace_file_content`, `write_to_file`) instead of running terminal shell commands (`cat`, `type`, `dir`, `Get-Content`, `echo`) to read or write files.

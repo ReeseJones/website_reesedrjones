@@ -2,8 +2,8 @@ import { ShaderProgram, ShaderProgramOptions } from "./shader_program";
 import { VertexBuffer } from "./vertex_buffer";
 import { VertexLayoutSpec } from "./vertex_layout";
 
-export interface ShaderEntry {
-    shader: ShaderProgram;
+export interface ShaderEntry<TUniforms extends Record<string, any> = Record<string, any>> {
+    shader: ShaderProgram<TUniforms>;
     refCount: number;
 }
 
@@ -15,8 +15,10 @@ export interface ShaderEntry {
  */
 export class WebGLContextManager {
     private gl: WebGL2RenderingContext | null = null;
-    private shaderRegistry = new Map<string, ShaderEntry>();
+    private shaderRegistry = new Map<string, ShaderEntry<any>>();
     private activeBuffers = new Set<VertexBuffer>();
+    private currentProgram: WebGLProgram | null = null;
+    private currentShader: ShaderProgram<any> | null = null;
 
     constructor(gl?: WebGL2RenderingContext) {
         if (gl) {
@@ -29,6 +31,8 @@ export class WebGLContextManager {
      */
     public setContext(gl: WebGL2RenderingContext): void {
         this.gl = gl;
+        this.currentProgram = null;
+        this.currentShader = null;
     }
 
     /**
@@ -39,28 +43,76 @@ export class WebGLContextManager {
     }
 
     /**
-     * Factory & Registry: Retrieves a shared ShaderProgram (incrementing refCount) or
-     * compiles and caches a new one (refCount = 1).
+     * Retrieves the currently active WebGLProgram without querying the GPU (no pipeline stall).
      */
-    public getOrCreateShader(key: string, options: ShaderProgramOptions): ShaderProgram {
+    public getCurrentProgram(): WebGLProgram | null {
+        return this.currentProgram;
+    }
+
+    /**
+     * Retrieves the currently active ShaderProgram instance, if any.
+     */
+    public getCurrentShader(): ShaderProgram<any> | null {
+        return this.currentShader;
+    }
+
+    /**
+     * Binds the specified ShaderProgram to the WebGL context and updates tracked state.
+     * Skips redundant GPU driver calls if the shader is already active.
+     */
+    public useShader(shader: ShaderProgram<any> | null): void {
+        if (this.currentShader === shader) return;
+
+        const program = shader ? shader.getProgram() : null;
+        if (this.currentProgram !== program) {
+            if (this.gl) {
+                this.gl.useProgram(program);
+            }
+            this.currentProgram = program;
+        }
+        this.currentShader = shader;
+    }
+
+    /**
+     * Low-level bind for a raw WebGLProgram.
+     */
+    public useProgram(program: WebGLProgram | null): void {
+        if (this.currentProgram === program) return;
+        if (this.gl) {
+            this.gl.useProgram(program);
+        }
+        this.currentProgram = program;
+        this.currentShader = null;
+    }
+
+    /**
+     * Factory & Registry: Retrieves a shared ShaderProgram (incrementing refCount) or
+     * compiles and caches a new one (refCount = 1) with strong uniform typing.
+     */
+    public getOrCreateShader<TUniforms extends Record<string, any> = Record<string, any>>(
+        key: string,
+        options: ShaderProgramOptions
+    ): ShaderProgram<TUniforms> {
         let entry = this.shaderRegistry.get(key);
         if (!entry) {
             if (!this.gl) {
                 throw new Error(`WebGLContextManager: Cannot create shader '${key}' before context is set.`);
             }
-            const shader = new ShaderProgram(this.gl, options);
+            const shader = new ShaderProgram<TUniforms>(this.gl, options, this);
             entry = { shader, refCount: 0 };
             this.shaderRegistry.set(key, entry);
         }
         entry.refCount++;
-        return entry.shader;
+        return entry.shader as ShaderProgram<TUniforms>;
     }
 
     /**
      * Release Pattern: Decrements a ShaderProgram's reference count.
      * When refCount reaches 0 (no renderers are using it), destroys the GPU program and unregisters it.
      */
-    public releaseShader(keyOrInstance: string | ShaderProgram): void {
+    public releaseShader<TUniforms extends Record<string, any> = Record<string, any>>(
+        keyOrInstance: string | ShaderProgram<TUniforms>
+    ): void {
         let targetKey: string | null = null;
         if (typeof keyOrInstance === "string") {
             targetKey = keyOrInstance;
@@ -80,6 +132,9 @@ export class WebGLContextManager {
 
         entry.refCount--;
         if (entry.refCount <= 0) {
+            if (this.currentShader === entry.shader) {
+                this.useShader(null);
+            }
             entry.shader.destroy();
             this.shaderRegistry.delete(targetKey);
         }
@@ -89,9 +144,9 @@ export class WebGLContextManager {
      * Factory Request: Allocates a new managed VertexBuffer tracking VBO and VAO GPU resources.
      * Optionally accepts an associated ShaderProgram or WebGLProgram for dynamic symbol location lookups.
      */
-    public createVertexBuffer(
+    public createVertexBuffer<TUniforms extends Record<string, any> = Record<string, any>>(
         layout: VertexLayoutSpec,
-        shader?: ShaderProgram | WebGLProgram
+        shader?: ShaderProgram<TUniforms> | WebGLProgram
     ): VertexBuffer {
         const buffer = new VertexBuffer(this.gl, layout, shader);
         this.activeBuffers.add(buffer);
@@ -112,6 +167,8 @@ export class WebGLContextManager {
      */
     public handleContextLost(): void {
         this.gl = null;
+        this.currentProgram = null;
+        this.currentShader = null;
         for (const entry of this.shaderRegistry.values()) {
             entry.shader.destroy();
         }
@@ -125,6 +182,8 @@ export class WebGLContextManager {
      */
     public handleContextRestored(newGl: WebGL2RenderingContext): void {
         this.gl = newGl;
+        this.currentProgram = null;
+        this.currentShader = null;
 
         // Phase 1: Rebuild Shaders with active refCount > 0
         for (const entry of this.shaderRegistry.values()) {
@@ -153,6 +212,8 @@ export class WebGLContextManager {
         }
         this.shaderRegistry.clear();
 
+        this.currentProgram = null;
+        this.currentShader = null;
         this.gl = null;
     }
 }
