@@ -1,11 +1,8 @@
-import { ShaderProgram, ShaderProgramOptions } from "./shader_program";
+import { ShaderProgram } from "./shader_program";
+import type { ShaderProgramOptions } from "./shader_program_types";
 import { VertexBuffer } from "./vertex_buffer";
-import { VertexLayoutSpec } from "./vertex_layout";
-
-export interface ShaderEntry<TUniforms extends object = Record<string, unknown>> {
-    shader: ShaderProgram<TUniforms>;
-    refCount: number;
-}
+import type { VertexLayoutSpec } from "./vertex_layout_types";
+import type { ShaderEntry } from "./context_manager_types";
 
 /**
  * Central WebGL GPU resource manager and lifecycle allocator.

@@ -1,4 +1,5 @@
 import React from "react";
+import type { WebGLContextManager } from "../../webgl/context_manager";
 
 export interface CanvasDimensions {
     /** Backing store width in physical device pixels (canvas.width) */
@@ -64,8 +65,6 @@ export interface WebGLContextOptions {
     /** Clear color RGBA tuple (0.0 to 1.0) used when autoClear is enabled. Defaults to [0, 0, 0, 0]. */
     clearColor?: [number, number, number, number];
 }
-
-import { WebGLContextManager } from "../../webgl/context_manager";
 
 export interface WebGLCanvasContextValue {
     /** The active WebGL2 context (null if unmounted or lost) */

@@ -1,4 +1,5 @@
-import { VertexLayoutSpec, configureVAO } from "./vertex_layout";
+import { configureVAO } from "./vertex_layout";
+import type { VertexLayoutSpec } from "./vertex_layout_types";
 import { ShaderProgram } from "./shader_program";
 
 /**
