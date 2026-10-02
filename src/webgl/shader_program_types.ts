@@ -1,5 +1,3 @@
-import type { ShaderProgram } from "./shader_program";
-
 export type UniformValue =
     | number
     | boolean
@@ -19,9 +17,6 @@ export type UniformType =
     | "vec4"
     | "mat4";
 
-export interface ShaderContextManager {
-    useShader(shader: ShaderProgram<never> | null): void;
-}
 
 export interface ShaderProgramOptions {
     /** Vertex shader GLSL source code */

@@ -1,8 +1,9 @@
 import type {
-    ShaderContextManager,
     ShaderProgramOptions,
     CachedUniform,
 } from "./shader_program_types";
+import type { IWebGLContextManager } from "./context_manager_types";
+import { compileShader } from "./shader_compiler";
 
 /**
  * Robust WebGL2 Shader Program wrapper.
@@ -14,31 +15,34 @@ export class ShaderProgram<TUniforms extends object = Record<string, unknown>> {
     public readonly vertSource: string;
     public readonly fragSource: string;
 
-    private gl: WebGL2RenderingContext;
+    private contextManager: IWebGLContextManager;
     private program: WebGLProgram | null = null;
     private uniformLocations = new Map<string, WebGLUniformLocation>();
     private uniformCache = new Map<string, CachedUniform>();
-    private contextManager?: ShaderContextManager;
+
+    private get gl(): WebGL2RenderingContext | null {
+        return this.contextManager.getContext();
+    }
 
     constructor(
-        gl: WebGL2RenderingContext,
-        options: ShaderProgramOptions,
-        contextManager?: ShaderContextManager
+        contextManager: IWebGLContextManager,
+        options: ShaderProgramOptions
     ) {
-        this.gl = gl;
+        this.contextManager = contextManager;
         this.vertSource = options.vertSource;
         this.fragSource = options.fragSource;
         this.label = options.label ?? "ShaderProgram";
-        this.contextManager = contextManager;
 
         this.build();
     }
 
     /**
      * Batch uploads a strongly typed dictionary of uniform values.
+     *
+     * **Context Binding:** Automatically binds the program to the active context via contextManager (`contextManager.useShader(this)`) before uploading.
      */
     public setUniforms(uniforms: Partial<TUniforms>): void {
-        this.use();
+        this.contextManager.useShader(this);
         for (const [name, val] of Object.entries(uniforms)) {
             if (val === undefined || val === null) continue;
             if (typeof val === "number") {
@@ -71,17 +75,6 @@ export class ShaderProgram<TUniforms extends object = Record<string, unknown>> {
     }
 
     /**
-     * Binds the underlying GPU program (gl.useProgram).
-     */
-    public use(): void {
-        if (this.contextManager) {
-            this.contextManager.useShader(this);
-        } else if (this.program) {
-            this.gl.useProgram(this.program);
-        }
-    }
-
-    /**
      * Returns true if the GPU WebGLProgram is compiled, linked, and ready.
      */
     public isValid(): boolean {
@@ -98,9 +91,10 @@ export class ShaderProgram<TUniforms extends object = Record<string, unknown>> {
     /**
      * Re-compiles GLSL sources, re-links the WebGLProgram, re-queries location handles,
      * and automatically re-uploads all client-side cached uniform values to the new GPU program.
+     *
+     * **Context Binding:** Re-binds program via `restoreCachedUniforms()` which invokes `contextManager.useShader()`.
      */
-    public rebuild(gl: WebGL2RenderingContext): boolean {
-        this.gl = gl;
+    public rebuild(): boolean {
         this.destroy();
         const success = this.build();
         if (success) {
@@ -111,11 +105,15 @@ export class ShaderProgram<TUniforms extends object = Record<string, unknown>> {
 
     /**
      * Retrieves cached WebGLUniformLocation for a symbol name.
+     *
+     * **Context Binding:** Does NOT bind program. Queries location handle independently without altering binding.
      */
     public getUniformLocation(name: string): WebGLUniformLocation | null {
         if (!this.program) return null;
         if (!this.uniformLocations.has(name)) {
-            const loc = this.gl.getUniformLocation(this.program, name);
+            const gl = this.gl;
+            if (!gl) return null;
+            const loc = gl.getUniformLocation(this.program, name);
             if (loc !== null) {
                 this.uniformLocations.set(name, loc);
             } else {
@@ -127,6 +125,12 @@ export class ShaderProgram<TUniforms extends object = Record<string, unknown>> {
 
     // --- Uniform Setters with Client-Side Caching & Redundant Upload Guard ---
 
+    /**
+     * Uploads a float uniform value if changed.
+     *
+     * **Context Binding:** Does NOT bind program. Caller must ensure `contextManager.useShader(this)`
+     * has been called prior to invoking.
+     */
     public setFloat(name: string, value: number): void {
         const cached = this.uniformCache.get(name);
         if (cached && cached.value === value) return; // Skip redundant upload
@@ -134,10 +138,16 @@ export class ShaderProgram<TUniforms extends object = Record<string, unknown>> {
         this.uniformCache.set(name, { type: "float", value });
         const loc = this.getUniformLocation(name);
         if (loc) {
-            this.gl.uniform1f(loc, value);
+            this.gl?.uniform1f(loc, value);
         }
     }
 
+    /**
+     * Uploads an integer uniform value if changed.
+     *
+     * **Context Binding:** Does NOT bind program. Caller must ensure `contextManager.useShader(this)`
+     * has been called prior to invoking.
+     */
     public setInt(name: string, value: number): void {
         const cached = this.uniformCache.get(name);
         if (cached && cached.value === value) return;
@@ -145,10 +155,16 @@ export class ShaderProgram<TUniforms extends object = Record<string, unknown>> {
         this.uniformCache.set(name, { type: "int", value });
         const loc = this.getUniformLocation(name);
         if (loc) {
-            this.gl.uniform1i(loc, value);
+            this.gl?.uniform1i(loc, value);
         }
     }
 
+    /**
+     * Uploads a 2-component float vector uniform value if changed.
+     *
+     * **Context Binding:** Does NOT bind program. Caller must ensure `contextManager.useShader(this)`
+     * has been called prior to invoking.
+     */
     public setVec2(name: string, x: number, y: number): void {
         const value: [number, number] = [x, y];
         const cached = this.uniformCache.get(name);
@@ -164,10 +180,16 @@ export class ShaderProgram<TUniforms extends object = Record<string, unknown>> {
         this.uniformCache.set(name, { type: "vec2", value });
         const loc = this.getUniformLocation(name);
         if (loc) {
-            this.gl.uniform2f(loc, x, y);
+            this.gl?.uniform2f(loc, x, y);
         }
     }
 
+    /**
+     * Uploads a 3-component float vector uniform value if changed.
+     *
+     * **Context Binding:** Does NOT bind program. Caller must ensure `contextManager.useShader(this)`
+     * has been called prior to invoking.
+     */
     public setVec3(
         name: string,
         xOrArray: number | [number, number, number] | Float32Array,
@@ -197,10 +219,16 @@ export class ShaderProgram<TUniforms extends object = Record<string, unknown>> {
         this.uniformCache.set(name, { type: "vec3", value: val });
         const loc = this.getUniformLocation(name);
         if (loc) {
-            this.gl.uniform3fv(loc, val);
+            this.gl?.uniform3fv(loc, val);
         }
     }
 
+    /**
+     * Uploads a 4-component float vector uniform value if changed.
+     *
+     * **Context Binding:** Does NOT bind program. Caller must ensure `contextManager.useShader(this)`
+     * has been called prior to invoking.
+     */
     public setVec4(
         name: string,
         x: number,
@@ -224,15 +252,21 @@ export class ShaderProgram<TUniforms extends object = Record<string, unknown>> {
         this.uniformCache.set(name, { type: "vec4", value: val });
         const loc = this.getUniformLocation(name);
         if (loc) {
-            this.gl.uniform4f(loc, x, y, z, w);
+            this.gl?.uniform4f(loc, x, y, z, w);
         }
     }
 
+    /**
+     * Uploads a 4x4 matrix uniform value.
+     *
+     * **Context Binding:** Does NOT bind program. Caller must ensure `contextManager.useShader(this)`
+     * has been called prior to invoking.
+     */
     public setMat4(name: string, data: Float32Array): void {
         this.uniformCache.set(name, { type: "mat4", value: new Float32Array(data) });
         const loc = this.getUniformLocation(name);
         if (loc) {
-            this.gl.uniformMatrix4fv(loc, false, data);
+            this.gl?.uniformMatrix4fv(loc, false, data);
         }
     }
 
@@ -241,8 +275,9 @@ export class ShaderProgram<TUniforms extends object = Record<string, unknown>> {
      */
     public destroy(): void {
         if (this.program) {
-            if (!this.gl.isContextLost()) {
-                this.gl.deleteProgram(this.program);
+            const gl = this.gl;
+            if (gl && !gl.isContextLost()) {
+                gl.deleteProgram(this.program);
             }
             this.program = null;
         }
@@ -252,47 +287,50 @@ export class ShaderProgram<TUniforms extends object = Record<string, unknown>> {
     // --- Private Build & Recovery Helpers ---
 
     private build(): boolean {
-        const vs = this.compileShader(this.gl.VERTEX_SHADER, this.vertSource);
-        const fs = this.compileShader(this.gl.FRAGMENT_SHADER, this.fragSource);
+        const gl = this.gl;
+        if (!gl) return false;
+
+        const vs = compileShader(gl, gl.VERTEX_SHADER, this.vertSource, this.label);
+        const fs = compileShader(gl, gl.FRAGMENT_SHADER, this.fragSource, this.label);
         if (!vs || !fs) return false;
 
-        const program = this.gl.createProgram();
+        const program = gl.createProgram();
         if (!program) return false;
 
-        this.gl.attachShader(program, vs);
-        this.gl.attachShader(program, fs);
-        this.gl.linkProgram(program);
+        gl.attachShader(program, vs);
+        gl.attachShader(program, fs);
+        gl.linkProgram(program);
 
-        const linked = this.gl.getProgramParameter(program, this.gl.LINK_STATUS);
+        const linked = gl.getProgramParameter(program, gl.LINK_STATUS);
         if (!linked) {
             console.error(
-                `[${this.label}] Program link failed: ${this.gl.getProgramInfoLog(program)}`
+                `[${this.label}] Program link failed: ${gl.getProgramInfoLog(program)}`
             );
-            this.gl.deleteShader(vs);
-            this.gl.deleteShader(fs);
-            this.gl.deleteProgram(program);
+            gl.deleteShader(vs);
+            gl.deleteShader(fs);
+            gl.deleteProgram(program);
             return false;
         }
 
         // Shaders can be detached after successful link
-        this.gl.detachShader(program, vs);
-        this.gl.detachShader(program, fs);
-        this.gl.deleteShader(vs);
-        this.gl.deleteShader(fs);
+        gl.detachShader(program, vs);
+        gl.detachShader(program, fs);
+        gl.deleteShader(vs);
+        gl.deleteShader(fs);
 
         this.program = program;
 
         // Auto-reflect and cache all active GLSL uniform locations directly from the GPU handle
-        this.reflectActiveUniforms();
+        this.reflectActiveUniforms(gl);
 
         return true;
     }
 
-    private reflectActiveUniforms(): void {
+    private reflectActiveUniforms(gl: WebGL2RenderingContext): void {
         if (!this.program) return;
-        const count = this.gl.getProgramParameter(this.program, this.gl.ACTIVE_UNIFORMS);
+        const count = gl.getProgramParameter(this.program, gl.ACTIVE_UNIFORMS);
         for (let i = 0; i < count; i++) {
-            const info = this.gl.getActiveUniform(this.program, i);
+            const info = gl.getActiveUniform(this.program, i);
             if (info) {
                 const cleanName = info.name.replace(/\[0\]$/, "");
                 this.getUniformLocation(cleanName);
@@ -302,53 +340,35 @@ export class ShaderProgram<TUniforms extends object = Record<string, unknown>> {
 
     private restoreCachedUniforms(): void {
         if (!this.program) return;
-        this.use();
+        const gl = this.gl;
+        if (!gl) return;
+        this.contextManager.useShader(this);
         for (const [name, cached] of this.uniformCache.entries()) {
             const loc = this.getUniformLocation(name);
             if (!loc) continue;
 
             switch (cached.type) {
                 case "float":
-                    this.gl.uniform1f(loc, cached.value as number);
+                    gl.uniform1f(loc, cached.value as number);
                     break;
                 case "int":
-                    this.gl.uniform1i(loc, cached.value as number);
+                    gl.uniform1i(loc, cached.value as number);
                     break;
                 case "vec2":
                     const v2 = cached.value as [number, number];
-                    this.gl.uniform2f(loc, v2[0], v2[1]);
+                    gl.uniform2f(loc, v2[0], v2[1]);
                     break;
                 case "vec3":
-                    this.gl.uniform3fv(loc, cached.value as number[]);
+                    gl.uniform3fv(loc, cached.value as number[]);
                     break;
                 case "vec4":
                     const v4 = cached.value as [number, number, number, number];
-                    this.gl.uniform4f(loc, v4[0], v4[1], v4[2], v4[3]);
+                    gl.uniform4f(loc, v4[0], v4[1], v4[2], v4[3]);
                     break;
                 case "mat4":
-                    this.gl.uniformMatrix4fv(loc, false, cached.value as Float32Array);
+                    gl.uniformMatrix4fv(loc, false, cached.value as Float32Array);
                     break;
             }
         }
-    }
-
-    private compileShader(type: number, source: string): WebGLShader | null {
-        const shader = this.gl.createShader(type);
-        if (!shader) return null;
-
-        this.gl.shaderSource(shader, source);
-        this.gl.compileShader(shader);
-
-        const compiled = this.gl.getShaderParameter(shader, this.gl.COMPILE_STATUS);
-        if (!compiled) {
-            const typeName = type === this.gl.VERTEX_SHADER ? "VERTEX" : "FRAGMENT";
-            console.error(
-                `[${this.label}] ${typeName} shader compile failed: ${this.gl.getShaderInfoLog(shader)}`
-            );
-            this.gl.deleteShader(shader);
-            return null;
-        }
-
-        return shader;
     }
 }

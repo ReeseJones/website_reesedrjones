@@ -1,5 +1,5 @@
 import React from "react";
-import type { WebGLContextManager } from "../../webgl/context_manager";
+import type { IWebGLContextManager } from "../../webgl/context_manager_types";
 
 export interface CanvasDimensions {
     /** Backing store width in physical device pixels (canvas.width) */
@@ -70,7 +70,7 @@ export interface WebGLCanvasContextValue {
     /** The active WebGL2 context (null if unmounted or lost) */
     gl: WebGL2RenderingContext | null;
     /** Central WebGL Context & GPU Resource Manager scoped to this canvas */
-    contextManager: WebGLContextManager;
+    contextManager: IWebGLContextManager;
     /** True if the client device supports the requested WebGL version */
     isSupported: boolean;
     /** True if the WebGL context is currently lost */

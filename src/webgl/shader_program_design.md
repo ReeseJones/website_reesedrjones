@@ -43,7 +43,7 @@ sequenceDiagram
 
     Note over Renderer, GPU: 1. Resource Request & Ref-Count Increment
     Renderer->>Manager: getOrCreateShader("galaxy_pinprick", options)
-    Manager->>Shader: new ShaderProgram(gl, options)
+    Manager->>Shader: new ShaderProgram(manager, options)
     Manager->>Manager: Store entry in shaderRegistry (refCount = 1)
     Renderer->>Manager: createVertexBuffer(STAR_VERTEX_LAYOUT)
     Manager->>Buffer: new VertexBuffer(gl, layout)
@@ -52,7 +52,7 @@ sequenceDiagram
     Note over Renderer, GPU: 2. Context Loss & Ref-Counted Restoration
     GPU-->>Manager: webglcontextrestored Event
     Note over Manager: Phase 1: Rebuild Shaders with refCount > 0
-    Manager->>Shader: shader.rebuild(newGl)
+    Manager->>Shader: shader.rebuild()
     Shader->>GPU: Re-compile GLSL & restore cached uniforms
     Note over Manager: Phase 2: Rebuild Active VertexBuffers
     Manager->>Buffer: buffer.rebuild(newGl)
@@ -79,8 +79,9 @@ export interface ShaderEntry {
     refCount: number;
 }
 
-export class WebGLContextManager {
+export class WebGLContextManager implements IWebGLContextManager {
     public setContext(gl: WebGL2RenderingContext): void;
+    public getContext(): WebGL2RenderingContext | null;
 
     /** Retrieves or compiles a shared ShaderProgram (increments refCount) */
     public getOrCreateShader(key: string, options: ShaderProgramOptions): ShaderProgram;

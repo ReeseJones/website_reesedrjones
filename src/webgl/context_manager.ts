@@ -2,7 +2,7 @@ import { ShaderProgram } from "./shader_program";
 import type { ShaderProgramOptions } from "./shader_program_types";
 import { VertexBuffer } from "./vertex_buffer";
 import type { VertexLayoutSpec } from "./vertex_layout_types";
-import type { ShaderEntry } from "./context_manager_types";
+import type { ShaderEntry, IWebGLContextManager } from "./context_manager_types";
 
 /**
  * Central WebGL GPU resource manager and lifecycle allocator.
@@ -10,7 +10,7 @@ import type { ShaderEntry } from "./context_manager_types";
  * request/release pattern, and executes a 2-phase automated context restoration sequence
  * upon receiving webglcontextrestored events.
  */
-export class WebGLContextManager {
+export class WebGLContextManager implements IWebGLContextManager {
     private gl: WebGL2RenderingContext | null = null;
     private shaderRegistry = new Map<string, ShaderEntry<never>>();
     private activeBuffers = new Set<VertexBuffer>();
@@ -57,8 +57,8 @@ export class WebGLContextManager {
      * Binds the specified ShaderProgram to the WebGL context and updates tracked state.
      * Skips redundant GPU driver calls if the shader is already active.
      */
-    public useShader(shader: ShaderProgram<never> | null): void {
-        if (this.currentShader === shader) return;
+    public useShader<TUniforms extends object = never>(shader: ShaderProgram<TUniforms> | null): void {
+        if (this.currentShader === (shader as unknown as ShaderProgram<never>)) return;
 
         const program = shader ? shader.getProgram() : null;
         if (this.currentProgram !== program) {
@@ -67,7 +67,7 @@ export class WebGLContextManager {
             }
             this.currentProgram = program;
         }
-        this.currentShader = shader;
+        this.currentShader = shader as unknown as ShaderProgram<never>;
     }
 
     /**
@@ -95,7 +95,7 @@ export class WebGLContextManager {
             if (!this.gl) {
                 throw new Error(`WebGLContextManager: Cannot create shader '${key}' before context is set.`);
             }
-            const shader = new ShaderProgram<TUniforms>(this.gl, options, this);
+            const shader = new ShaderProgram<TUniforms>(this, options);
             entry = { shader: shader as unknown as ShaderProgram<never>, refCount: 0 };
             this.shaderRegistry.set(key, entry);
         }
@@ -185,7 +185,7 @@ export class WebGLContextManager {
         // Phase 1: Rebuild Shaders with active refCount > 0
         for (const entry of this.shaderRegistry.values()) {
             if (entry.refCount > 0) {
-                entry.shader.rebuild(newGl);
+                entry.shader.rebuild();
             }
         }
 

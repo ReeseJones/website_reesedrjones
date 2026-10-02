@@ -5,7 +5,7 @@ import { CanvasDimensions, TimeInfo } from "../components/webgl_canvas/types";
 import { ShaderProgram } from "../webgl/shader_program";
 import { VertexBuffer } from "../webgl/vertex_buffer";
 import { parseVertexLayoutFromGLSL } from "../webgl/vertex_layout";
-import { WebGLContextManager } from "../webgl/context_manager";
+import type { IWebGLContextManager } from "../webgl/context_manager_types";
 import { OrientationInputController } from "./orientation_input";
 
 /**
@@ -31,7 +31,7 @@ export class GalacticCloudRenderer {
     private isDestroyed = false;
 
     constructor(
-        private contextManager: WebGLContextManager,
+        private contextManager: IWebGLContextManager,
         customParams?: Partial<GalaxyParameters>
     ) {
         const isMobile =
