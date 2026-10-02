@@ -25,7 +25,7 @@ All core WebGL infrastructure and generic resource utilities reside in [`src/web
 ---
 
 ## 4. Explicit Pass State Ownership
-- **Explicit Pass State Ownership:** Every subscriber pass must explicitly set its required WebGL pipeline states (such as `shaderProgram.use()`, `gl.blendFunc()`, and `gl.enable(gl.BLEND)`) inside `renderFrame()` prior to its draw call. Never assume state initialized during `init()` or left over by prior passes in a multi-pass pipeline will remain active.
+- **Explicit Pass State Ownership:** Every subscriber pass must explicitly set its required WebGL pipeline states (such as `contextManager.useShader(shaderProgram)`, `gl.blendFunc()`, and `gl.enable(gl.BLEND)`) inside `renderFrame()` prior to its draw call. Never assume state initialized during `init()` or left over by prior passes in a multi-pass pipeline will remain active.
 
 ---
 

@@ -42,3 +42,14 @@ Principles, standards, and typing patterns for TypeScript code in this repositor
 - **Dependency Isolation & Tree-Shaking:** Consumers that only need types for annotations or contracts should never be forced to import runtime implementation code, heavyweight third-party libraries (e.g., PixiJS, WebGL runtime), or module side-effects.
 - **Cycle Prevention:** Splitting interfaces from concrete classes eliminates circular dependency graphs between collaborating components or managers.
 - **No Barrel Files:** Even when types are split into separate files, do not create barrel files (`index.ts` re-exporting types and classes together). Import types directly from their respective type files using `import type { ... } from "./..._types"`.
+
+---
+
+## 6. Standalone Pure Functions vs. Class Methods
+- **Avoid Pseudo-Instance Methods:** If a class member method does not read or mutate instance state (`this`), or only accesses trivial contextual data (such as a debug label) that can be passed as an argument, do not declare it as an instance method.
+- **Prefer Standalone Module Functions:** Extract such routines into dedicated standalone functions (`function doWork(...)`) in appropriate utility modules rather than static class methods:
+  - **Tree-Shaking & Lean Classes:** Standalone functions avoid bloating class constructor objects and allow bundlers to perform granular dead-code elimination.
+  - **Explicit Dependencies:** All required context (e.g., `gl: WebGL2RenderingContext`, `label: string`) is passed explicitly via arguments.
+  - **Zero Implicit Coupling:** Guarantees that the function has no side-effects on instance state and does not depend on object lifecycles.
+  - **Isolated Testability & Reusability:** Pure standalone functions can be directly tested and shared across modules without instantiating class hierarchies or mocking complex constructor dependencies.
+
