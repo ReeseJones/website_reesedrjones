@@ -1,4 +1,16 @@
 /**
+ * Common step rates for WebGL2 vertex attribute advancement (gl.vertexAttribDivisor).
+ */
+export const VertexStepRate = {
+    /** Attribute advances once per vertex (divisor = 0, default for standard geometry) */
+    PerVertex: 0,
+    /** Attribute advances once per instance (divisor = 1, standard for instanced data) */
+    PerInstance: 1,
+} as const;
+
+export type VertexStepRate = (typeof VertexStepRate)[keyof typeof VertexStepRate] | number;
+
+/**
  * Attribute specification for a single vertex attribute within a WebGL buffer layout.
  */
 export interface AttributeSpec {
@@ -19,6 +31,12 @@ export interface AttributeSpec {
 
     /** Whether fixed-point data values should be normalized. Defaults to false */
     normalized?: boolean;
+
+    /**
+     * Optional attribute instancing divisor override (WebGL2).
+     * Use VertexStepRate.PerVertex (0), VertexStepRate.PerInstance (1), or a custom instance step rate (N).
+     */
+    divisor?: VertexStepRate;
 }
 
 /**
@@ -31,3 +49,22 @@ export interface VertexLayoutSpec {
     /** Optional explicit total stride override in bytes. Computed automatically if omitted */
     stride?: number;
 }
+
+/**
+ * Specification for binding a specific WebGLBuffer within a single or multi-buffer VAO.
+ */
+export interface VertexBufferBinding {
+    /** Target WebGLBuffer to bind to gl.ARRAY_BUFFER */
+    vbo: WebGLBuffer;
+
+    /** Layout specification for attributes packed in this buffer (single attribute or interleaved) */
+    layout: VertexLayoutSpec;
+
+    /**
+     * Optional instancing divisor for all attributes in this buffer (WebGL2).
+     * Use VertexStepRate.PerVertex (0), VertexStepRate.PerInstance (1), or a custom instance step rate (N).
+     * Can be overridden per attribute via AttributeSpec.divisor.
+     */
+    divisor?: VertexStepRate;
+}
+

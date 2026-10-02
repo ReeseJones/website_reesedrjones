@@ -1,4 +1,4 @@
-import type { AttributeSpec, VertexLayoutSpec } from "./vertex_layout_types";
+import type { AttributeSpec, VertexBufferBinding, VertexLayoutSpec } from "./vertex_layout_types";
 
 /**
  * Computes the total vertex stride in bytes for a given layout specification.
@@ -14,9 +14,79 @@ export function computeLayoutStride(layout: VertexLayoutSpec): number {
 }
 
 /**
+ * Configures a WebGL Vertex Array Object (VAO) from one or more VBO bindings.
+ * Supports splitting attributes across multiple buffers (e.g. static geometry in one VBO,
+ * dynamic or instanced data in another VBO).
+ *
+ * @param gl WebGL2 rendering context
+ * @param vao Target WebGLVertexArrayObject
+ * @param bindings Array of VertexBufferBinding entries describing each VBO and its packed attributes
+ * @param program Optional WebGLProgram required if attributes use string names instead of numeric locations
+ */
+export function configureMultiBufferVAO(
+    gl: WebGL2RenderingContext,
+    vao: WebGLVertexArrayObject,
+    bindings: VertexBufferBinding[],
+    program?: WebGLProgram
+): void {
+    gl.bindVertexArray(vao);
+
+    for (const binding of bindings) {
+        gl.bindBuffer(gl.ARRAY_BUFFER, binding.vbo);
+
+        const stride = computeLayoutStride(binding.layout);
+        let currentOffset = 0;
+
+        for (const attr of binding.layout.attributes) {
+            const bytesPerComp = attr.componentBytes ?? Float32Array.BYTES_PER_ELEMENT;
+            const attrType = attr.type ?? gl.FLOAT;
+            const normalized = attr.normalized ?? false;
+
+            let loc: number;
+            if (typeof attr.nameOrLocation === "number") {
+                loc = attr.nameOrLocation;
+            } else if (program) {
+                loc = gl.getAttribLocation(program, attr.nameOrLocation);
+            } else {
+                console.warn(
+                    `configureMultiBufferVAO: Shader program required to resolve attribute name '${attr.nameOrLocation}'`
+                );
+                currentOffset += attr.size * bytesPerComp;
+                continue;
+            }
+
+            if (loc !== -1) {
+                gl.enableVertexAttribArray(loc);
+                gl.vertexAttribPointer(
+                    loc,
+                    attr.size,
+                    attrType,
+                    normalized,
+                    stride,
+                    currentOffset
+                );
+
+                const effectiveDivisor = attr.divisor ?? binding.divisor;
+                if (effectiveDivisor !== undefined) {
+                    gl.vertexAttribDivisor(loc, effectiveDivisor);
+                }
+            } else {
+                console.warn(
+                    `configureMultiBufferVAO: Attribute '${attr.nameOrLocation}' not active in shader program`
+                );
+            }
+
+            currentOffset += attr.size * bytesPerComp;
+        }
+    }
+
+    gl.bindVertexArray(null);
+    gl.bindBuffer(gl.ARRAY_BUFFER, null);
+}
+
+/**
  * Configures a WebGL Vertex Array Object (VAO) using a declarative layout specification.
- * Binds the VAO and VBO, computes stride and cumulative byte offsets, enables attribute locations,
- * and sets up vertex attribute pointers.
+ * Supports a single VBO + layout or an array of VertexBufferBinding entries.
  *
  * @param gl WebGL2 rendering context
  * @param vao Target WebGLVertexArrayObject
@@ -30,52 +100,32 @@ export function configureVAO(
     vbo: WebGLBuffer,
     layout: VertexLayoutSpec,
     program?: WebGLProgram
+): void;
+export function configureVAO(
+    gl: WebGL2RenderingContext,
+    vao: WebGLVertexArrayObject,
+    bindings: VertexBufferBinding[],
+    program?: WebGLProgram
+): void;
+export function configureVAO(
+    gl: WebGL2RenderingContext,
+    vao: WebGLVertexArrayObject,
+    vboOrBindings: WebGLBuffer | VertexBufferBinding[],
+    layoutOrProgram?: VertexLayoutSpec | WebGLProgram,
+    program?: WebGLProgram
 ): void {
-    gl.bindVertexArray(vao);
-    gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
-
-    const stride = computeLayoutStride(layout);
-    let currentOffset = 0;
-
-    for (const attr of layout.attributes) {
-        const bytesPerComp = attr.componentBytes ?? Float32Array.BYTES_PER_ELEMENT;
-        const attrType = attr.type ?? gl.FLOAT;
-        const normalized = attr.normalized ?? false;
-
-        let loc: number;
-        if (typeof attr.nameOrLocation === "number") {
-            loc = attr.nameOrLocation;
-        } else if (program) {
-            loc = gl.getAttribLocation(program, attr.nameOrLocation);
-        } else {
-            console.warn(
-                `configureVAO: Shader program required to resolve attribute name '${attr.nameOrLocation}'`
-            );
-            currentOffset += attr.size * bytesPerComp;
-            continue;
-        }
-
-        if (loc !== -1) {
-            gl.enableVertexAttribArray(loc);
-            gl.vertexAttribPointer(
-                loc,
-                attr.size,
-                attrType,
-                normalized,
-                stride,
-                currentOffset
-            );
-        } else {
-            console.warn(
-                `configureVAO: Attribute '${attr.nameOrLocation}' not active in shader program`
-            );
-        }
-
-        currentOffset += attr.size * bytesPerComp;
+    if (Array.isArray(vboOrBindings)) {
+        configureMultiBufferVAO(
+            gl,
+            vao,
+            vboOrBindings,
+            layoutOrProgram as WebGLProgram | undefined
+        );
+        return;
     }
 
-    gl.bindVertexArray(null);
-    gl.bindBuffer(gl.ARRAY_BUFFER, null);
+    const layout = layoutOrProgram as VertexLayoutSpec;
+    configureMultiBufferVAO(gl, vao, [{ vbo: vboOrBindings, layout }], program);
 }
 
 /**
