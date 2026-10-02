@@ -2,16 +2,7 @@ import { useEffect, useRef } from "react";
 import { useWebGLPass } from "../components/webgl_canvas/use_webgl_pass";
 import { useWebGLContext } from "../components/webgl_canvas/webgl_context";
 import { GalacticCloudRenderer } from "./galactic_cloud_renderer";
-import { GalaxyParameters } from "./parameters/index";
-import { GalaxyController } from "./use_galaxy_controller";
-
-export interface GalacticCloudPassProps {
-    /** Target parameters or controller instance */
-    params?: GalaxyParameters;
-    controller?: GalaxyController;
-    /** Subscriber priority (default: -10 for background pass) */
-    priority?: number;
-}
+import type { GalacticCloudPassProps } from "./galaxy_pass_types";
 
 /**
  * Renderless pass component for the Galactic Cloud & Infinite Horizon background simulation.

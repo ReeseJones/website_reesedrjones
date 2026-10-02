@@ -2,16 +2,7 @@ import { useEffect, useRef } from "react";
 import { useWebGLPass } from "../components/webgl_canvas/use_webgl_pass";
 import { useWebGLContext } from "../components/webgl_canvas/webgl_context";
 import { GalaxyRenderer } from "./galaxy_renderer";
-import { GalaxyParameters } from "./parameters/index";
-import { GalaxyController } from "./use_galaxy_controller";
-
-export interface GalaxyPassProps {
-    /** Target parameters or controller instance */
-    params?: GalaxyParameters;
-    controller?: GalaxyController;
-    /** Subscriber priority (default: 0 for background simulation) */
-    priority?: number;
-}
+import type { GalaxyPassProps } from "./galaxy_pass_types";
 
 /**
  * Renderless pass component for the 3D Galaxy Backdrop simulation.

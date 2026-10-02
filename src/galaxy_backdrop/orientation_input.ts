@@ -7,35 +7,11 @@
  * - On mobile devices, device orientation sensor data (or touch gesture fallbacks) are used for camera parallax.
  */
 
-interface OrientationSensorLike {
-    quaternion?: [number, number, number, number];
-    start(): void;
-    stop(): void;
-    addEventListener(type: string, listener: () => void): void;
-    removeEventListener(type: string, listener: () => void): void;
-}
-
-interface SensorConstructor {
-    new (options?: { frequency?: number }): OrientationSensorLike;
-}
-
-interface SensorWindow extends Window {
-    RelativeOrientationSensor?: SensorConstructor;
-    AbsoluteOrientationSensor?: SensorConstructor;
-    DeviceOrientationEvent?: typeof DeviceOrientationEvent & {
-        requestPermission?: () => Promise<string>;
-    };
-}
-
-declare global {
-    interface WindowEventMap {
-        deviceorientationabsolute: DeviceOrientationEvent;
-    }
-}
-
-export interface OrientationInputOptions {
-    onUpdate: (pitchOffset: number, yawOffset: number) => void;
-}
+import type {
+    OrientationSensorLike,
+    SensorWindow,
+    OrientationInputOptions,
+} from "./orientation_types";
 
 export class OrientationInputController {
     private onUpdate: (pitchOffset: number, yawOffset: number) => void;
