@@ -1,22 +1,10 @@
 import "./carousel_dialog.scss";
 
 import React, { useEffect, useRef } from "react";
-import type { CarouselItem } from "./carousel";
+import type { CarouselItem, CarouselDialogProps } from "./types";
 import { useSwipeGestures } from "./use_swipe_gestures";
 import { validateIndex } from "../../lib/helpers";
 import { CloseIcon, ChevronLeftIcon, ChevronRightIcon } from "./carousel_icons";
-
-export interface CarouselDialogProps
-  extends React.HTMLAttributes<HTMLDialogElement> {
-  items: CarouselItem[];
-  selectedIndex: number;
-  isOpen: boolean;
-  onClose: () => void;
-  onScrollLeft?: () => void;
-  onScrollRight?: () => void;
-  onSelectIndex?: (index: number) => void;
-  animationDurationMs?: number;
-}
 
 export function CarouselDialog({
   items,

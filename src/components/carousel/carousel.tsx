@@ -8,36 +8,12 @@ import { useSwipeGestures } from "./use_swipe_gestures";
 import { validateIndex } from "../../lib/helpers";
 import { FullscreenIcon, ChevronLeftIcon, ChevronRightIcon } from "./carousel_icons";
 
-export type CarouselImageMode = "fit" | "cover";
-
-export interface CarouselItem {
-  title: string;
-  fullImageUrl: string;
-  thumbnailUrl: string;
-  alt?: string;
-  linkUrl?: string;
-  description?: string;
-  imageMode?: CarouselImageMode;
-}
-
-export interface CarouselProps extends React.HTMLAttributes<HTMLDivElement> {
-  items: CarouselItem[];
-  selectedIndex: number;
-  onScrollLeft?: () => void;
-  onScrollRight?: () => void;
-  onSelectIndex?: (index: number) => void;
-  onOpenDialog?: (index: number) => void;
-  animationDurationMs?: number; // Defaults to 400ms
-  imageMode?: CarouselImageMode; // Defaults to "fit"
-}
-
-interface RenderSlideContentOptions {
-  item: CarouselItem;
-  isSelected: boolean;
-  selectedIndex: number;
-  isTransitioning: boolean;
-  onOpenDialog?: (index: number) => void;
-}
+import type {
+  CarouselImageMode,
+  CarouselItem,
+  CarouselProps,
+  RenderSlideContentOptions,
+} from "./types";
 
 function renderSlideImage(item: CarouselItem): React.ReactElement {
   return <img src={item.fullImageUrl} alt={item.alt ?? item.title} />;

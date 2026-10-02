@@ -1,26 +1,10 @@
 import { useState, useCallback, useMemo } from "react";
 import { useWrappingIndex, wrapIndex } from "../../hooks/use_wrapping_index";
-
-export interface UseCarouselControllerOptions {
-  itemCount: number;
-  initialIndex?: number;
-  loop?: boolean;
-}
-
-export interface CarouselControllerBind {
-  selectedIndex: number;
-  onScrollLeft: () => void;
-  onScrollRight: () => void;
-  onSelectIndex: (index: number) => void;
-}
-
-export interface UseCarouselControllerReturn {
-  selectedIndex: number;
-  setIndex: (index: number) => void;
-  scrollLeft: () => void;
-  scrollRight: () => void;
-  bind: CarouselControllerBind;
-}
+import type {
+  UseCarouselControllerOptions,
+  CarouselControllerBind,
+  UseCarouselControllerReturn,
+} from "./types";
 
 /**
  * Manages the active carousel index and navigation controls using useWrappingIndex.
