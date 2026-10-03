@@ -1,0 +1,209 @@
+import { mat4, quat, vec3 } from "gl-matrix";
+import type { Vector3Like } from "../../maths/vector_types";
+import type {
+    EulerAngles,
+    ITransform,
+    OnTransformDirtyCallback,
+    QuaternionTuple
+} from "./transform_types";
+
+/**
+ * 3D spatial transformation component managing position, unit quaternion rotation,
+ * scale, and local 4x4 matrix synthesis.
+ */
+export class Transform implements ITransform {
+    private readonly _position: Float32Array = new Float32Array(3);
+    private readonly _rotation: Float32Array = new Float32Array([0, 0, 0, 1]);
+    private readonly _scale: Float32Array = new Float32Array([1, 1, 1]);
+    private readonly _localMatrix: Float32Array = new Float32Array(16);
+
+    private _isLocalDirty: boolean = true;
+    private _onDirty?: OnTransformDirtyCallback;
+
+    constructor(onDirty?: OnTransformDirtyCallback) {
+        this._onDirty = onDirty;
+        mat4.identity(this._localMatrix as unknown as mat4);
+    }
+
+    public get localMatrix(): Float32Array {
+        return this._localMatrix;
+    }
+
+    public get isLocalDirty(): boolean {
+        return this._isLocalDirty;
+    }
+
+    public setOnDirty(onDirty?: OnTransformDirtyCallback): void {
+        this._onDirty = onDirty;
+    }
+
+    private markDirty(): void {
+        this._isLocalDirty = true;
+        this._onDirty?.();
+    }
+
+    public getPosition(): Vector3Like {
+        return {
+            x: this._position[0],
+            y: this._position[1],
+            z: this._position[2]
+        };
+    }
+
+    public getQuaternion(): QuaternionTuple {
+        return [
+            this._rotation[0],
+            this._rotation[1],
+            this._rotation[2],
+            this._rotation[3]
+        ];
+    }
+
+    public getEulerAngles(): EulerAngles {
+        const x = this._rotation[0];
+        const y = this._rotation[1];
+        const z = this._rotation[2];
+        const w = this._rotation[3];
+
+        // For YXZ Euler angles composition:
+        // sin(pitch) = 2 * (w * x - y * z)
+        const sinPitch = 2 * (w * x - y * z);
+        let pitch: number;
+        let yaw: number;
+        let roll: number;
+
+        if (Math.abs(sinPitch) < 0.9999999) {
+            pitch = Math.asin(Math.max(-1, Math.min(1, sinPitch)));
+            yaw = Math.atan2(2 * (x * z + w * y), 1 - 2 * (x * x + y * y));
+            roll = Math.atan2(2 * (x * y + w * z), 1 - 2 * (x * x + z * z));
+        } else {
+            // Gimbal lock singularity
+            pitch = (Math.PI / 2) * Math.sign(sinPitch);
+            yaw = Math.atan2(-2 * (x * y - w * z), 1 - 2 * (y * y + z * z));
+            roll = 0;
+        }
+
+        return { pitch, yaw, roll };
+    }
+
+    public getScale(): Vector3Like {
+        return {
+            x: this._scale[0],
+            y: this._scale[1],
+            z: this._scale[2]
+        };
+    }
+
+    public setPosition(x: number, y: number, z: number): this {
+        if (this._position[0] !== x || this._position[1] !== y || this._position[2] !== z) {
+            this._position[0] = x;
+            this._position[1] = y;
+            this._position[2] = z;
+            this.markDirty();
+        }
+        return this;
+    }
+
+    public setRotationEuler(pitch: number, yaw: number, roll: number): this {
+        // YXZ order: q = qy * qx * qz
+        const hx = pitch * 0.5;
+        const hy = yaw * 0.5;
+        const hz = roll * 0.5;
+        const sx = Math.sin(hx);
+        const cx = Math.cos(hx);
+        const sy = Math.sin(hy);
+        const cy = Math.cos(hy);
+        const sz = Math.sin(hz);
+        const cz = Math.cos(hz);
+
+        const qx = sx * cy * cz + cx * sy * sz;
+        const qy = cx * sy * cz - sx * cy * sz;
+        const qz = cx * cy * sz - sx * sy * cz;
+        const qw = cx * cy * cz + sx * sy * sz;
+
+        if (
+            this._rotation[0] !== qx ||
+            this._rotation[1] !== qy ||
+            this._rotation[2] !== qz ||
+            this._rotation[3] !== qw
+        ) {
+            this._rotation[0] = qx;
+            this._rotation[1] = qy;
+            this._rotation[2] = qz;
+            this._rotation[3] = qw;
+            this.markDirty();
+        }
+        return this;
+    }
+
+    public setRotationQuaternion(x: number, y: number, z: number, w: number): this {
+        const lenSq = x * x + y * y + z * z + w * w;
+        let nx = 0;
+        let ny = 0;
+        let nz = 0;
+        let nw = 1;
+
+        if (lenSq > 0.000001) {
+            const invLen = 1 / Math.sqrt(lenSq);
+            nx = x * invLen;
+            ny = y * invLen;
+            nz = z * invLen;
+            nw = w * invLen;
+        }
+
+        if (
+            this._rotation[0] !== nx ||
+            this._rotation[1] !== ny ||
+            this._rotation[2] !== nz ||
+            this._rotation[3] !== nw
+        ) {
+            this._rotation[0] = nx;
+            this._rotation[1] = ny;
+            this._rotation[2] = nz;
+            this._rotation[3] = nw;
+            this.markDirty();
+        }
+        return this;
+    }
+
+    public slerp(target: QuaternionTuple, t: number): this {
+        quat.slerp(
+            this._rotation as unknown as quat,
+            this._rotation as unknown as quat,
+            target as unknown as quat,
+            t
+        );
+        this.markDirty();
+        return this;
+    }
+
+    public setScale(sx: number, sy: number, sz: number): this {
+        if (this._scale[0] !== sx || this._scale[1] !== sy || this._scale[2] !== sz) {
+            this._scale[0] = sx;
+            this._scale[1] = sy;
+            this._scale[2] = sz;
+            this.markDirty();
+        }
+        return this;
+    }
+
+    public setUniformScale(s: number): this {
+        return this.setScale(s, s, s);
+    }
+
+    public updateLocalMatrix(): boolean {
+        if (!this._isLocalDirty) {
+            return false;
+        }
+
+        mat4.fromRotationTranslationScale(
+            this._localMatrix as unknown as mat4,
+            this._rotation as unknown as quat,
+            this._position as unknown as vec3,
+            this._scale as unknown as vec3
+        );
+
+        this._isLocalDirty = false;
+        return true;
+    }
+}

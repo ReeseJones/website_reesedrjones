@@ -12,6 +12,7 @@
     "preview": "npm run build && wrangler dev"
   },
   "dependencies": {
+    "gl-matrix": "^3.4.4",
     "pixi.js": "^8.18.1",
     "react": "^19.1.0",
     "react-dom": "^19.2.6",
@@ -22,6 +23,7 @@
     "@parcel/resolver-glob": "^2.16.4",
     "@parcel/transformer-glsl": "^2.16.4",
     "@parcel/transformer-sass": "^2.16.4",
+    "@types/gl-matrix": "^2.4.5",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "parcel": "^2.14.0",
