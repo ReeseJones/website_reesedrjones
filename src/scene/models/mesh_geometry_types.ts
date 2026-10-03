@@ -37,7 +37,7 @@ export interface IMeshGeometry {
     /** Total vertex count for draw calls */
     readonly vertexCount: number;
 
-    /** WebGL primitive type (e.g. 0x0004 = gl.TRIANGLES, 0x0000 = gl.POINTS) */
+    /** WebGL primitive type (e.g. WebGL2RenderingContext.TRIANGLES, WebGL2RenderingContext.POINTS) */
     readonly primitiveType: number;
 
     /** Optional index count (null if non-indexed) */

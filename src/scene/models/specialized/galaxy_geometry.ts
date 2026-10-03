@@ -39,7 +39,7 @@ export class GalaxyGeometry extends MeshGeometry {
                 layout: GALAXY_VERTEX_LAYOUT,
                 vertexCount: resolvedParams.starCount,
             },
-            0x0000, // WebGL2RenderingContext.POINTS
+            WebGL2RenderingContext.POINTS,
             id
         );
 

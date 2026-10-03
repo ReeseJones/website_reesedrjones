@@ -24,12 +24,12 @@ export class MeshGeometry implements IMeshGeometry {
 
     /**
      * @param bufferData Interleaved vertex data, layout specification, and optional indices.
-     * @param primitiveType WebGL primitive type (defaults to 0x0004 = gl.TRIANGLES).
+     * @param primitiveType WebGL primitive type (defaults to WebGL2RenderingContext.TRIANGLES).
      * @param id Optional explicit debugging identifier.
      */
     constructor(
         bufferData: GeometryBufferData,
-        primitiveType: number = 0x0004,
+        primitiveType: number = WebGL2RenderingContext.TRIANGLES,
         id?: string
     ) {
         this._bufferData = bufferData;

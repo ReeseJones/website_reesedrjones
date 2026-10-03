@@ -95,7 +95,11 @@ export class SphereGeometry extends MeshGeometry {
         const widthSegments = options?.widthSegments ?? (options?.segments ? options.segments * 2 : 32);
         const heightSegments = options?.heightSegments ?? (options?.segments ?? 16);
 
-        super(buildSphereBufferData(radius, widthSegments, heightSegments), 0x0004, id);
+        super(
+            buildSphereBufferData(radius, widthSegments, heightSegments),
+            WebGL2RenderingContext.TRIANGLES,
+            id
+        );
 
         this.radius = radius;
         this.widthSegments = widthSegments;

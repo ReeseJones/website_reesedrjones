@@ -48,7 +48,11 @@ export class QuadGeometry extends MeshGeometry {
         const width = options?.width ?? 1.0;
         const height = options?.height ?? 1.0;
 
-        super(buildQuadBufferData(width, height), 0x0004, id);
+        super(
+            buildQuadBufferData(width, height),
+            WebGL2RenderingContext.TRIANGLES,
+            id
+        );
 
         this.width = width;
         this.height = height;

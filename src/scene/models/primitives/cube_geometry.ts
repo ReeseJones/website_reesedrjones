@@ -157,7 +157,11 @@ export class CubeGeometry extends MeshGeometry {
         const height = options?.height ?? 1.0;
         const depth = options?.depth ?? 1.0;
 
-        super(buildCubeBufferData(width, height, depth), 0x0004, id);
+        super(
+            buildCubeBufferData(width, height, depth),
+            WebGL2RenderingContext.TRIANGLES,
+            id
+        );
 
         this.width = width;
         this.height = height;

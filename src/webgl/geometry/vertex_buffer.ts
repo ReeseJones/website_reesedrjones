@@ -32,7 +32,7 @@ export class VertexBuffer {
         this.layout = layout;
         this.shader = shader;
         const currentGl = this.gl;
-        this.usage = currentGl ? currentGl.STATIC_DRAW : 0x88e4; // 0x88e4 is gl.STATIC_DRAW
+        this.usage = currentGl ? currentGl.STATIC_DRAW : WebGL2RenderingContext.STATIC_DRAW;
 
         if (currentGl && !currentGl.isContextLost()) {
             this.buildGPUResources();

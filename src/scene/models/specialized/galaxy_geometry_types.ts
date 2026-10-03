@@ -17,37 +17,37 @@ export const GALAXY_VERTEX_LAYOUT: VertexLayoutSpec = {
             nameOrLocation: 0,
             description: "a_radius (float)",
             size: 1,
-            type: 0x1406, // gl.FLOAT
+            type: WebGL2RenderingContext.FLOAT,
         },
         {
             nameOrLocation: 1,
             description: "a_baseAngle (float)",
             size: 1,
-            type: 0x1406, // gl.FLOAT
+            type: WebGL2RenderingContext.FLOAT,
         },
         {
             nameOrLocation: 2,
             description: "a_zOffset (float)",
             size: 1,
-            type: 0x1406, // gl.FLOAT
+            type: WebGL2RenderingContext.FLOAT,
         },
         {
             nameOrLocation: 3,
             description: "a_size (float)",
             size: 1,
-            type: 0x1406, // gl.FLOAT
+            type: WebGL2RenderingContext.FLOAT,
         },
         {
             nameOrLocation: 4,
             description: "a_spectralType (float)",
             size: 1,
-            type: 0x1406, // gl.FLOAT
+            type: WebGL2RenderingContext.FLOAT,
         },
         {
             nameOrLocation: 5,
             description: "a_driftPhase (float)",
             size: 1,
-            type: 0x1406, // gl.FLOAT
+            type: WebGL2RenderingContext.FLOAT,
         },
     ],
     stride: 6 * Float32Array.BYTES_PER_ELEMENT,
