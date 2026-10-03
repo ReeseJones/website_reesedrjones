@@ -140,11 +140,13 @@ export class GalacticCloudRenderer {
             uYawOffset: effectiveYawOffset,
         });
 
-        // Assert Explicit Pass Pipeline State & Draw Fullscreen Quad
-        gl.disable(gl.DEPTH_TEST);
-        gl.depthMask(false);
-        gl.enable(gl.BLEND);
-        gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+        // Assert Explicit Pass Pipeline State via WebGLContextManager & Draw Fullscreen Quad
+        this.contextManager.applyPipelineState({
+            depthTest: false,
+            depthWrite: false,
+            blendMode: "alpha",
+            cullFace: false,
+        });
 
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     }

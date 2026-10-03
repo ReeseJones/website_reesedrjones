@@ -42,11 +42,11 @@ This feature extends the [`src/galaxy_backdrop/`](galaxy_backdrop_design.md) dir
 ### Execution Flow
 1. **Pass Priority `-10` (`GalacticCloudPass`):**
    * Clears canvas color buffer with deep space base color.
-   * Disables depth writing (`gl.depthMask(false)`).
+   * Asserts pipeline state via `contextManager.applyPipelineState({ depthTest: false, depthWrite: false, blendMode: "alpha", cullFace: false })`.
    * Renders full-screen quad applying view-ray direction reconstruction.
    * Computes background horizon gradient band and volumetric noise gas clouds.
-2. **Pass Priority `0` (`GalaxyPass`):**
-   * Renders existing 300,000 point sprites additively on top of the cloud/horizon background.
+2. **Pass Priority `0` (`GalaxyPass` / `ImperativeGalaxyScenePass`):**
+   * Renders 3D starfield additively (`blendMode: "additive"`) on top of the cloud/horizon background.
 
 ---
 
@@ -140,4 +140,4 @@ $$\text{noiseVal} = \sum_{i=1}^{3} w_i \cdot \text{Simplex3D}(\vec{v} \cdot \tex
 3. **Renderer Class (`galactic_cloud_renderer.ts`):** Build WebGL2 renderer for full-screen quad geometry, VAO binding, and matrix/uniform state synchronization.
 4. **Pass Component (`galactic_cloud_pass.tsx`):** Create renderless React pass component subscribed to `<WebGLCanvas />` at priority `-10`.
 5. **UI Settings Section (`galactic_cloud_section.tsx`):** Build the new dedicated section component and register it inside [`galaxy_settings_dialog.tsx`](galaxy_settings_dialog/galaxy_settings_dialog.tsx).
-6. **Layout Integration:** Add `<GalacticCloudPass controller={backdropGalaxy} />` to [`layout.tsx`](file:///d:/_/website_reesedrjones/src/layouts/layout.tsx).
+6. **Layout Integration:** Add `<GalacticCloudPass controller={backdropGalaxy} />` to [`layout.tsx`](../layouts/layout.tsx).

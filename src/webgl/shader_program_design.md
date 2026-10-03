@@ -19,14 +19,15 @@ This document specifies a centralized WebGL GPU resource manager and ref-counted
 
 All generic WebGL infrastructure and lifecycle code reside in `src/webgl/`:
 
-- **Shader & Manager Design Doc:** [`src/webgl/shader_program_design.md`](src/webgl/shader_program_design.md)
-- **VAO Layout Design Doc:** [`src/webgl/shader_vao_layout_design.md`](src/webgl/shader_vao_layout_design.md)
-- **Central Context Manager:** [`src/webgl/context_manager.ts`](src/webgl/context_manager.ts)
-- **Managed Vertex Buffer:** [`src/webgl/vertex_buffer.ts`](src/webgl/vertex_buffer.ts)
-- **Shader Program Utility:** [`src/webgl/shader_program.ts`](src/webgl/shader_program.ts)
-- **VAO Layout Utility:** [`src/webgl/vertex_layout.ts`](src/webgl/vertex_layout.ts)
-- **Domain Consumer (Galaxy Renderer):** [`src/galaxy_backdrop/galaxy_renderer.ts`](src/galaxy_backdrop/galaxy_renderer.ts)
-- **Domain Consumer (Cloud Renderer):** [`src/galaxy_backdrop/galactic_cloud_renderer.ts`](src/galaxy_backdrop/galactic_cloud_renderer.ts)
+- **Shader & Manager Design Doc:** [`src/webgl/shader_program_design.md`](shader_program_design.md)
+- **VAO Layout Design Doc:** [`src/webgl/shader_vao_layout_design.md`](shader_vao_layout_design.md)
+- **Shader Key Index & Registry Types:** [`src/webgl/shader_types.ts`](shader_types.ts)
+- **Central Context Manager:** [`src/webgl/context_manager.ts`](context_manager.ts)
+- **Managed Vertex Buffer:** [`src/webgl/vertex_buffer.ts`](vertex_buffer.ts)
+- **Shader Program Utility:** [`src/webgl/shader_program.ts`](shader_program.ts)
+- **VAO Layout Utility:** [`src/webgl/vertex_layout.ts`](vertex_layout.ts)
+- **Domain Consumer (Galaxy Renderer):** [`src/galaxy_backdrop/galaxy_renderer.ts`](../galaxy_backdrop/galaxy_renderer.ts)
+- **Domain Consumer (Cloud Renderer):** [`src/galaxy_backdrop/galactic_cloud_renderer.ts`](../galaxy_backdrop/galactic_cloud_renderer.ts)
 
 ---
 
@@ -74,6 +75,8 @@ sequenceDiagram
 ### `WebGLContextManager` ([`src/webgl/context_manager.ts`](src/webgl/context_manager.ts))
 
 ```typescript
+import type { ShaderKey } from "./shader_types";
+
 export interface ShaderEntry {
     shader: ShaderProgram;
     refCount: number;
@@ -83,11 +86,14 @@ export class WebGLContextManager implements IWebGLContextManager {
     public setContext(gl: WebGL2RenderingContext): void;
     public getContext(): WebGL2RenderingContext | null;
 
-    /** Retrieves or compiles a shared ShaderProgram (increments refCount) */
-    public getOrCreateShader(key: string, options: ShaderProgramOptions): ShaderProgram;
+    /** Retrieves or compiles a shared ShaderProgram (increments refCount) with type-safe key validation */
+    public getOrCreateShader(key: ShaderKey, options: ShaderProgramOptions): ShaderProgram;
+
+    /** Queries active ShaderProgram instance without altering refCount */
+    public getShader(key: ShaderKey): ShaderProgram | null;
 
     /** Decrements refCount; destroys GPU program and unregisters when refCount === 0 */
-    public releaseShader(keyOrInstance: string | ShaderProgram): void;
+    public releaseShader(keyOrInstance: ShaderKey | ShaderProgram): void;
 
     /** Factory method: Request a managed VertexBuffer instance */
     public createVertexBuffer(layout: VertexLayoutSpec): VertexBuffer;

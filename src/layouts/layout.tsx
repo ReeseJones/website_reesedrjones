@@ -6,6 +6,7 @@ import { useGalaxyController } from "../galaxy_backdrop/use_galaxy_controller";
 import { WebGLCanvas } from "../components/webgl_canvas/webgl_canvas";
 import { GalacticCloudPass } from "../galaxy_backdrop/galactic_cloud_pass";
 import { GalaxyPass } from "../galaxy_backdrop/galaxy_pass";
+import { ImperativeGalaxyScenePass } from "../scene/test/imperative_galaxy_scene_pass";
 import { GalaxySettingsDialog } from "../galaxy_backdrop/galaxy_settings_dialog/galaxy_settings_dialog";
 import { Outlet } from "react-router-dom";
 import { useResizeCallbackRef, Dimensions } from "../hooks/use_resize_callback_ref";
@@ -56,7 +57,8 @@ export const Layout = (props: LayoutProps) => {
                 }}
             >
                 <GalacticCloudPass controller={backdropGalaxy} priority={-10} />
-                <GalaxyPass controller={backdropGalaxy} />
+                {/* Imperative 3D Scene Architecture Test Pass */}
+                <ImperativeGalaxyScenePass controller={backdropGalaxy} />
             </WebGLCanvas>
 
             <Header onOpenSettings={() => setIsSettingsOpen(true)} />

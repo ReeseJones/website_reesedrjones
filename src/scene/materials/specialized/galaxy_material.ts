@@ -1,19 +1,25 @@
 import { Material } from "../material";
-import { DEFAULT_PINPRICK_PARAMETERS } from "../../../galaxy_backdrop/parameters/presets/pinprick";
+import {
+    DEFAULT_GALAXY_PARAMETERS,
+    DEFAULT_ORB_PARAMETERS,
+    DEFAULT_PINPRICK_PARAMETERS,
+} from "../../../galaxy_backdrop/parameters/index";
 import type { GalaxyParameters } from "../../../galaxy_backdrop/parameters/types";
 import type { GalaxyMaterialOptions } from "./galaxy_material_types";
 
 /**
  * Specialized material for rendering the interactive spiral galaxy starfield.
- * Encapsulates the pinprick shader program, additive blending pipeline state,
+ * Encapsulates pinprick and orb shader programs, additive blending pipeline state,
  * and pre-populates galaxy simulation domain uniforms.
  */
 export class GalaxyMaterial extends Material {
     public readonly galaxyParams: GalaxyParameters;
 
     constructor(options?: GalaxyMaterialOptions) {
+        const isOrb = (options?.params?.style ?? DEFAULT_GALAXY_PARAMETERS.style) === "orb";
+        const defaultParams = isOrb ? DEFAULT_ORB_PARAMETERS : DEFAULT_PINPRICK_PARAMETERS;
         const resolvedParams: GalaxyParameters = {
-            ...DEFAULT_PINPRICK_PARAMETERS,
+            ...defaultParams,
             ...options?.params,
         };
 
@@ -36,10 +42,10 @@ export class GalaxyMaterial extends Material {
         };
 
         super({
-            shaderKey: options?.shaderKey ?? "galaxy_pinprick",
+            shaderKey: options?.shaderKey ?? (resolvedParams.style === "orb" ? "galaxy_orb" : "galaxy_pinprick"),
             pipelineState: {
                 blendMode: options?.pipelineState?.blendMode ?? "additive",
-                depthTest: options?.pipelineState?.depthTest ?? true,
+                depthTest: options?.pipelineState?.depthTest ?? false,
                 depthWrite: options?.pipelineState?.depthWrite ?? false,
                 cullFace: options?.pipelineState?.cullFace ?? false,
             },
@@ -47,5 +53,33 @@ export class GalaxyMaterial extends Material {
         });
 
         this.galaxyParams = resolvedParams;
+    }
+
+    /**
+     * Dynamically updates simulation uniforms when galaxy parameters change.
+     */
+    public updateParameters(params: Partial<GalaxyParameters>): void {
+        if (params.style && params.style !== this.galaxyParams.style) {
+            this.shaderKey = params.style === "orb" ? "galaxy_orb" : "galaxy_pinprick";
+        }
+
+        const uniforms: Record<string, unknown> = {};
+        if (params.rotationSpeed !== undefined) uniforms.u_rotationSpeed = params.rotationSpeed;
+        if (params.differentialSpeed !== undefined) uniforms.u_differentialSpeed = params.differentialSpeed;
+        if (params.driftSpeed !== undefined) uniforms.u_driftSpeed = params.driftSpeed;
+        if (params.driftAmplitude !== undefined) uniforms.u_driftAmplitude = params.driftAmplitude;
+        if (params.pointScale !== undefined) uniforms.u_pointScale = params.pointScale;
+        if (params.minPointSize !== undefined) uniforms.u_minPointSize = params.minPointSize;
+        if (params.maxPointSize !== undefined) uniforms.u_maxPointSize = params.maxPointSize;
+        if (params.nearFadeDistance !== undefined) uniforms.u_nearFadeDistance = params.nearFadeDistance;
+        if (params.coreColor !== undefined) uniforms.u_coreColor = params.coreColor;
+        if (params.coreBlazeColor !== undefined) uniforms.u_coreBlazeColor = params.coreBlazeColor;
+        if (params.armInnerColor !== undefined) uniforms.u_armInnerColor = params.armInnerColor;
+        if (params.armOuterColor !== undefined) uniforms.u_armOuterColor = params.armOuterColor;
+        if (params.accentColor !== undefined) uniforms.u_accentColor = params.accentColor;
+        if (params.coreGlowBoost !== undefined) uniforms.u_coreGlowBoost = params.coreGlowBoost;
+
+        this.setUniforms(uniforms);
+        Object.assign(this.galaxyParams, params);
     }
 }
