@@ -53,3 +53,18 @@ Principles, standards, and typing patterns for TypeScript code in this repositor
   - **Zero Implicit Coupling:** Guarantees that the function has no side-effects on instance state and does not depend on object lifecycles.
   - **Isolated Testability & Reusability:** Pure standalone functions can be directly tested and shared across modules without instantiating class hierarchies or mocking complex constructor dependencies.
 
+---
+
+## 7. Encapsulation & Member Visibility: Avoiding Protected State
+- **Default to `private` for Internal State:** All internal state variables, cache fields, backing storage, and non-exported helper methods must default to `private`. Never use `protected` as a default or convenience modifier.
+- **Zero `protected` Members on Leaf Classes:** Concrete classes not explicitly designed as base classes for inheritance (such as `PerspectiveCamera`, `GalaxyMaterial`, `CubeGeometry`) must never declare `protected` members. If a class has no derived subclasses, every internal member must be `private`.
+- **Avoid Protected State / Variables:** Base classes must not expose raw mutable state fields to subclasses:
+  - **Fragile Base Class Risk:** Directly exposing mutable state allows derived classes to mutate fields without triggering cache invalidation, dirty tracking, or invariant verification in the base class.
+  - **Read-Only Access via Getters:** When derived classes need to observe base class state, base classes should provide public or protected read-only getters (`this.near`, `this.far`, `this.transform`) rather than exposing raw backing variables (`this._near`, `this._far`, `this._transform`).
+  - **Behavioral Mutation Methods:** If derived classes need to alter base lifecycle or invalidation states, provide explicit protected methods (e.g., `protected markProjectionDirty(): void`) rather than allowing subclasses to set raw flags (`this._isProjDirty = true`).
+- **Restrict `protected` to Template Method Hooks:** The `protected` modifier is strictly reserved for:
+  - Abstract methods intended for subclasses to implement (e.g., `protected abstract updateProjectionMatrix(): void`).
+  - Virtual lifecycle hooks or extension callbacks (e.g., `protected onBeforeRender(): void`).
+  - Controlled base mutators that enforce invariants and manage dirty flags.
+
+
