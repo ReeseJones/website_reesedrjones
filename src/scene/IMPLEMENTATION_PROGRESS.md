@@ -19,13 +19,13 @@ This document serves as the persistent single source of truth for the phased imp
   - **Commit Target:** `feat(scene): implement transform hierarchy and scene graph core`
 
 - **Phase 2: Camera & View-Projection Subsystem**
-  - **Status:** Pending
+  - **Status:** Complete
   - **Reference Design:** [`camera/camera_system_design.md`](camera/camera_system_design.md)
   - **Deliverables:**
-    - `src/scene/camera/camera_types.ts`
-    - `src/scene/camera/camera.ts` (abstract base extending `SceneNode`)
-    - `src/scene/camera/perspective_camera.ts`
-    - `src/scene/camera/orthographic_camera.ts`
+    - `src/scene/camera/camera_types.ts` (Completed)
+    - `src/scene/camera/camera.ts` (abstract base extending `SceneNode`) (Completed)
+    - `src/scene/camera/perspective_camera.ts` (Completed)
+    - `src/scene/camera/orthographic_camera.ts` (Completed)
   - **Commit Target:** `feat(scene): implement camera and view projection system`
 
 - **Phase 3: Model Space, Geometry & Material Architecture**
