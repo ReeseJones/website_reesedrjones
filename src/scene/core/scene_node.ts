@@ -17,7 +17,12 @@ export class SceneNode implements ISceneNode {
     public name: string;
 
     private readonly _transform: Transform;
-    private readonly _worldMatrix: mat4 = mat4.create();
+    private readonly _worldMatrix: Float32Array = new Float32Array([
+        1, 0, 0, 0,
+        0, 1, 0, 0,
+        0, 0, 1, 0,
+        0, 0, 0, 1
+    ]);
     private _parent: ISceneNode | null = null;
     private readonly _children: ISceneNode[] = [];
 
@@ -135,13 +140,13 @@ export class SceneNode implements ISceneNode {
             if (!this._parent) {
                 mat4.copy(
                     this._worldMatrix,
-                    this._transform.localMatrix as unknown as mat4
+                    this._transform.localMatrix
                 );
             } else {
                 mat4.multiply(
                     this._worldMatrix,
-                    this._parent.worldMatrix as unknown as mat4,
-                    this._transform.localMatrix as unknown as mat4
+                    this._parent.worldMatrix,
+                    this._transform.localMatrix
                 );
             }
             this._isWorldDirty = false;

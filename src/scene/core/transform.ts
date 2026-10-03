@@ -12,12 +12,17 @@ import type {
  * scale, and local 4x4 matrix synthesis.
  */
 export class Transform implements ITransform {
-    private static readonly _scratchQuat: quat = quat.create();
+    private static readonly _scratchQuat: Float32Array = new Float32Array(4);
 
-    private readonly _position: vec3 = vec3.create();
-    private readonly _rotation: quat = quat.create();
-    private readonly _scale: vec3 = vec3.fromValues(1, 1, 1);
-    private readonly _localMatrix: mat4 = mat4.create();
+    private readonly _position: Float32Array = new Float32Array(3);
+    private readonly _rotation: Float32Array = new Float32Array([0, 0, 0, 1]);
+    private readonly _scale: Float32Array = new Float32Array([1, 1, 1]);
+    private readonly _localMatrix: Float32Array = new Float32Array([
+        1, 0, 0, 0,
+        0, 1, 0, 0,
+        0, 0, 1, 0,
+        0, 0, 0, 1
+    ]);
 
     private _isLocalDirty: boolean = true;
     private _onDirty?: OnTransformDirtyCallback;
@@ -161,7 +166,7 @@ export class Transform implements ITransform {
         quat.slerp(
             this._rotation,
             this._rotation,
-            target as unknown as quat,
+            target,
             t
         );
         this.markDirty();

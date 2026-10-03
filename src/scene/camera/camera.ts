@@ -10,9 +10,24 @@ import type { Vector3Like } from "../../maths/vector_types";
  * view-projection matrices.
  */
 export abstract class Camera extends SceneNode implements ICamera {
-    private readonly _viewMatrix: mat4 = mat4.create();
-    private readonly _projectionMatrix: mat4 = mat4.create();
-    private readonly _viewProjectionMatrix: mat4 = mat4.create();
+    private readonly _viewMatrix: Float32Array = new Float32Array([
+        1, 0, 0, 0,
+        0, 1, 0, 0,
+        0, 0, 1, 0,
+        0, 0, 0, 1
+    ]);
+    private readonly _projectionMatrix: Float32Array = new Float32Array([
+        1, 0, 0, 0,
+        0, 1, 0, 0,
+        0, 0, 1, 0,
+        0, 0, 0, 1
+    ]);
+    private readonly _viewProjectionMatrix: Float32Array = new Float32Array([
+        1, 0, 0, 0,
+        0, 1, 0, 0,
+        0, 0, 1, 0,
+        0, 0, 0, 1
+    ]);
 
     private _near: number;
     private _far: number;
@@ -133,7 +148,7 @@ export abstract class Camera extends SceneNode implements ICamera {
             this.updateWorldTransform();
             const inverted = mat4.invert(
                 this._viewMatrix,
-                this.worldMatrix as unknown as mat4
+                this.worldMatrix
             );
             if (!inverted) {
                 mat4.identity(this._viewMatrix);
