@@ -7,15 +7,20 @@ import type { StandardMaterialOptions } from "./standard_material_types";
  */
 export class StandardMaterial extends Material {
     constructor(options?: StandardMaterialOptions) {
+        const colorVec4 = options?.color
+            ? options.color.length === 3
+                ? [options.color[0], options.color[1], options.color[2], 1.0]
+                : options.color
+            : [1.0, 1.0, 1.0, 1.0];
+
         const uniforms: Record<string, unknown> = {
-            ...(options?.color !== undefined ? { u_color: options.color } : {}),
-            ...(options?.roughness !== undefined ? { u_roughness: options.roughness } : {}),
-            ...(options?.metallic !== undefined ? { u_metallic: options.metallic } : {}),
+            u_color: colorVec4,
+            u_useTexture: 0.0,
             ...options?.uniforms,
         };
 
         super({
-            shaderKey: options?.shaderKey ?? "standard_pbr",
+            shaderKey: options?.shaderKey ?? "unlit",
             pipelineState: {
                 blendMode: options?.pipelineState?.blendMode ?? "opaque",
                 depthTest: options?.pipelineState?.depthTest ?? true,

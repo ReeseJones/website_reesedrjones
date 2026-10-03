@@ -233,7 +233,7 @@ export interface PipelineState {
 
 export interface MaterialOptions {
     /** Unique shader key registered with WebGLContextManager */
-    shaderKey: string;
+    shaderKey: ShaderKey;
     /** Pipeline state overrides */
     pipelineState?: Partial<PipelineState>;
     /** Material-specific uniform key-value pairs */
@@ -241,8 +241,8 @@ export interface MaterialOptions {
 }
 
 export interface IMaterial {
-    /** Shader program identifier */
-    readonly shaderKey: string;
+    /** Strongly-typed shader program identifier */
+    readonly shaderKey: ShaderKey;
     
     /** Pipeline state settings (blending, depth, culling) */
     readonly pipelineState: PipelineState;
@@ -307,25 +307,39 @@ Materials assert explicit pass state ownership prior to issuing draw calls:
 
 ```typescript
 // =========================================================================
-// Case 1: Standard Cartesian Model (Asteroid / Planet)
+// Case 1: Standard Cartesian Model with Texture & Cloning (Asteroid / Planet)
 // =========================================================================
 const asteroidGeo = new SphereGeometry({ radius: 2.0, segments: 16 });
-const asteroidMat = new StandardMaterial({
-    shaderKey: "standard_pbr",
-    uniforms: { u_color: [0.8, 0.4, 0.2] },
+const asteroidTexture = Texture.fromUrl(contextManager, asteroidPng);
+
+const baseMat = new UnlitMaterial({
+    texture: asteroidTexture,
+    color: [1.0, 1.0, 1.0, 1.0],
 });
-const asteroid = new ModelInstance(asteroidGeo, asteroidMat);
+
+// Clone material with unique color tint for a damaged variant
+const damagedMat = baseMat.clone().setColor([1.0, 0.4, 0.4, 1.0]);
+
+const asteroid = new ModelInstance(asteroidGeo, baseMat);
 asteroid.transform.setPosition(15, 5, -30);
 scene.add(asteroid);
+
+const damagedAsteroid = new ModelInstance(asteroidGeo, damagedMat);
+damagedAsteroid.transform.setPosition(-15, 5, -30);
+scene.add(damagedAsteroid);
 
 // =========================================================================
 // Case 2: Specialized Procedural Galaxy Simulation
 // =========================================================================
 const galaxyGeo = new GalaxyGeometry(galaxyParams);
 const galaxyMat = new GalaxyMaterial({
-    shaderKey: "galaxy_pinprick",
+    // Automatically selects "galaxy_orb" or "galaxy_pinprick" based on galaxyParams.style
     params: galaxyParams,
-    blendMode: "additive",
+    pipelineState: {
+        blendMode: "additive",
+        depthTest: false,
+        depthWrite: false,
+    },
 });
 const galaxy = new ModelInstance(galaxyGeo, galaxyMat);
 galaxy.transform.setPosition(0, 0, 0); // Position at galactic origin
