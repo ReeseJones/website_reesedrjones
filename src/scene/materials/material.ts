@@ -1,6 +1,6 @@
 import type { IMaterial, MaterialOptions, PipelineState } from "./material_types";
 import type { ShaderKey } from "../../webgl/shader_types";
-import type { ITexture } from "../../webgl/texture_types";
+import type { ITexture, TextureUnit } from "../../webgl/texture_types";
 
 /**
  * Base material class encapsulating shader selection, uniform parameters,
@@ -10,7 +10,7 @@ export class Material implements IMaterial {
     private _shaderKey: ShaderKey;
     private _pipelineState: PipelineState;
     private readonly _uniforms: Map<string, unknown> = new Map();
-    private readonly _textures: Map<number, ITexture> = new Map();
+    private readonly _textures: Map<TextureUnit | number, ITexture> = new Map();
 
     constructor(options: MaterialOptions) {
         this._shaderKey = options.shaderKey;
@@ -72,42 +72,9 @@ export class Material implements IMaterial {
     }
 
     /**
-     * Asserts WebGL blending, depth buffer mask/test, and backface culling states.
+     * Binds a texture resource to a specific hardware texture unit (e.g. TextureUnit.Color).
      */
-    public applyPipelineState(gl: WebGL2RenderingContext): void {
-        switch (this._pipelineState.blendMode) {
-            case "additive":
-                gl.enable(gl.BLEND);
-                gl.blendFunc(gl.ONE, gl.ONE);
-                break;
-            case "alpha":
-                gl.enable(gl.BLEND);
-                gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-                break;
-            case "opaque":
-            default:
-                gl.disable(gl.BLEND);
-                break;
-        }
-
-        if (this._pipelineState.depthTest) {
-            gl.enable(gl.DEPTH_TEST);
-        } else {
-            gl.disable(gl.DEPTH_TEST);
-        }
-        gl.depthMask(this._pipelineState.depthWrite);
-
-        if (this._pipelineState.cullFace) {
-            gl.enable(gl.CULL_FACE);
-        } else {
-            gl.disable(gl.CULL_FACE);
-        }
-    }
-
-    /**
-     * Binds a texture resource to a specific hardware texture unit (e.g. Unit 0 for base texture).
-     */
-    public setTexture(unit: number, texture: ITexture | null): this {
+    public setTexture(unit: TextureUnit | number, texture: ITexture | null): this {
         if (texture) {
             this._textures.set(unit, texture);
         } else {
@@ -119,14 +86,14 @@ export class Material implements IMaterial {
     /**
      * Retrieves the texture bound to a specific hardware texture unit, if any.
      */
-    public getTexture(unit: number): ITexture | null {
+    public getTexture(unit: TextureUnit | number): ITexture | null {
         return this._textures.get(unit) ?? null;
     }
 
     /**
      * Retrieves all assigned textures mapped by hardware texture unit.
      */
-    public getTextures(): ReadonlyMap<number, ITexture> {
+    public getTextures(): ReadonlyMap<TextureUnit | number, ITexture> {
         return this._textures;
     }
 

@@ -1,5 +1,6 @@
 import { Material } from "./material";
 import type { UnlitMaterialOptions } from "./unlit_material_types";
+import { TextureUnit, type ITexture } from "../../webgl/texture_types";
 
 /**
  * Unlit material for rendering geometry with a solid/tinted color and optional 2D texture,
@@ -21,8 +22,8 @@ export class UnlitMaterial extends Material {
             ...options?.uniforms,
         };
 
-        const textures: Record<number, ITexture> = {
-            ...(options?.texture ? { 0: options.texture } : {}),
+        const textures: Partial<Record<TextureUnit | number, ITexture>> = {
+            ...(options?.texture ? { [TextureUnit.Color]: options.texture } : {}),
             ...options?.textures,
         };
 
@@ -35,30 +36,30 @@ export class UnlitMaterial extends Material {
                 cullFace: options?.pipelineState?.cullFace ?? true,
             },
             uniforms,
-            textures,
+            textures: textures as Record<number, ITexture>,
         });
     }
 
     /**
-     * Retrieves the 2D texture bound to Semantic Unit 0 (u_texture).
+     * Retrieves the 2D texture bound to Semantic Unit 0 (TextureUnit.Color / u_texture).
      */
     public get texture(): ITexture | null {
-        return this.getTexture(0);
+        return this.getTexture(TextureUnit.Color);
     }
 
     /**
-     * Assigns or clears the 2D texture bound to Semantic Unit 0 (u_texture).
+     * Assigns or clears the 2D texture bound to Semantic Unit 0 (TextureUnit.Color / u_texture).
      */
     public setTexture(texture: ITexture | null): this;
-    public setTexture(unit: number, texture: ITexture | null): this;
-    public setTexture(unitOrTexture: number | ITexture | null, maybeTexture?: ITexture | null): this {
+    public setTexture(unit: TextureUnit | number, texture: ITexture | null): this;
+    public setTexture(unitOrTexture: TextureUnit | number | ITexture | null, maybeTexture?: ITexture | null): this {
         if (typeof unitOrTexture === "number") {
             super.setTexture(unitOrTexture, maybeTexture ?? null);
-            if (unitOrTexture === 0) {
+            if (unitOrTexture === TextureUnit.Color) {
                 this.setUniform("u_useTexture", maybeTexture ? 1.0 : 0.0);
             }
         } else {
-            super.setTexture(0, unitOrTexture);
+            super.setTexture(TextureUnit.Color, unitOrTexture);
             this.setUniform("u_useTexture", unitOrTexture ? 1.0 : 0.0);
         }
         return this;
@@ -94,7 +95,7 @@ export class UnlitMaterial extends Material {
             pipelineState: { ...this.pipelineState },
             uniforms: currentUniforms,
             textures: clonedTextures,
-            texture: this.getTexture(0),
+            texture: this.getTexture(TextureUnit.Color),
             useTexture: (currentUniforms.u_useTexture as number) > 0.5,
         });
     }

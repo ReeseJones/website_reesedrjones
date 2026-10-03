@@ -1,5 +1,12 @@
 import type { IWebGLContextManager } from "./context_manager_types";
-import type { ITexture, TextureFilter, TextureOptions, TextureSource, TextureWrap } from "./texture_types";
+import {
+    TextureUnit,
+    type ITexture,
+    type TextureFilter,
+    type TextureOptions,
+    type TextureSource,
+    type TextureWrap,
+} from "./texture_types";
 
 /**
  * Pure WebGL2 texture resource abstraction with immediate 1x1 fallback,
@@ -53,9 +60,9 @@ export class Texture implements ITexture {
     }
 
     /**
-     * Binds this texture to a specific hardware texture unit (defaults to Unit 0).
+     * Binds this texture to a specific hardware texture unit (defaults to TextureUnit.Color).
      */
-    public bind(unit: number = 0): void {
+    public bind(unit: TextureUnit | number = TextureUnit.Color): void {
         this._contextManager.bindTexture(unit, this._handle);
     }
 

@@ -255,9 +255,6 @@ export interface IMaterial {
     
     /** Returns current uniform values */
     getUniforms(): Readonly<Record<string, unknown>>;
-    
-    /** Applies WebGL pipeline states (blendFunc, depthMask, etc.) */
-    applyPipelineState(gl: WebGL2RenderingContext): void;
 }
 ```
 
@@ -282,9 +279,9 @@ export interface IModelInstance extends ISceneNode {
 
 ---
 
-## 6. WebGL Pipeline State Management in Materials
+## 6. WebGL Pipeline State Management via Context Manager
 
-Materials assert explicit pass state ownership prior to issuing draw calls:
+Materials declare their desired rasterization and blending configurations declaratively via `pipelineState`. The rendering pipeline applies these settings cooperatively through `contextManager.applyPipelineState(material.pipelineState)` to benefit from state caching and driver call deduplication:
 
 - **Opaque Preset (`blendMode: "opaque"`):**
   - `gl.disable(gl.BLEND)`
