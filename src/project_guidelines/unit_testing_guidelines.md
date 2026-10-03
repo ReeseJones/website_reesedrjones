@@ -6,8 +6,8 @@ This document specifies the testing principles, conventions, execution commands,
 
 ## 1. Core Principles & Agent Obligations
 
-- **Verification Benchmark:** Unit tests serve as the mandatory benchmark for confirming that newly written or refactored code compiles, runs without runtime exceptions, and satisfies its intended contract.
-- **Agent Duty to Verify:** Whenever an agent introduces or modifies architectural components, math routines, scene nodes, or subsystems, the agent must run the corresponding unit tests to verify behavior before marking the task complete.
+- **Verification Benchmark:** Unit tests serve as the mandatory benchmark for confirming that newly written or refactored code compiles, runs without runtime exceptions, asserts expected behavior and returns, and satisfies its intended contract.
+- **Agent Duty to Verify:** Whenever an agent introduces or modifies architectural components, math routines, scene nodes, or subsystems, the agent must run the corresponding unit tests to verify behavior and returns before marking the task complete.
 - **Never Spin Up Real WebGL Contexts:** Unit tests must remain fast, deterministic, and runnable in headless CLI/CI environments. Never initialize real browser WebGL2 canvases in unit test files. Use interface stubs and mock fixtures.
 
 ---
@@ -23,10 +23,11 @@ When writing unit tests for any class, module, or subsystem, agents must adhere 
 
 ### Step 2: Branch & Parameter Input Matrix
 For each public method or property, enumerate the code paths based on unique parameter inputs and edge conditions. Create an `it('should ...')` spec for each:
-- **Nominal / Happy Path:** Standard valid inputs producing expected outputs.
-- **Boundary & Zero Cases:** Zero vectors, negative values, identity matrices, empty arrays, null/undefined optional parameters.
+- **Return Value & Output Verification:** Explicitly assert what the method **returns** for each code path—including return data structures, primitive values, boolean status flags, nullable outputs (`null` / `undefined`), and fluent method chaining (`return this`). Never verify internal side-effects alone; always assert the returns.
+- **Nominal / Happy Path:** Standard valid inputs producing expected returns and state changes.
+- **Boundary & Zero Cases:** Zero vectors, negative values, identity matrices, empty arrays, null/undefined optional parameters, asserting fallback or error returns.
 - **State Mutation & Dirty Flagging:** Verifying internal flags change, cached values are invalidated, and listeners are triggered.
-- **Idempotency & Redundancy:** Calling a method repeatedly with the same arguments (e.g. binding an already-bound buffer) must not produce side effects or duplicate operations.
+- **Idempotency & Redundancy:** Calling a method repeatedly with the same arguments (e.g. binding an already-bound buffer) must not produce side effects, duplicate operations, or unexpected returns.
 
 ### Step 3: Domain-Specific Holistic Requirements
 Evaluate the component within the broader 3D engine context:
