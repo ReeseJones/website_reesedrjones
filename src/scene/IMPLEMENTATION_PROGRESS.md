@@ -29,19 +29,19 @@ This document serves as the persistent single source of truth for the phased imp
   - **Commit Target:** `feat(scene): implement camera and view projection system`
 
 - **Phase 3: Model Space, Geometry & Material Architecture**
-  - **Status:** Pending
+  - **Status:** Complete
   - **Reference Design:** [`models/model_mesh_design.md`](models/model_mesh_design.md)
   - **Deliverables:**
-    - `src/scene/models/mesh_geometry_types.ts` & `src/scene/models/mesh_geometry.ts`
-    - `src/scene/models/primitives/sphere_geometry.ts`, `cube_geometry.ts`, `quad_geometry.ts`
-    - `src/scene/materials/material_types.ts` & `src/scene/materials/material.ts`
-    - `src/scene/materials/standard_material.ts`
-    - `src/scene/models/model_instance_types.ts` & `src/scene/models/model_instance.ts`
-    - Specialized: `src/scene/models/specialized/galaxy_geometry.ts` & `src/scene/materials/specialized/galaxy_material.ts`
+    - `src/scene/models/mesh_geometry_types.ts` & `src/scene/models/mesh_geometry.ts` (Completed)
+    - `src/scene/models/primitives/sphere_geometry.ts`, `cube_geometry.ts`, `quad_geometry.ts` (Completed)
+    - `src/scene/materials/material_types.ts` & `src/scene/materials/material.ts` (Completed)
+    - `src/scene/materials/standard_material.ts` (Completed)
+    - `src/scene/models/model_instance_types.ts` & `src/scene/models/model_instance.ts` (Completed)
+    - Specialized: `src/scene/models/specialized/galaxy_geometry.ts` & `src/scene/materials/specialized/galaxy_material.ts` (Completed)
   - **Commit Target:** `feat(scene): implement geometry, material, and model instance architecture`
 
 - **Phase 4: Scene Rendering Pipeline & WebGL Canvas Bridge**
-  - **Status:** Pending
+  - **Status:** In Progress
   - **Reference Design:** [`renderer/scene_render_pipeline_design.md`](renderer/scene_render_pipeline_design.md)
   - **Deliverables:**
     - Context Manager state caching: updates to `src/webgl/context_manager_types.ts` and `src/webgl/context_manager.ts`
