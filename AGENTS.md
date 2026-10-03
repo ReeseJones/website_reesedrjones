@@ -13,6 +13,9 @@
 - `npm run build` — Production build to `./dist`
 - `npm run preview` — Build and run local Cloudflare preview (`wrangler dev`) (Not for agents)
 - `npm run deploy` — Build and deploy directly to Cloudflare (`wrangler deploy`) (Not for agents)
+- `npm test` — Run all unit tests with Vitest
+- `npm run test:watch` — Incremental targeted test runner in watch mode
+- `npm run test:coverage` — Run unit tests with V8 code coverage report
 
 ## Interaction Protocol: Inquiries vs. Implementation
 - **Never edit code on inquiries:** Treat any message containing a question mark (`?`) or phrasing like *"Can we..."*, *"Could we..."*, *"Should we..."*, *"What if..."*, or inquiring about possibilities, optimizations, or refactoring strictly as an **inquiry**, NOT authorization to edit files.
@@ -32,8 +35,10 @@
   - HTML & layout: [html_layout_guidelines.md](src/project_guidelines/html_layout_guidelines.md)
   - TypeScript & typing standards: [typescript_guidelines.md](src/project_guidelines/typescript_guidelines.md)
   - Parcel imports & asset indexing: [using_parcel_guideline.md](src/project_guidelines/using_parcel_guideline.md)
+  - Unit testing standards & mocking: [unit_testing_guidelines.md](src/project_guidelines/unit_testing_guidelines.md)
 
 ## Rules
+- **Unit Testing Benchmark:** Agents must create, use, and run unit tests as the benchmark for compiling code and asserting behavior. Adhere to [unit_testing_guidelines.md](src/project_guidelines/unit_testing_guidelines.md): map each explicit public interface method/property to a `describe` block, test input code paths and edge conditions in `it` specs, verify domain requirements (math invariants, matrix ordering, dirty-flag cascading, deterministic resource disposal), and mock dependencies with test fixtures rather than instantiating real WebGL contexts.
 - **Verify builds:** The main agent does not need to run `npm run build` after every step. This work will typically be delegated to subagents and instructed to do so as part of making their design.
 - **Client-only:** Never import Node built-in modules (`fs`, `path`, `process`) in app code.
 - **Asset imports:** Use relative ESM imports for images/assets (e.g., `import heroImg from "./hero.jpg"`).
