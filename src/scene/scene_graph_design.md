@@ -12,7 +12,7 @@ This document specifies the mathematical foundation, data contracts, and algorit
   - Local TRS matrix is recomputed only when local properties change (`isLocalDirty`).
   - World matrix is recomputed only when the local matrix or an ancestor's world matrix changes (`isWorldDirty`), avoiding redundant matrix multiplications for static nodes.
 - **Hierarchical Visibility Pruning:** Visibility cascades down the scene graph. If an ancestor is marked `visible = false`, its entire subtree is skipped during pre-render updates and draw passes.
-- **Lightweight Class Inheritance:** `SceneNode` serves as the lightweight spatial base class, extended by specialized entities (`GroupNode`, `ModelInstance`, and `CameraNode`).
+- **Lightweight Class Inheritance:** `SceneNode` serves as the lightweight spatial base class and grouping container, extended by specialized entities (`ModelInstance` and `CameraNode`).
 - **Strict Separation of Types:** Interfaces are declared in dedicated `*_types.ts` files to prevent circular dependencies.
 
 ---
@@ -82,8 +82,7 @@ All transform and scene graph code resides in `src/maths/` and `src/scene/core/`
   - [`src/scene/core/transform.ts`](core/transform.ts): The `Transform` class managing TRS data, `gl-matrix` conversions, and local matrix synthesis.
 - **Scene Node Hierarchy Layer:**
   - [`src/scene/core/scene_node_types.ts`](core/scene_node_types.ts): Contracts for node hierarchy, traversal callbacks, and options.
-  - [`src/scene/core/scene_node.ts`](core/scene_node.ts): Base `SceneNode` class implementing parent-child relationships, world matrix caching, and visibility cascading.
-  - [`src/scene/core/group_node.ts`](core/group_node.ts): Lightweight empty node used for scene organization and compound rotation pivots.
+  - [`src/scene/core/scene_node.ts`](core/scene_node.ts): Base `SceneNode` class implementing parent-child relationships, world matrix caching, visibility cascading, and group organization.
 - **Scene Container Layer:**
   - [`src/scene/core/scene_types.ts`](core/scene_types.ts): Contracts for the root `Scene` container and active camera registry.
   - [`src/scene/core/scene.ts`](core/scene.ts): The top-level `Scene` container managing root nodes and frame update passes.

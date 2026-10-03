@@ -27,7 +27,7 @@ To ensure crisp system boundaries, responsibilities for state, order, and execut
     - `cullFace`: boolean (enables/disables backface culling)
 - **`ModelInstance` (Scene Composition Layering Owner):**
   - **Responsibility:** Dictates rendering sequence and spatial placement in the scene graph.
-  - **Parameters:** `renderOrder: number` (defaults to `0`). Materials can provide a suggested default (e.g., `StandardMaterial` defaults to `0`, `GalaxyMaterial` defaults to `10`), but developers can override it per instance.
+  - **Parameters:** `renderOrder: number` (defaults to `0`). Materials can provide a suggested default (e.g., `UnlitMaterial` defaults to `0`, `GalaxyMaterial` defaults to `10`), but developers can override it per instance.
 - **`WebGLContextManager` (GPU State Caching & Deduplication Authority):**
   - **Responsibility:** Tracks the active GPU state on the WebGL context. When `applyPipelineState(desired)` is called, it compares against `currentPipelineState` and only issues WebGL driver calls for properties that actually changed.
 - **`SceneRenderer` (Orchestration & Execution):**
@@ -299,7 +299,7 @@ import { Scene } from "./core/scene";
 import { PerspectiveCamera } from "./camera/perspective_camera";
 import { ModelInstance } from "./models/model_instance";
 import { SphereGeometry } from "./models/primitives/sphere_geometry";
-import { StandardMaterial } from "./materials/standard_material";
+import { UnlitMaterial } from "./materials/unlit_material";
 import { GalaxyGeometry } from "./models/specialized/galaxy_geometry";
 import { GalaxyMaterial } from "./materials/specialized/galaxy_material";
 
@@ -312,8 +312,7 @@ export function SpaceExplorationView(): React.JSX.Element {
 
         // 1. Add Opaque Spacecraft (renderOrder: 0, writes depth)
         const shipGeo = new SphereGeometry({ radius: 3, segments: 16 });
-        const shipMat = new StandardMaterial({ 
-            shaderKey: "unlit",
+        const shipMat = new UnlitMaterial({ 
             pipelineState: { depthTest: true, depthWrite: true, blendMode: "opaque" }
         });
         const ship = new ModelInstance(shipGeo, shipMat);

@@ -11,10 +11,9 @@ This document serves as the persistent single source of truth for the phased imp
   - **Reference Design:** [`scene_graph_design.md`](scene_graph_design.md)
   - **Prerequisites:** `npm install gl-matrix`, `npm install --save-dev @types/gl-matrix` (Completed)
   - **Deliverables:**
-    - `src/maths/vector_types.ts` & `src/maths/vector.ts` (Completed)
+    - `src/maths/vector_types.ts` (Completed, standardized to `gl-matrix`)
     - `src/scene/core/transform_types.ts` & `src/scene/core/transform.ts` (Completed)
     - `src/scene/core/scene_node_types.ts` & `src/scene/core/scene_node.ts` (Completed)
-    - `src/scene/core/group_node.ts` (Completed)
     - `src/scene/core/scene_types.ts` & `src/scene/core/scene.ts` (Completed)
   - **Commit Target:** `feat(scene): implement transform hierarchy and scene graph core`
 
@@ -35,7 +34,7 @@ This document serves as the persistent single source of truth for the phased imp
     - `src/scene/models/mesh_geometry_types.ts` & `src/scene/models/mesh_geometry.ts` (Completed)
     - `src/scene/models/primitives/sphere_geometry.ts`, `cube_geometry.ts`, `quad_geometry.ts` (Completed)
     - `src/scene/materials/material_types.ts` & `src/scene/materials/material.ts` (Completed)
-    - `src/scene/materials/standard_material.ts` (Completed)
+    - `src/scene/materials/unlit_material.ts` (Completed)
     - `src/scene/models/model_instance_types.ts` & `src/scene/models/model_instance.ts` (Completed)
     - Specialized: `src/scene/models/specialized/galaxy_geometry.ts` & `src/scene/materials/specialized/galaxy_material.ts` (Completed)
   - **Commit Target:** `feat(scene): implement geometry, material, and model instance architecture`

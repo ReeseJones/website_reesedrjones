@@ -26,11 +26,11 @@ flowchart TD
     subgraph SceneGraph ["Scene Graph & Hierarchy"]
         Scene["Scene (Root)"]
         CameraNode["CameraNode"]
-        GroupNode["GroupNode"]
+        SceneNode["SceneNode (Group/Pivot)"]
         ModelNode["ModelInstance (Entity)"]
         Scene --> CameraNode
-        Scene --> GroupNode
-        GroupNode --> ModelNode
+        Scene --> SceneNode
+        SceneNode --> ModelNode
     end
 
     subgraph GeometryAndShaders ["Assets & GPU Resources"]

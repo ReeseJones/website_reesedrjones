@@ -66,9 +66,7 @@ flowchart TD
 
     subgraph MaterialLayer ["Scene Materials"]
         UnlitMat["UnlitMaterial"]
-        StdMat["StandardMaterial"]
         UnlitMat -->|"references"| TexInstance
-        StdMat -->|"references"| TexInstance
     end
 
     subgraph ContextManagement ["Context Manager & State Cache"]
@@ -277,8 +275,6 @@ To prevent redundant driver overhead:
   - Constructor accepts `texture?: ITexture | string`.
   - If provided, sets `u_useTexture = 1.0` and maps `u_texture` to `TextureUnit.Color0` (unit `0`).
   - Exposes `public setTexture(texture: ITexture | string | null): this` and `public get texture(): ITexture | null`.
-- **`StandardMaterial` Updates:**
-  - Standardizes `TextureUnit.Color0` (albedo/color texture) and future normal/roughness map slots.
 
 ### 5. `SceneRenderer` Pass Execution (`src/scene/renderer/scene_renderer.ts`)
 - **Pre-Draw Texture Synchronization:**

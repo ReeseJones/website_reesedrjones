@@ -44,7 +44,7 @@ All declarative React bindings will reside in `src/scene/react/`:
   - [`src/scene/react/use_scene_node.ts`](use_scene_node.ts): Hook managing lifecycle attachment of a `SceneNode` to its parent.
 - **Declarative Components:**
   - [`src/scene/react/scene_component.tsx`](scene_component.tsx): Declarative `<Scene />` component wrapping [`<ScenePass />`](../renderer/scene_pass.tsx).
-  - [`src/scene/react/group_component.tsx`](group_component.tsx): Declarative `<Group />` mapping to `GroupNode`.
+  - [`src/scene/react/group_component.tsx`](group_component.tsx): Declarative `<Group />` mapping to `SceneNode`.
   - [`src/scene/react/camera_component.tsx`](camera_component.tsx): Declarative `<PerspectiveCamera />` component.
   - [`src/scene/react/model_instance_component.tsx`](model_instance_component.tsx): Declarative `<ModelInstance />` component.
 
@@ -118,6 +118,6 @@ export interface ModelInstanceProps extends NodeProps {
 
 The following topics will be elaborated in a dedicated design phase:
 - **Prop-Diffing Lifecycle:** Efficiently reconciling changes to `position`, `rotation`, and `scale` props without recreating nodes.
-- **Declarative Shaders & Materials:** Allowing `<StandardMaterial color="#ffaa00" />` as inline JSX children of `<ModelInstance>`.
+- **Declarative Shaders & Materials:** Allowing `<UnlitMaterial color="#ffaa00" />` as inline JSX children of `<ModelInstance>`.
 - **Event Handling & Raycasting:** Passing pointer events (`onClick`, `onPointerOver`) to 3D model instances.
 - **Animation Integration:** Bridging React state and spring/lerp libraries (e.g. framer-motion or custom tick hooks) with node transforms.

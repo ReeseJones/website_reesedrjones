@@ -1,4 +1,4 @@
-import { GroupNode } from "./group_node";
+import { SceneNode } from "./scene_node";
 import type { ISceneNode } from "./scene_node_types";
 import type { IScene } from "./scene_types";
 
@@ -7,10 +7,10 @@ import type { IScene } from "./scene_types";
  * updates, and visibility-pruned traversals.
  */
 export class Scene implements IScene {
-    public readonly root: GroupNode;
+    public readonly root: SceneNode;
 
     constructor(rootName: string = "SceneRoot") {
-        this.root = new GroupNode(rootName);
+        this.root = new SceneNode(rootName);
     }
 
     public add(node: ISceneNode): this {

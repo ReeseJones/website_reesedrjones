@@ -10,9 +10,9 @@ import type { Vector3Like } from "../../maths/vector_types";
  * view-projection matrices.
  */
 export abstract class Camera extends SceneNode implements ICamera {
-    private readonly _viewMatrix: Float32Array = new Float32Array(16);
-    private readonly _projectionMatrix: Float32Array = new Float32Array(16);
-    private readonly _viewProjectionMatrix: Float32Array = new Float32Array(16);
+    private readonly _viewMatrix: mat4 = mat4.create();
+    private readonly _projectionMatrix: mat4 = mat4.create();
+    private readonly _viewProjectionMatrix: mat4 = mat4.create();
 
     private _near: number;
     private _far: number;
@@ -28,10 +28,6 @@ export abstract class Camera extends SceneNode implements ICamera {
         super(name, id);
         this._near = near;
         this._far = far;
-
-        mat4.identity(this._viewMatrix as unknown as mat4);
-        mat4.identity(this._projectionMatrix as unknown as mat4);
-        mat4.identity(this._viewProjectionMatrix as unknown as mat4);
 
         this.transform.setOnDirty(() => this.markWorldDirty());
     }
@@ -136,11 +132,11 @@ export abstract class Camera extends SceneNode implements ICamera {
         if (this.isWorldDirty || this._isViewDirty || this.transform.isLocalDirty) {
             this.updateWorldTransform();
             const inverted = mat4.invert(
-                this._viewMatrix as unknown as mat4,
+                this._viewMatrix,
                 this.worldMatrix as unknown as mat4
             );
             if (!inverted) {
-                mat4.identity(this._viewMatrix as unknown as mat4);
+                mat4.identity(this._viewMatrix);
             }
             this._isViewDirty = false;
             viewUpdated = true;
@@ -155,9 +151,9 @@ export abstract class Camera extends SceneNode implements ICamera {
 
         if (viewUpdated || projUpdated) {
             mat4.multiply(
-                this._viewProjectionMatrix as unknown as mat4,
-                this._projectionMatrix as unknown as mat4,
-                this._viewMatrix as unknown as mat4
+                this._viewProjectionMatrix,
+                this._projectionMatrix,
+                this._viewMatrix
             );
         }
     }

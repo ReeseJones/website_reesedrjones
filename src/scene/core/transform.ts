@@ -12,17 +12,18 @@ import type {
  * scale, and local 4x4 matrix synthesis.
  */
 export class Transform implements ITransform {
-    private readonly _position: Float32Array = new Float32Array(3);
-    private readonly _rotation: Float32Array = new Float32Array([0, 0, 0, 1]);
-    private readonly _scale: Float32Array = new Float32Array([1, 1, 1]);
-    private readonly _localMatrix: Float32Array = new Float32Array(16);
+    private static readonly _scratchQuat: quat = quat.create();
+
+    private readonly _position: vec3 = vec3.create();
+    private readonly _rotation: quat = quat.create();
+    private readonly _scale: vec3 = vec3.fromValues(1, 1, 1);
+    private readonly _localMatrix: mat4 = mat4.create();
 
     private _isLocalDirty: boolean = true;
     private _onDirty?: OnTransformDirtyCallback;
 
     constructor(onDirty?: OnTransformDirtyCallback) {
         this._onDirty = onDirty;
-        mat4.identity(this._localMatrix as unknown as mat4);
     }
 
     public get localMatrix(): Float32Array {
@@ -96,9 +97,7 @@ export class Transform implements ITransform {
 
     public setPosition(x: number, y: number, z: number): this {
         if (this._position[0] !== x || this._position[1] !== y || this._position[2] !== z) {
-            this._position[0] = x;
-            this._position[1] = y;
-            this._position[2] = z;
+            vec3.set(this._position, x, y, z);
             this.markDirty();
         }
         return this;
@@ -137,30 +136,22 @@ export class Transform implements ITransform {
     }
 
     public setRotationQuaternion(x: number, y: number, z: number, w: number): this {
-        const lenSq = x * x + y * y + z * z + w * w;
-        let nx = 0;
-        let ny = 0;
-        let nz = 0;
-        let nw = 1;
-
-        if (lenSq > 0.000001) {
-            const invLen = 1 / Math.sqrt(lenSq);
-            nx = x * invLen;
-            ny = y * invLen;
-            nz = z * invLen;
-            nw = w * invLen;
+        const sqrLen = x * x + y * y + z * z + w * w;
+        const target = Transform._scratchQuat;
+        if (sqrLen < 1e-6) {
+            quat.identity(target);
+        } else {
+            quat.set(target, x, y, z, w);
+            quat.normalize(target, target);
         }
 
         if (
-            this._rotation[0] !== nx ||
-            this._rotation[1] !== ny ||
-            this._rotation[2] !== nz ||
-            this._rotation[3] !== nw
+            this._rotation[0] !== target[0] ||
+            this._rotation[1] !== target[1] ||
+            this._rotation[2] !== target[2] ||
+            this._rotation[3] !== target[3]
         ) {
-            this._rotation[0] = nx;
-            this._rotation[1] = ny;
-            this._rotation[2] = nz;
-            this._rotation[3] = nw;
+            quat.copy(this._rotation, target);
             this.markDirty();
         }
         return this;
@@ -168,8 +159,8 @@ export class Transform implements ITransform {
 
     public slerp(target: QuaternionTuple, t: number): this {
         quat.slerp(
-            this._rotation as unknown as quat,
-            this._rotation as unknown as quat,
+            this._rotation,
+            this._rotation,
             target as unknown as quat,
             t
         );
@@ -179,9 +170,7 @@ export class Transform implements ITransform {
 
     public setScale(sx: number, sy: number, sz: number): this {
         if (this._scale[0] !== sx || this._scale[1] !== sy || this._scale[2] !== sz) {
-            this._scale[0] = sx;
-            this._scale[1] = sy;
-            this._scale[2] = sz;
+            vec3.set(this._scale, sx, sy, sz);
             this.markDirty();
         }
         return this;
@@ -197,10 +186,10 @@ export class Transform implements ITransform {
         }
 
         mat4.fromRotationTranslationScale(
-            this._localMatrix as unknown as mat4,
-            this._rotation as unknown as quat,
-            this._position as unknown as vec3,
-            this._scale as unknown as vec3
+            this._localMatrix,
+            this._rotation,
+            this._position,
+            this._scale
         );
 
         this._isLocalDirty = false;

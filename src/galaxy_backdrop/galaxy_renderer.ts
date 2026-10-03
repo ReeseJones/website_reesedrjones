@@ -7,16 +7,7 @@ import {
     StarRenderStyle,
 } from "./parameters/index";
 import { generateStarBuffer } from "./galaxy_math";
-import {
-    createMat4,
-    mat4Identity,
-    mat4Multiply,
-    mat4Perspective,
-    mat4RotateX,
-    mat4RotateY,
-    mat4RotateZ,
-    mat4Translate,
-} from "../maths/matrix";
+import { mat4, vec3 } from "gl-matrix";
 import galaxyPinprickVert, { GalaxyPinprickUniforms } from "./shaders/galaxy_pinprick.vert";
 import galaxyPinprickFrag from "./shaders/galaxy_pinprick.frag";
 import galaxyOrbVert, { GalaxyOrbUniforms } from "./shaders/galaxy_orb.vert";
@@ -48,9 +39,10 @@ export class GalaxyRenderer {
     private starCount: number;
 
     // Cached Transformation Matrices
-    private projMatrix = createMat4();
-    private modelViewMatrix = createMat4();
-    private viewProjMatrix = createMat4();
+    private projMatrix: mat4 = mat4.create();
+    private modelViewMatrix: mat4 = mat4.create();
+    private viewProjMatrix: mat4 = mat4.create();
+    private translationVec: vec3 = vec3.create();
 
     // Input Parallax State
     private targetPitchOffset = 0;
@@ -170,27 +162,27 @@ export class GalaxyRenderer {
         const aspect = dims.aspect;
 
         // 1. Perspective Camera Projection
-        mat4Perspective(
+        const fovRad = (this.params.fov * Math.PI) / 180;
+        mat4.perspective(
             this.projMatrix,
-            this.params.fov,
+            fovRad,
             aspect,
             this.params.nearPlane,
             this.params.farPlane
         );
 
         // 2. 3D Model-View Transformation
-        mat4Identity(this.modelViewMatrix);
+        mat4.identity(this.modelViewMatrix);
 
         const aspectScale = Math.min(1.0, aspect / 1.5);
         const offsetX = this.params.centerOffsetX * aspectScale;
         const offsetY = this.params.centerOffsetY;
 
-        mat4Translate(
+        vec3.set(this.translationVec, offsetX, offsetY, -this.params.cameraDistance);
+        mat4.translate(
             this.modelViewMatrix,
             this.modelViewMatrix,
-            offsetX,
-            offsetY,
-            -this.params.cameraDistance
+            this.translationVec
         );
 
         const pitch =
@@ -201,11 +193,11 @@ export class GalaxyRenderer {
             this.currentYawOffset * this.params.mouseSensitivity;
         const roll = this.params.rollAngle;
 
-        mat4RotateX(this.modelViewMatrix, this.modelViewMatrix, pitch);
-        mat4RotateY(this.modelViewMatrix, this.modelViewMatrix, yaw);
-        mat4RotateZ(this.modelViewMatrix, this.modelViewMatrix, roll);
+        mat4.rotateX(this.modelViewMatrix, this.modelViewMatrix, pitch);
+        mat4.rotateY(this.modelViewMatrix, this.modelViewMatrix, yaw);
+        mat4.rotateZ(this.modelViewMatrix, this.modelViewMatrix, roll);
 
-        mat4Multiply(
+        mat4.multiply(
             this.viewProjMatrix,
             this.projMatrix,
             this.modelViewMatrix

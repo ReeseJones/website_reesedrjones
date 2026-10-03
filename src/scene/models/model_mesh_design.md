@@ -82,7 +82,7 @@ The reason the galaxy renders correctly is that it is paired with a **`GalaxyMat
 
 ### Side-by-Side GLSL Vertex Shader Comparison
 
-- **Standard Cartesian Vertex Shader (`StandardMaterial`):**
+- **Standard Cartesian Vertex Shader (`UnlitMaterial`):**
   ```glsl
   #version 300 es
   precision highp float;
@@ -160,7 +160,7 @@ All geometry, material, and instance classes reside in `src/scene/models/` and `
 - **Material Layer (`src/scene/materials/`):**
   - [`src/scene/materials/material_types.ts`](../materials/material_types.ts): Core interfaces (`IMaterial`, `MaterialOptions`, `BlendMode`, `PipelineState`).
   - [`src/scene/materials/material.ts`](../materials/material.ts): Base material class managing shader keys, uniforms, and WebGL state assertion.
-  - [`src/scene/materials/standard_material.ts`](../materials/standard_material.ts): Default material pairing with Cartesian `StandardGeometry`.
+  - [`src/scene/materials/unlit_material.ts`](../materials/unlit_material.ts): Default material pairing with Cartesian `MeshGeometry`.
   - [`src/scene/materials/specialized/galaxy_material.ts`](../materials/specialized/galaxy_material.ts): Domain material pairing with `GalaxyGeometry` (pinprick shaders + additive blend state + parameters).
 - **Model Instance Layer (`src/scene/models/`):**
   - [`src/scene/models/model_instance_types.ts`](model_instance_types.ts): Contracts for renderable scene graph entities.

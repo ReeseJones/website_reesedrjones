@@ -17,7 +17,7 @@ export class SceneNode implements ISceneNode {
     public name: string;
 
     private readonly _transform: Transform;
-    private readonly _worldMatrix: Float32Array = new Float32Array(16);
+    private readonly _worldMatrix: mat4 = mat4.create();
     private _parent: ISceneNode | null = null;
     private readonly _children: ISceneNode[] = [];
 
@@ -29,7 +29,6 @@ export class SceneNode implements ISceneNode {
         this.name = name;
         this.id = id ?? generateNodeId(name);
         this._transform = new Transform(() => this.markWorldDirty());
-        mat4.identity(this._worldMatrix as unknown as mat4);
     }
 
     public get transform(): Transform {
@@ -135,12 +134,12 @@ export class SceneNode implements ISceneNode {
         if (needsWorldUpdate) {
             if (!this._parent) {
                 mat4.copy(
-                    this._worldMatrix as unknown as mat4,
+                    this._worldMatrix,
                     this._transform.localMatrix as unknown as mat4
                 );
             } else {
                 mat4.multiply(
-                    this._worldMatrix as unknown as mat4,
+                    this._worldMatrix,
                     this._parent.worldMatrix as unknown as mat4,
                     this._transform.localMatrix as unknown as mat4
                 );
