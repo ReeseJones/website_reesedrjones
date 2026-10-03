@@ -10,14 +10,14 @@ import type { Vector3Like } from "../../maths/vector_types";
  * view-projection matrices.
  */
 export abstract class Camera extends SceneNode implements ICamera {
-    protected readonly _viewMatrix: Float32Array = new Float32Array(16);
-    protected readonly _projectionMatrix: Float32Array = new Float32Array(16);
-    protected readonly _viewProjectionMatrix: Float32Array = new Float32Array(16);
+    private readonly _viewMatrix: Float32Array = new Float32Array(16);
+    private readonly _projectionMatrix: Float32Array = new Float32Array(16);
+    private readonly _viewProjectionMatrix: Float32Array = new Float32Array(16);
 
-    protected _near: number;
-    protected _far: number;
-    protected _isProjDirty: boolean = true;
-    protected _isViewDirty: boolean = true;
+    private _near: number;
+    private _far: number;
+    private _isProjDirty: boolean = true;
+    private _isViewDirty: boolean = true;
 
     constructor(
         near: number = 0.1,
@@ -33,7 +33,7 @@ export abstract class Camera extends SceneNode implements ICamera {
         mat4.identity(this._projectionMatrix as unknown as mat4);
         mat4.identity(this._viewProjectionMatrix as unknown as mat4);
 
-        this._transform.setOnDirty(() => this.markWorldDirty());
+        this.transform.setOnDirty(() => this.markWorldDirty());
     }
 
     public get viewMatrix(): Float32Array {
@@ -70,6 +70,13 @@ export abstract class Camera extends SceneNode implements ICamera {
         }
     }
 
+    /**
+     * Marks projection matrix dirty, scheduling recomputation on next matrix update.
+     */
+    protected markProjectionDirty(): void {
+        this._isProjDirty = true;
+    }
+
     public override markWorldDirty(): void {
         super.markWorldDirty();
         this._isViewDirty = true;
@@ -80,7 +87,7 @@ export abstract class Camera extends SceneNode implements ICamera {
      * Computes the look-at orientation basis and applies it as a unit quaternion.
      */
     public lookAt(target: Vector3Like, worldUp: Vector3Like = { x: 0, y: 1, z: 0 }): this {
-        const eye = this._transform.getPosition();
+        const eye = this.transform.getPosition();
         const eyeVec = vec3.fromValues(eye.x, eye.y, eye.z);
         const targetVec = vec3.fromValues(target.x, target.y, target.z);
         const upVec = vec3.fromValues(worldUp.x, worldUp.y, worldUp.z);
@@ -117,7 +124,7 @@ export abstract class Camera extends SceneNode implements ICamera {
         quat.fromMat3(rotQuat, rotMat);
         quat.normalize(rotQuat, rotQuat);
 
-        this._transform.setRotationQuaternion(rotQuat[0], rotQuat[1], rotQuat[2], rotQuat[3]);
+        this.transform.setRotationQuaternion(rotQuat[0], rotQuat[1], rotQuat[2], rotQuat[3]);
         return this;
     }
 
@@ -126,11 +133,11 @@ export abstract class Camera extends SceneNode implements ICamera {
      */
     public updateMatrices(): void {
         let viewUpdated = false;
-        if (this._isWorldDirty || this._isViewDirty || this._transform.isLocalDirty) {
+        if (this.isWorldDirty || this._isViewDirty || this.transform.isLocalDirty) {
             this.updateWorldTransform();
             const inverted = mat4.invert(
                 this._viewMatrix as unknown as mat4,
-                this._worldMatrix as unknown as mat4
+                this.worldMatrix as unknown as mat4
             );
             if (!inverted) {
                 mat4.identity(this._viewMatrix as unknown as mat4);

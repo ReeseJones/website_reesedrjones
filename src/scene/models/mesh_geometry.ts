@@ -15,12 +15,12 @@ function generateGeometryId(prefix: string = "MeshGeometry"): string {
 export class MeshGeometry implements IMeshGeometry {
     public readonly id: string;
 
-    protected readonly _bufferData: GeometryBufferData;
-    protected readonly _primitiveType: number;
-    protected _vertexBuffer: VertexBuffer | null = null;
-    protected _indexBuffer: WebGLBuffer | null = null;
-    protected _contextManager: IWebGLContextManager | null = null;
-    protected _gl: WebGL2RenderingContext | null = null;
+    private readonly _bufferData: GeometryBufferData;
+    private readonly _primitiveType: number;
+    private _vertexBuffer: VertexBuffer | null = null;
+    private _indexBuffer: WebGLBuffer | null = null;
+    private _contextManager: IWebGLContextManager | null = null;
+    private _gl: WebGL2RenderingContext | null = null;
 
     /**
      * @param bufferData Interleaved vertex data, layout specification, and optional indices.

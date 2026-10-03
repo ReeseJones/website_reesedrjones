@@ -7,12 +7,12 @@ import type { OrthographicCameraOptions } from "./camera_types";
  * CAD views, and isometric rendering.
  */
 export class OrthographicCamera extends Camera {
-    protected _left: number;
-    protected _right: number;
-    protected _top: number;
-    protected _bottom: number;
-    protected _zoom: number;
-    protected _aspect?: number;
+    private _left: number;
+    private _right: number;
+    private _top: number;
+    private _bottom: number;
+    private _zoom: number;
+    private _aspect?: number;
 
     constructor(
         options: OrthographicCameraOptions = {},
@@ -25,7 +25,6 @@ export class OrthographicCamera extends Camera {
         this._top = options.top ?? 1;
         this._bottom = options.bottom ?? -1;
         this._zoom = options.zoom ?? 1.0;
-        this._isProjDirty = true;
     }
 
     public get left(): number {
@@ -35,7 +34,7 @@ export class OrthographicCamera extends Camera {
     public set left(value: number) {
         if (this._left !== value) {
             this._left = value;
-            this._isProjDirty = true;
+            this.markProjectionDirty();
         }
     }
 
@@ -46,7 +45,7 @@ export class OrthographicCamera extends Camera {
     public set right(value: number) {
         if (this._right !== value) {
             this._right = value;
-            this._isProjDirty = true;
+            this.markProjectionDirty();
         }
     }
 
@@ -57,7 +56,7 @@ export class OrthographicCamera extends Camera {
     public set top(value: number) {
         if (this._top !== value) {
             this._top = value;
-            this._isProjDirty = true;
+            this.markProjectionDirty();
         }
     }
 
@@ -68,7 +67,7 @@ export class OrthographicCamera extends Camera {
     public set bottom(value: number) {
         if (this._bottom !== value) {
             this._bottom = value;
-            this._isProjDirty = true;
+            this.markProjectionDirty();
         }
     }
 
@@ -79,7 +78,7 @@ export class OrthographicCamera extends Camera {
     public set zoom(value: number) {
         if (this._zoom !== value) {
             this._zoom = value;
-            this._isProjDirty = true;
+            this.markProjectionDirty();
         }
     }
 
@@ -98,7 +97,7 @@ export class OrthographicCamera extends Camera {
         const halfWidth = (currentHeight * aspect) * 0.5;
         this._left = centerX - halfWidth;
         this._right = centerX + halfWidth;
-        this._isProjDirty = true;
+        this.markProjectionDirty();
     }
 
     /**
@@ -107,14 +106,13 @@ export class OrthographicCamera extends Camera {
     public updateProjectionMatrix(): void {
         const effectiveZoom = this._zoom > 0 ? this._zoom : 1.0;
         mat4.ortho(
-            this._projectionMatrix as unknown as mat4,
+            this.projectionMatrix as unknown as mat4,
             this._left / effectiveZoom,
             this._right / effectiveZoom,
             this._bottom / effectiveZoom,
             this._top / effectiveZoom,
-            this._near,
-            this._far
+            this.near,
+            this.far
         );
-        this._isProjDirty = false;
     }
 }

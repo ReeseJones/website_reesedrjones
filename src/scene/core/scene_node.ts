@@ -16,14 +16,14 @@ export class SceneNode implements ISceneNode {
     public readonly id: string;
     public name: string;
 
-    protected readonly _transform: Transform;
-    protected readonly _worldMatrix: Float32Array = new Float32Array(16);
-    protected _parent: ISceneNode | null = null;
-    protected readonly _children: ISceneNode[] = [];
+    private readonly _transform: Transform;
+    private readonly _worldMatrix: Float32Array = new Float32Array(16);
+    private _parent: ISceneNode | null = null;
+    private readonly _children: ISceneNode[] = [];
 
-    protected _visible: boolean = true;
-    protected _computedVisible: boolean = true;
-    protected _isWorldDirty: boolean = true;
+    private _visible: boolean = true;
+    private _computedVisible: boolean = true;
+    private _isWorldDirty: boolean = true;
 
     constructor(name: string = "SceneNode", id?: string) {
         this.name = name;
