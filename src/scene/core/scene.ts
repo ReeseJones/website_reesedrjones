@@ -52,11 +52,4 @@ export class Scene implements IScene {
         this.clear();
         this.root.destroy();
     }
-
-    /**
-     * Backwards-compatible alias for destroy().
-     */
-    public dispose(): void {
-        this.destroy();
-    }
 }

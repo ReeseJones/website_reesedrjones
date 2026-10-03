@@ -1,3 +1,4 @@
+import { computeLayoutStride } from "../../webgl/geometry/vertex_layout";
 import type {
     GeometryBufferData,
     GeometryDisposeListener,
@@ -68,6 +69,11 @@ export class MeshGeometry implements IMeshGeometry {
         this._bufferData.attributes = attributes;
         if (vertexCount !== undefined) {
             this._bufferData.vertexCount = vertexCount;
+        } else {
+            const strideBytes = computeLayoutStride(this._bufferData.layout);
+            if (strideBytes > 0) {
+                this._bufferData.vertexCount = Math.floor(attributes.byteLength / strideBytes);
+            }
         }
         this._version++;
     }
@@ -114,12 +120,5 @@ export class MeshGeometry implements IMeshGeometry {
             }
         }
         this._disposeListeners.clear();
-    }
-
-    /**
-     * Backwards-compatible alias for dispose().
-     */
-    public destroy(): void {
-        this.dispose();
     }
 }

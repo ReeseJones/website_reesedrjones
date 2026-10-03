@@ -178,7 +178,7 @@ export function ImperativeGalaxyScenePass({
             orientationControllerRef.current?.destroy();
             orientationControllerRef.current = null;
 
-            geometryRef.current?.destroy();
+            geometryRef.current?.dispose();
             geometryRef.current = null;
 
             rendererRef.current?.destroy();
@@ -217,7 +217,7 @@ export function ImperativeGalaxyScenePass({
                 activeParams.coreDensityRatio !== currentGeoParams.coreDensityRatio);
 
         if (needsGeometryRebuild && modelRef.current) {
-            geometryRef.current.destroy();
+            geometryRef.current.dispose();
             const newGeo = new GalaxyGeometry({ params: activeParams });
             modelRef.current.geometry = newGeo;
             geometryRef.current = newGeo;

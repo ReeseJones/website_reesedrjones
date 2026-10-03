@@ -527,13 +527,4 @@ describe("Scene", () => {
             expect(scene.root.parent).toBeNull();
         });
     });
-
-    describe(".dispose() alias", () => {
-        it("should delegate to destroy() for backwards compatibility", () => {
-            const scene = new Scene();
-            const destroySpy = vi.spyOn(scene, "destroy");
-            scene.dispose();
-            expect(destroySpy).toHaveBeenCalledTimes(1);
-        });
-    });
 });

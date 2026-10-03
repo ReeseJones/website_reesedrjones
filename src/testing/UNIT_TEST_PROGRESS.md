@@ -53,7 +53,8 @@ Done as needed by each item, not up front.
 
 ### A2. Geometry Foundation
 
-- **A2.1 [mesh_geometry.ts](../scene/models/mesh_geometry.ts)** — `MeshGeometry` — ⬜ Not Started
+- **A2.1 [mesh_geometry.ts](../scene/models/mesh_geometry.ts)** — `MeshGeometry` — 🔍 Awaiting Review
+  - Test: `mesh_geometry.test.ts` (46 specs)
   - Depended on by: every primitive, `GalaxyGeometry`, `GeometryManager`
   - Focus: id uniqueness, buffer / layout getters, version or dirty flag on data updates, `onDispose` listeners, idempotent dispose
 - **A2.2 [standard_layout.ts](../scene/models/primitives/standard_layout.ts)** — `STANDARD_VERTEX_LAYOUT` — ⬜ Not Started
