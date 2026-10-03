@@ -14,6 +14,7 @@ import galaxyOrbVert from "../../galaxy_backdrop/shaders/galaxy_orb.vert";
 import galaxyOrbFrag from "../../galaxy_backdrop/shaders/galaxy_orb.frag";
 import unlitVert from "../shaders/unlit.vert";
 import unlitFrag from "../shaders/unlit.frag";
+import { TextureUnit } from "../../webgl/texture_types";
 
 /**
  * Concrete 3D Scene Renderer executing hierarchical scene graph traversal,
@@ -124,7 +125,7 @@ export class SceneRenderer implements ISceneRenderer {
                     }
                 }
             } else if ((material.getUniforms().u_useTexture as number) > 0.5) {
-                this.contextManager.bindTexture(0, this.contextManager.getDefaultWhiteTexture());
+                this.contextManager.bindTexture(TextureUnit.Color, this.contextManager.getDefaultWhiteTexture());
             }
 
             shader.setUniforms(material.getUniforms());
@@ -185,7 +186,6 @@ export class SceneRenderer implements ISceneRenderer {
                     fragSource: unlitFrag,
                     label: "unlit",
                 });
-                shader.setInt("u_texture", 0);
             }
         }
 

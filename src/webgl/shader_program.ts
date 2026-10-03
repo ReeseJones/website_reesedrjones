@@ -4,6 +4,7 @@ import type {
 } from "./shader_program_types";
 import type { IWebGLContextManager } from "./context_manager_types";
 import { compileShader } from "./shader_compiler";
+import { DEFAULT_TEXTURE_UNIT_MAP } from "./texture_types";
 
 /**
  * Robust WebGL2 Shader Program wrapper.
@@ -19,6 +20,7 @@ export class ShaderProgram<TUniforms extends object = Record<string, unknown>> {
     private program: WebGLProgram | null = null;
     private uniformLocations = new Map<string, WebGLUniformLocation>();
     private uniformCache = new Map<string, CachedUniform>();
+    private optionsSamplers?: Record<string, number>;
 
     private get gl(): WebGL2RenderingContext | null {
         return this.contextManager.getContext();
@@ -32,6 +34,7 @@ export class ShaderProgram<TUniforms extends object = Record<string, unknown>> {
         this.vertSource = options.vertSource;
         this.fragSource = options.fragSource;
         this.label = options.label ?? "ShaderProgram";
+        this.optionsSamplers = options.samplers;
 
         this.build();
     }
@@ -345,11 +348,26 @@ export class ShaderProgram<TUniforms extends object = Record<string, unknown>> {
     private reflectActiveUniforms(gl: WebGL2RenderingContext): void {
         if (!this.program) return;
         const count = gl.getProgramParameter(this.program, gl.ACTIVE_UNIFORMS);
+        this.contextManager.useShader(this);
         for (let i = 0; i < count; i++) {
             const info = gl.getActiveUniform(this.program, i);
             if (info) {
                 const cleanName = info.name.replace(/\[0\]$/, "");
-                this.getUniformLocation(cleanName);
+                const loc = this.getUniformLocation(cleanName);
+                if (
+                    loc &&
+                    (info.type === gl.SAMPLER_2D ||
+                        info.type === gl.SAMPLER_CUBE ||
+                        info.type === gl.SAMPLER_2D_SHADOW ||
+                        info.type === gl.SAMPLER_2D_ARRAY ||
+                        info.type === gl.SAMPLER_3D)
+                ) {
+                    const unit = this.optionsSamplers?.[cleanName] ?? DEFAULT_TEXTURE_UNIT_MAP[cleanName];
+                    if (unit !== undefined) {
+                        gl.uniform1i(loc, unit);
+                        this.uniformCache.set(cleanName, { type: "int", value: unit });
+                    }
+                }
             }
         }
     }

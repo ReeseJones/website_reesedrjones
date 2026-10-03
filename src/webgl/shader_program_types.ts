@@ -26,6 +26,8 @@ export interface ShaderProgramOptions {
     fragSource: string;
     /** Debug label used in console log diagnostic messages */
     label?: string;
+    /** Explicit sampler uniform name to TextureUnit/integer mapping overrides */
+    samplers?: Record<string, number>;
 }
 
 export interface CachedUniform {
