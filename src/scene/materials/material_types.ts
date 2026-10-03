@@ -1,3 +1,6 @@
+import type { ShaderKey } from "../../webgl/shader_types";
+import type { ITexture } from "../../webgl/texture_types";
+
 /**
  * WebGL blending mode presets for scene materials.
  */
@@ -22,11 +25,13 @@ export interface PipelineState {
  */
 export interface MaterialOptions {
     /** Unique shader key registered with WebGLContextManager */
-    shaderKey: string;
+    shaderKey: ShaderKey;
     /** Pipeline state overrides */
     pipelineState?: Partial<PipelineState>;
     /** Initial material-specific uniform values */
     uniforms?: Record<string, unknown>;
+    /** Initial texture assignments mapped by conventional unit index (e.g. 0 for albedo/diffuse) */
+    textures?: Record<number, ITexture>;
 }
 
 /**
@@ -34,7 +39,7 @@ export interface MaterialOptions {
  */
 export interface IMaterial {
     /** Shader program identifier registered with WebGLContextManager */
-    readonly shaderKey: string;
+    readonly shaderKey: ShaderKey;
 
     /** Active pipeline state settings */
     readonly pipelineState: PipelineState;
@@ -50,4 +55,16 @@ export interface IMaterial {
 
     /** Directly applies configured pipeline state (blendFunc, depthMask, etc.) to the WebGL context */
     applyPipelineState(gl: WebGL2RenderingContext): void;
+
+    /** Binds a texture resource to a specific hardware texture unit (e.g. Unit 0 for base texture) */
+    setTexture(unit: number, texture: ITexture | null): this;
+
+    /** Retrieves the texture bound to a specific hardware texture unit, if any */
+    getTexture(unit: number): ITexture | null;
+
+    /** Retrieves all assigned textures mapped by hardware texture unit */
+    getTextures(): ReadonlyMap<number, ITexture>;
+
+    /** Duplicates this material preserving pipeline state, uniforms, and texture bindings */
+    clone(): IMaterial;
 }

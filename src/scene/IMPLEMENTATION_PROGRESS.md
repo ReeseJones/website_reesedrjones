@@ -49,6 +49,32 @@ This document serves as the persistent single source of truth for the phased imp
     - `src/scene/renderer/scene_pass_types.ts` & `src/scene/renderer/scene_pass.tsx` (Completed)
   - **Commit Target:** `feat(scene): implement scene rendering pipeline and webgl canvas bridge`
 
+- **Phase 4.5: Imperative Scene Test Pass & Strongly-Typed Shader Key Index**
+  - **Status:** Complete
+  - **Reference Designs:** [`renderer/scene_render_pipeline_design.md`](renderer/scene_render_pipeline_design.md), [`../webgl/shader_program_design.md`](../webgl/shader_program_design.md)
+  - **Deliverables:**
+    - Strongly-typed ShaderKey index: `src/webgl/shader_types.ts` (`AVAILABLE_SHADER_KEYS` containing `"galaxy_pinprick"`, `"galaxy_orb"`, `"galactic_cloud"`, `"unlit"`) (Completed)
+    - Unlit color/texture shader: GLSL sources at `src/scene/shaders/unlit.vert` and `src/scene/shaders/unlit.frag` with auto-generated declaration types (Completed)
+    - Unlit material: `src/scene/materials/unlit_material_types.ts` & `src/scene/materials/unlit_material.ts` supporting color tints and optional textures (Completed)
+    - Context Manager integration: `getOrCreateShader`, `getShader`, and `releaseShader` constrained to `ShaderKey` in `src/webgl/context_manager_types.ts` & `src/webgl/context_manager.ts` (Completed)
+    - Material typing: `shaderKey: ShaderKey` in `src/scene/materials/material_types.ts` & `src/scene/materials/material.ts` (Completed)
+    - Dynamic galaxy shader style support (`galaxy_orb` & `galaxy_pinprick`) in `src/scene/materials/specialized/galaxy_material.ts` & `src/scene/renderer/scene_renderer.ts` (Completed)
+    - Imperative scene test pass: `src/scene/test/imperative_galaxy_scene_types.ts` & `src/scene/test/imperative_galaxy_scene_pass.tsx` (Completed)
+    - Layout integration: Active mount in `src/layouts/layout.tsx` replacing hard-coded `GalaxyPass` while keeping legacy backdrop code intact (Completed)
+    - Cooperative pipeline state management: `GalacticCloudRenderer` delegates to `contextManager.applyPipelineState` avoiding state collision (Completed)
+  - **Commit Target:** `feat(scene): implement imperative scene test pass and strongly typed shader keys`
+
+- **Phase 4.6: 2D Texture Resources & Sampler2D Material Pipeline**
+  - **Status:** Complete
+  - **Reference Design:** [`materials/texture_material_system_design.md`](materials/texture_material_system_design.md)
+  - **Deliverables:**
+    - `src/webgl/texture_types.ts` & `src/webgl/texture.ts` (1x1 fallback, async decode, context recovery) (Completed)
+    - Context Manager texture state caching & shared 1x1 white texture singleton in `src/webgl/context_manager_types.ts` & `src/webgl/context_manager.ts` (Completed)
+    - Polymorphic `clone()` on `Material` and `UnlitMaterial` (Completed)
+    - Material texture integration (`UnlitMaterial`, `Material`, `MaterialOptions`) (Completed)
+    - SceneRenderer pre-draw texture synchronization in `src/scene/renderer/scene_renderer.ts` (Completed)
+  - **Commit Target:** `feat(scene): implement 2d texture resources and sampler2d material bindings`
+
 - **Phase 5: Declarative React Scene Architecture**
   - **Status:** Deferred (Discussion pending)
   - **Reference Design:** [`react/declarative_scene_design.md`](react/declarative_scene_design.md)

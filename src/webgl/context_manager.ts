@@ -4,6 +4,7 @@ import { VertexBuffer } from "./vertex_buffer";
 import type { VertexLayoutSpec } from "./vertex_layout_types";
 import type { ShaderEntry, IWebGLContextManager } from "./context_manager_types";
 import type { PipelineState } from "../scene/materials/material_types";
+import type { ShaderKey } from "./shader_types";
 
 /**
  * Central WebGL GPU resource manager and lifecycle allocator.
@@ -18,10 +19,14 @@ export class WebGLContextManager implements IWebGLContextManager {
     private currentProgram: WebGLProgram | null = null;
     private currentShader: ShaderProgram<never> | null = null;
     private currentPipelineState: PipelineState | null = null;
+    private readonly _boundTextures: Map<number, WebGLTexture | null> = new Map();
+    private _activeTextureUnit: number = 0;
+    private _maxTextureUnits: number = 16;
+    private _defaultWhiteTexture: WebGLTexture | null = null;
 
     constructor(gl?: WebGL2RenderingContext) {
         if (gl) {
-            this.gl = gl;
+            this.setContext(gl);
         }
     }
 
@@ -33,6 +38,10 @@ export class WebGLContextManager implements IWebGLContextManager {
         this.currentProgram = null;
         this.currentShader = null;
         this.currentPipelineState = null;
+        this._boundTextures.clear();
+        this._activeTextureUnit = 0;
+        this._maxTextureUnits = gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS) || 16;
+        this.initDefaultWhiteTexture(gl);
     }
 
     /**
@@ -90,7 +99,7 @@ export class WebGLContextManager implements IWebGLContextManager {
      * compiles and caches a new one (refCount = 1) with strong uniform typing.
      */
     public getOrCreateShader<TUniforms extends object = Record<string, unknown>>(
-        key: string,
+        key: ShaderKey,
         options: ShaderProgramOptions
     ): ShaderProgram<TUniforms> {
         let entry = this.shaderRegistry.get(key);
@@ -110,7 +119,7 @@ export class WebGLContextManager implements IWebGLContextManager {
      * Registry Query: Retrieves an existing compiled ShaderProgram if registered, without altering refCount.
      */
     public getShader<TUniforms extends object = Record<string, unknown>>(
-        key: string
+        key: ShaderKey
     ): ShaderProgram<TUniforms> | null {
         const entry = this.shaderRegistry.get(key);
         return entry ? (entry.shader as unknown as ShaderProgram<TUniforms>) : null;
@@ -121,7 +130,7 @@ export class WebGLContextManager implements IWebGLContextManager {
      * When refCount reaches 0 (no renderers are using it), destroys the GPU program and unregisters it.
      */
     public releaseShader<TUniforms extends object = Record<string, unknown>>(
-        keyOrInstance: string | ShaderProgram<TUniforms>
+        keyOrInstance: ShaderKey | ShaderProgram<TUniforms>
     ): void {
         let targetKey: string | null = null;
         if (typeof keyOrInstance === "string") {
@@ -237,6 +246,40 @@ export class WebGLContextManager implements IWebGLContextManager {
     }
 
     /**
+     * Maximum hardware texture units supported in fragment shaders.
+     */
+    public get maxTextureUnits(): number {
+        return this._maxTextureUnits;
+    }
+
+    /**
+     * Retrieves the shared 1x1 solid white fallback texture handle.
+     */
+    public getDefaultWhiteTexture(): WebGLTexture | null {
+        return this._defaultWhiteTexture;
+    }
+
+    /**
+     * Binds a WebGLTexture to a hardware texture unit with redundant call skipping.
+     */
+    public bindTexture(unit: number, texture: WebGLTexture | null): void {
+        const gl = this.gl;
+        if (!gl) return;
+
+        if (this._boundTextures.get(unit) === texture) {
+            return;
+        }
+
+        if (this._activeTextureUnit !== unit) {
+            gl.activeTexture(gl.TEXTURE0 + unit);
+            this._activeTextureUnit = unit;
+        }
+
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        this._boundTextures.set(unit, texture);
+    }
+
+    /**
      * Handlers invoked when a WebGL context lost event occurs.
      */
     public handleContextLost(): void {
@@ -244,6 +287,9 @@ export class WebGLContextManager implements IWebGLContextManager {
         this.currentProgram = null;
         this.currentShader = null;
         this.currentPipelineState = null;
+        this._boundTextures.clear();
+        this._activeTextureUnit = 0;
+        this._defaultWhiteTexture = null;
         for (const entry of this.shaderRegistry.values()) {
             entry.shader.destroy();
         }
@@ -260,6 +306,10 @@ export class WebGLContextManager implements IWebGLContextManager {
         this.currentProgram = null;
         this.currentShader = null;
         this.currentPipelineState = null;
+        this._boundTextures.clear();
+        this._activeTextureUnit = 0;
+        this._maxTextureUnits = newGl.getParameter(newGl.MAX_TEXTURE_IMAGE_UNITS) || 16;
+        this.initDefaultWhiteTexture(newGl);
 
         // Phase 1: Rebuild Shaders with active refCount > 0
         for (const entry of this.shaderRegistry.values()) {
@@ -288,9 +338,42 @@ export class WebGLContextManager implements IWebGLContextManager {
         }
         this.shaderRegistry.clear();
 
+        if (this.gl && this._defaultWhiteTexture) {
+            this.gl.deleteTexture(this._defaultWhiteTexture);
+        }
+        this._defaultWhiteTexture = null;
+        this._boundTextures.clear();
+
         this.currentProgram = null;
         this.currentShader = null;
         this.currentPipelineState = null;
         this.gl = null;
+    }
+
+    private initDefaultWhiteTexture(gl: WebGL2RenderingContext): void {
+        const tex = gl.createTexture();
+        if (tex) {
+            gl.activeTexture(gl.TEXTURE0);
+            gl.bindTexture(gl.TEXTURE_2D, tex);
+            gl.texImage2D(
+                gl.TEXTURE_2D,
+                0,
+                gl.RGBA,
+                1,
+                1,
+                0,
+                gl.RGBA,
+                gl.UNSIGNED_BYTE,
+                new Uint8Array([255, 255, 255, 255])
+            );
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+            gl.bindTexture(gl.TEXTURE_2D, null);
+            this._defaultWhiteTexture = tex;
+            this._boundTextures.set(0, null);
+            this._activeTextureUnit = 0;
+        }
     }
 }

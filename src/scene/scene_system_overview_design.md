@@ -79,6 +79,8 @@ All scene and camera components will reside in `src/scene/`, accompanied by vect
 - **Models & Geometry (`src/scene/models/`):**
   - [`src/scene/models/mesh_geometry.ts`](models/mesh_geometry.ts) & [`src/scene/models/mesh_geometry_types.ts`](models/mesh_geometry_types.ts): Pure model-space vertex data and attribute layout management.
   - [`src/scene/models/model_instance.ts`](models/model_instance.ts) & [`src/scene/models/model_instance_types.ts`](models/model_instance_types.ts): Renderable instance linking geometry, transform, and shader/material.
+- **Materials & Textures (`src/scene/materials/`):**
+  - [`src/scene/materials/texture_material_system_design.md`](materials/texture_material_system_design.md): 2D texture resources, async image decoding, 1x1 zero-stall fallback, hardware texture unit state caching, and `sampler2D` shader bindings.
 - **Renderer & Canvas Bridge (`src/scene/renderer/`):**
   - [`src/scene/renderer/scene_renderer.ts`](renderer/scene_renderer.ts) & [`src/scene/renderer/scene_renderer_types.ts`](renderer/scene_renderer_types.ts): Scene traversal, matrix uniform dispatch, and batch rendering.
   - [`src/scene/renderer/scene_pass.tsx`](renderer/scene_pass.tsx): React pass component integrating with `<WebGLCanvas />`.

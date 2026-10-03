@@ -3,6 +3,7 @@ import type { ShaderProgramOptions } from "./shader_program_types";
 import type { VertexBuffer } from "./vertex_buffer";
 import type { VertexLayoutSpec } from "./vertex_layout_types";
 import type { PipelineState } from "../scene/materials/material_types";
+import type { ShaderKey } from "./shader_types";
 
 export interface ShaderEntry<TUniforms extends object = Record<string, unknown>> {
     shader: ShaderProgram<TUniforms>;
@@ -38,7 +39,7 @@ export interface IWebGLContextManager {
      * compiles and caches a new one (refCount = 1).
      */
     getOrCreateShader<TUniforms extends object = Record<string, unknown>>(
-        key: string,
+        key: ShaderKey,
         options: ShaderProgramOptions
     ): ShaderProgram<TUniforms>;
 
@@ -46,14 +47,14 @@ export interface IWebGLContextManager {
      * Registry Query: Retrieves an existing compiled ShaderProgram if registered, without altering refCount.
      */
     getShader<TUniforms extends object = Record<string, unknown>>(
-        key: string
+        key: ShaderKey
     ): ShaderProgram<TUniforms> | null;
 
     /**
      * Release Pattern: Decrements a ShaderProgram's reference count and disposes it at 0.
      */
     releaseShader<TUniforms extends object = Record<string, unknown>>(
-        keyOrInstance: string | ShaderProgram<TUniforms>
+        keyOrInstance: ShaderKey | ShaderProgram<TUniforms>
     ): void;
 
     /**
@@ -77,6 +78,15 @@ export interface IWebGLContextManager {
 
     /** Forces depth mask true or false (e.g. before clearing depth buffer). */
     setDepthMask(enabled: boolean): void;
+
+    /** Binds a WebGLTexture to a hardware texture unit with redundant call skipping. */
+    bindTexture(unit: number, texture: WebGLTexture | null): void;
+
+    /** Retrieves the shared 1x1 solid white fallback texture handle. */
+    getDefaultWhiteTexture(): WebGLTexture | null;
+
+    /** Maximum hardware texture units supported in fragment shaders. */
+    readonly maxTextureUnits: number;
 
     /** Handlers invoked when a WebGL context lost event occurs. */
     handleContextLost(): void;

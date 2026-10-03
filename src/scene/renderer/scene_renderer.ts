@@ -7,64 +7,13 @@ import type { CanvasDimensions, TimeInfo } from "../../components/webgl_canvas/t
 import type { IWebGLContextManager } from "../../webgl/context_manager_types";
 import type { ShaderProgram } from "../../webgl/shader_program";
 import type { ISceneRenderer, RenderQueueItem } from "./scene_renderer_types";
+import type { ShaderKey } from "../../webgl/shader_types";
 import galaxyPinprickVert from "../../galaxy_backdrop/shaders/galaxy_pinprick.vert";
 import galaxyPinprickFrag from "../../galaxy_backdrop/shaders/galaxy_pinprick.frag";
-
-const DEFAULT_STANDARD_PBR_VERT = `#version 300 es
-precision highp float;
-
-layout(location = 0) in vec3 a_position;
-layout(location = 1) in vec3 a_normal;
-layout(location = 2) in vec2 a_uv;
-
-uniform mat4 u_viewProjectionMatrix;
-uniform mat4 u_modelMatrix;
-uniform mat3 u_normalMatrix;
-
-out vec3 v_normal;
-out vec2 v_uv;
-out vec3 v_worldPos;
-
-void main() {
-    vec4 worldPos = u_modelMatrix * vec4(a_position, 1.0);
-    v_worldPos = worldPos.xyz;
-    v_normal = u_normalMatrix * a_normal;
-    v_uv = a_uv;
-    gl_Position = u_viewProjectionMatrix * worldPos;
-}
-`;
-
-const DEFAULT_STANDARD_PBR_FRAG = `#version 300 es
-precision highp float;
-
-in vec3 v_normal;
-in vec2 v_uv;
-in vec3 v_worldPos;
-
-uniform vec4 u_color;
-uniform vec3 u_cameraPosition;
-uniform float u_roughness;
-uniform float u_metallic;
-
-out vec4 fragColor;
-
-void main() {
-    vec3 N = normalize(v_normal);
-    vec3 L = normalize(vec3(0.5, 0.8, 0.6));
-    vec3 V = normalize(u_cameraPosition - v_worldPos);
-    vec3 H = normalize(L + V);
-
-    float diff = max(dot(N, L), 0.0);
-    float spec = pow(max(dot(N, H), 0.0), 32.0) * (1.0 - clamp(u_roughness, 0.0, 1.0));
-
-    vec4 baseColor = (u_color.a > 0.0) ? u_color : vec4(0.8, 0.8, 0.8, 1.0);
-    vec3 ambient = 0.2 * baseColor.rgb;
-    vec3 diffuse = diff * baseColor.rgb;
-    vec3 specular = spec * vec3(0.4);
-
-    fragColor = vec4(ambient + diffuse + specular, baseColor.a);
-}
-`;
+import galaxyOrbVert from "../../galaxy_backdrop/shaders/galaxy_orb.vert";
+import galaxyOrbFrag from "../../galaxy_backdrop/shaders/galaxy_orb.frag";
+import unlitVert from "../shaders/unlit.vert";
+import unlitFrag from "../shaders/unlit.frag";
 
 /**
  * Concrete 3D Scene Renderer executing hierarchical scene graph traversal,
@@ -78,7 +27,7 @@ export class SceneRenderer implements ISceneRenderer {
     private readonly _normalMatrix: Float32Array = new Float32Array(9);
     private readonly _cameraPosition: [number, number, number] = [0, 0, 0];
     private readonly _renderQueue: RenderQueueItem[] = [];
-    private readonly _warnedShaders: Set<string> = new Set();
+    private readonly _warnedShaders: Set<ShaderKey> = new Set();
 
     constructor(contextManager: IWebGLContextManager) {
         this.contextManager = contextManager;
@@ -164,7 +113,20 @@ export class SceneRenderer implements ISceneRenderer {
             shader.setMat4("u_modelViewMatrix", this._modelViewMatrix);
             shader.setMat3("u_normalMatrix", this._normalMatrix);
 
-            // Tier C: Material Domain Uniforms
+            // Tier C: Material Domain Uniforms & Texture Units
+            const textures = material.getTextures();
+            if (textures.size > 0) {
+                for (const [unit, tex] of textures.entries()) {
+                    if (tex && tex.handle) {
+                        this.contextManager.bindTexture(unit, tex.handle);
+                    } else {
+                        this.contextManager.bindTexture(unit, this.contextManager.getDefaultWhiteTexture());
+                    }
+                }
+            } else if ((material.getUniforms().u_useTexture as number) > 0.5) {
+                this.contextManager.bindTexture(0, this.contextManager.getDefaultWhiteTexture());
+            }
+
             shader.setUniforms(material.getUniforms());
 
             // Bind VAO and issue draw call
@@ -200,7 +162,6 @@ export class SceneRenderer implements ISceneRenderer {
 
     public destroy(): void {
         this._renderQueue.length = 0;
-        this.contextManager.resetPipelineState();
     }
 
     private getOrResolveShader(material: IMaterial): ShaderProgram | null {
@@ -212,12 +173,19 @@ export class SceneRenderer implements ISceneRenderer {
                     fragSource: galaxyPinprickFrag,
                     label: "galaxy_pinprick",
                 });
-            } else if (material.shaderKey === "standard_pbr") {
-                shader = this.contextManager.getOrCreateShader("standard_pbr", {
-                    vertSource: DEFAULT_STANDARD_PBR_VERT,
-                    fragSource: DEFAULT_STANDARD_PBR_FRAG,
-                    label: "standard_pbr",
+            } else if (material.shaderKey === "galaxy_orb") {
+                shader = this.contextManager.getOrCreateShader("galaxy_orb", {
+                    vertSource: galaxyOrbVert,
+                    fragSource: galaxyOrbFrag,
+                    label: "galaxy_orb",
                 });
+            } else if (material.shaderKey === "unlit") {
+                shader = this.contextManager.getOrCreateShader("unlit", {
+                    vertSource: unlitVert,
+                    fragSource: unlitFrag,
+                    label: "unlit",
+                });
+                shader.setInt("u_texture", 0);
             }
         }
 

@@ -98,6 +98,9 @@ sequenceDiagram
 In WebGL, `gl.clear(gl.DEPTH_BUFFER_BIT)` is ignored by the GPU if `depthMask` is set to `false`. 
 Before clearing the depth buffer at the beginning of a pass, `SceneRenderer` or `ScenePass` calls `contextManager.setDepthMask(true)` ensuring the depth clear takes effect.
 
+### Cooperative Multi-Pass State Management
+Rather than forcing arbitrary driver resets between passes, all passes and materials cooperatively assert their pipeline state through `contextManager.applyPipelineState()`. This enables `WebGLContextManager` to cleanly track and apply driver transitions (for example, transitioning from `GalacticCloudRenderer`'s alpha blending to `GalaxyMaterial`'s additive blending) without state collisions or redundant GL driver calls.
+
 ---
 
 ## 5. The 5-Stage Frame Rendering Loop
@@ -144,13 +147,15 @@ sequenceDiagram
 2. **Stage 2 (Camera Synchronization):** Automatically updates the camera's aspect ratio from `dims.aspect`, inverts the camera world matrix to compute `viewMatrix` ($V$), and pre-multiplies $\mathbf{VP} = \mathbf{P} \cdot \mathbf{V}$ on the CPU.
 3. **Stage 3 (Visibility Filtering & Stable Sort):** Traverses the scene graph collecting all `ModelInstance` nodes where `computedVisible === true`. Performs a stable sort on `renderOrder` (preserving tree insertion order for ties).
 4. **Stage 4 (Pipeline State Assertion):** Passes `material.pipelineState` to `contextManager.applyPipelineState()`, deduplicating driver calls.
-5. **Stage 5 (Uniform Upload & Draw Call):** Activates the shader program, uploads standard and material uniforms, binds the geometry VAO, and issues the WebGL draw call.
+5. **Stage 5 (Texture Binding, Uniform Upload & Draw Call):**
+   - Synchronizes material textures via `contextManager.bindTexture(unit, handle)`. If a material requests texture sampling (`u_useTexture > 0.5`) but its texture is pending decode, falls back to `contextManager.getDefaultWhiteTexture()`.
+   - Activates shader program, uploads standard (Tier A/B) and material (Tier C) uniforms, binds the geometry VAO, and issues the WebGL draw call.
 
 ---
 
-## 6. Uniform Distribution Protocol
+## 6. Uniform & Texture Distribution Protocol
 
-The shader uniform distribution protocol standardizes uniform naming and upload frequency across all shaders:
+The uniform and texture distribution protocol standardizes naming and binding conventions across all shaders:
 
 ### Tier A: Frame & Camera Uniforms (Uploaded Once Per Shader Per Frame)
 - `uniform mat4 u_viewProjectionMatrix`: Pre-multiplied $P \times V$ matrix.
@@ -166,7 +171,14 @@ The shader uniform distribution protocol standardizes uniform naming and upload 
 - `uniform mat3 u_normalMatrix`: Inverse-transpose of the $3 \times 3$ model matrix for lighting normals.
 
 ### Tier C: Material Domain Uniforms (Uploaded From Material Dictionary)
-- Custom domain uniforms extracted via `material.getUniforms()` (e.g. `u_color`, `u_rotationSpeed`, `u_coreBlazeColor`, `u_pointScale`).
+- Custom domain uniforms extracted via `material.getUniforms()` (e.g. `u_color`, `u_useTexture`, `u_rotationSpeed`, `u_pointScale`).
+
+### Tier D: Semantic Texture Slots (Hardware Texture Units)
+- **Unit 0 (`u_texture`):** Base color, albedo, or diffuse texture map.
+- **Unit 1 (`u_normalMap`):** Tangent-space normal map.
+- **Unit 2 (`u_roughnessMap`):** PBR roughness / specular map.
+- **Unit 3 (`u_emissiveMap`):** Self-illumination / emissive glow map.
+- State caching in `WebGLContextManager` suppresses redundant `gl.activeTexture()` and `gl.bindTexture()` calls across sequential instances.
 
 ---
 
@@ -205,6 +217,15 @@ export interface IWebGLContextManager {
     
     /** Forces depth mask true or false (e.g. before clearing depth buffer) */
     setDepthMask(enabled: boolean): void;
+
+    /** Binds a WebGLTexture to a hardware texture unit with redundant call skipping */
+    bindTexture(unit: number, texture: WebGLTexture | null): void;
+
+    /** Retrieves the shared 1x1 solid white fallback texture handle */
+    getDefaultWhiteTexture(): WebGLTexture | null;
+
+    /** Maximum hardware texture units supported in fragment shaders */
+    readonly maxTextureUnits: number;
 }
 ```
 
@@ -279,7 +300,7 @@ export function SpaceExplorationView(): React.JSX.Element {
         // 1. Add Opaque Spacecraft (renderOrder: 0, writes depth)
         const shipGeo = new SphereGeometry({ radius: 3, segments: 16 });
         const shipMat = new StandardMaterial({ 
-            shaderKey: "standard_pbr",
+            shaderKey: "unlit",
             pipelineState: { depthTest: true, depthWrite: true, blendMode: "opaque" }
         });
         const ship = new ModelInstance(shipGeo, shipMat);
