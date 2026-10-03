@@ -13,4 +13,5 @@ node_modules/
 *.vert.d.ts
 *.frag.d.ts
 *.glsl.d.ts
-
+# Test Coverage
+coverage/
