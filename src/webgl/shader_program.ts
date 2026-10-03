@@ -67,6 +67,8 @@ export class ShaderProgram<TUniforms extends object = Record<string, unknown>> {
                     typeof val[3] === "number"
                 ) {
                     this.setVec4(name, val[0], val[1], val[2], val[3]);
+                } else if (val.length === 9) {
+                    this.setMat3(name, val instanceof Float32Array ? val : new Float32Array(val as number[]));
                 } else if (val.length === 16) {
                     this.setMat4(name, val instanceof Float32Array ? val : new Float32Array(val as number[]));
                 }
@@ -257,6 +259,20 @@ export class ShaderProgram<TUniforms extends object = Record<string, unknown>> {
     }
 
     /**
+     * Uploads a 3x3 matrix uniform value.
+     *
+     * **Context Binding:** Does NOT bind program. Caller must ensure `contextManager.useShader(this)`
+     * has been called prior to invoking.
+     */
+    public setMat3(name: string, data: Float32Array): void {
+        this.uniformCache.set(name, { type: "mat3", value: new Float32Array(data) });
+        const loc = this.getUniformLocation(name);
+        if (loc) {
+            this.gl?.uniformMatrix3fv(loc, false, data);
+        }
+    }
+
+    /**
      * Uploads a 4x4 matrix uniform value.
      *
      * **Context Binding:** Does NOT bind program. Caller must ensure `contextManager.useShader(this)`
@@ -364,6 +380,9 @@ export class ShaderProgram<TUniforms extends object = Record<string, unknown>> {
                 case "vec4":
                     const v4 = cached.value as [number, number, number, number];
                     gl.uniform4f(loc, v4[0], v4[1], v4[2], v4[3]);
+                    break;
+                case "mat3":
+                    gl.uniformMatrix3fv(loc, false, cached.value as Float32Array);
                     break;
                 case "mat4":
                     gl.uniformMatrix4fv(loc, false, cached.value as Float32Array);

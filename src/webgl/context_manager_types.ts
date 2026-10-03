@@ -2,6 +2,7 @@ import type { ShaderProgram } from "./shader_program";
 import type { ShaderProgramOptions } from "./shader_program_types";
 import type { VertexBuffer } from "./vertex_buffer";
 import type { VertexLayoutSpec } from "./vertex_layout_types";
+import type { PipelineState } from "../scene/materials/material_types";
 
 export interface ShaderEntry<TUniforms extends object = Record<string, unknown>> {
     shader: ShaderProgram<TUniforms>;
@@ -11,7 +12,7 @@ export interface ShaderEntry<TUniforms extends object = Record<string, unknown>>
 /**
  * Public contract for the central WebGL GPU resource manager and lifecycle allocator.
  * Manages context tracking, ref-counted ShaderProgram instances, managed VertexBuffers,
- * and automated context recovery.
+ * pipeline state caching, and automated context recovery.
  */
 export interface IWebGLContextManager {
     /** Sets or updates the active WebGL2 rendering context. */
@@ -42,6 +43,13 @@ export interface IWebGLContextManager {
     ): ShaderProgram<TUniforms>;
 
     /**
+     * Registry Query: Retrieves an existing compiled ShaderProgram if registered, without altering refCount.
+     */
+    getShader<TUniforms extends object = Record<string, unknown>>(
+        key: string
+    ): ShaderProgram<TUniforms> | null;
+
+    /**
      * Release Pattern: Decrements a ShaderProgram's reference count and disposes it at 0.
      */
     releaseShader<TUniforms extends object = Record<string, unknown>>(
@@ -60,6 +68,15 @@ export interface IWebGLContextManager {
      * Release Pattern: Deletes GPU resources associated with a VertexBuffer.
      */
     releaseVertexBuffer(buffer: VertexBuffer): void;
+
+    /** Asserts desired WebGL pipeline state; skips redundant driver calls. */
+    applyPipelineState(state: PipelineState): void;
+
+    /** Resets cached pipeline state to default or canvas baseline. */
+    resetPipelineState(): void;
+
+    /** Forces depth mask true or false (e.g. before clearing depth buffer). */
+    setDepthMask(enabled: boolean): void;
 
     /** Handlers invoked when a WebGL context lost event occurs. */
     handleContextLost(): void;

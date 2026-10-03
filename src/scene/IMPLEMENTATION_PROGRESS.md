@@ -41,12 +41,12 @@ This document serves as the persistent single source of truth for the phased imp
   - **Commit Target:** `feat(scene): implement geometry, material, and model instance architecture`
 
 - **Phase 4: Scene Rendering Pipeline & WebGL Canvas Bridge**
-  - **Status:** In Progress
+  - **Status:** Complete
   - **Reference Design:** [`renderer/scene_render_pipeline_design.md`](renderer/scene_render_pipeline_design.md)
   - **Deliverables:**
-    - Context Manager state caching: updates to `src/webgl/context_manager_types.ts` and `src/webgl/context_manager.ts`
-    - `src/scene/renderer/scene_renderer_types.ts` & `src/scene/renderer/scene_renderer.ts`
-    - `src/scene/renderer/scene_pass_types.ts` & `src/scene/renderer/scene_pass.tsx`
+    - Context Manager state caching: updates to `src/webgl/context_manager_types.ts` and `src/webgl/context_manager.ts` (Completed)
+    - `src/scene/renderer/scene_renderer_types.ts` & `src/scene/renderer/scene_renderer.ts` (Completed)
+    - `src/scene/renderer/scene_pass_types.ts` & `src/scene/renderer/scene_pass.tsx` (Completed)
   - **Commit Target:** `feat(scene): implement scene rendering pipeline and webgl canvas bridge`
 
 - **Phase 5: Declarative React Scene Architecture**

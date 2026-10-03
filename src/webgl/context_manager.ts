@@ -3,6 +3,7 @@ import type { ShaderProgramOptions } from "./shader_program_types";
 import { VertexBuffer } from "./vertex_buffer";
 import type { VertexLayoutSpec } from "./vertex_layout_types";
 import type { ShaderEntry, IWebGLContextManager } from "./context_manager_types";
+import type { PipelineState } from "../scene/materials/material_types";
 
 /**
  * Central WebGL GPU resource manager and lifecycle allocator.
@@ -16,6 +17,7 @@ export class WebGLContextManager implements IWebGLContextManager {
     private activeBuffers = new Set<VertexBuffer>();
     private currentProgram: WebGLProgram | null = null;
     private currentShader: ShaderProgram<never> | null = null;
+    private currentPipelineState: PipelineState | null = null;
 
     constructor(gl?: WebGL2RenderingContext) {
         if (gl) {
@@ -30,6 +32,7 @@ export class WebGLContextManager implements IWebGLContextManager {
         this.gl = gl;
         this.currentProgram = null;
         this.currentShader = null;
+        this.currentPipelineState = null;
     }
 
     /**
@@ -104,6 +107,16 @@ export class WebGLContextManager implements IWebGLContextManager {
     }
 
     /**
+     * Registry Query: Retrieves an existing compiled ShaderProgram if registered, without altering refCount.
+     */
+    public getShader<TUniforms extends object = Record<string, unknown>>(
+        key: string
+    ): ShaderProgram<TUniforms> | null {
+        const entry = this.shaderRegistry.get(key);
+        return entry ? (entry.shader as unknown as ShaderProgram<TUniforms>) : null;
+    }
+
+    /**
      * Release Pattern: Decrements a ShaderProgram's reference count.
      * When refCount reaches 0 (no renderers are using it), destroys the GPU program and unregisters it.
      */
@@ -160,12 +173,77 @@ export class WebGLContextManager implements IWebGLContextManager {
     }
 
     /**
+     * Asserts desired WebGL pipeline state; skips redundant driver calls.
+     */
+    public applyPipelineState(state: PipelineState): void {
+        const gl = this.gl;
+        if (!gl) return;
+
+        const prev = this.currentPipelineState;
+
+        if (!prev || prev.depthTest !== state.depthTest) {
+            if (state.depthTest) {
+                gl.enable(gl.DEPTH_TEST);
+                gl.depthFunc(gl.LEQUAL);
+            } else {
+                gl.disable(gl.DEPTH_TEST);
+            }
+        }
+
+        if (!prev || prev.depthWrite !== state.depthWrite) {
+            gl.depthMask(state.depthWrite);
+        }
+
+        if (!prev || prev.blendMode !== state.blendMode) {
+            if (state.blendMode === "opaque") {
+                gl.disable(gl.BLEND);
+            } else if (state.blendMode === "alpha") {
+                gl.enable(gl.BLEND);
+                gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+            } else if (state.blendMode === "additive") {
+                gl.enable(gl.BLEND);
+                gl.blendFunc(gl.ONE, gl.ONE);
+            }
+        }
+
+        if (!prev || prev.cullFace !== state.cullFace) {
+            if (state.cullFace) {
+                gl.enable(gl.CULL_FACE);
+            } else {
+                gl.disable(gl.CULL_FACE);
+            }
+        }
+
+        this.currentPipelineState = { ...state };
+    }
+
+    /**
+     * Resets cached pipeline state to null (forcing next applyPipelineState to re-assert all states).
+     */
+    public resetPipelineState(): void {
+        this.currentPipelineState = null;
+    }
+
+    /**
+     * Forces depth mask true or false (e.g. before clearing depth buffer).
+     */
+    public setDepthMask(enabled: boolean): void {
+        if (this.gl) {
+            this.gl.depthMask(enabled);
+        }
+        if (this.currentPipelineState) {
+            this.currentPipelineState.depthWrite = enabled;
+        }
+    }
+
+    /**
      * Handlers invoked when a WebGL context lost event occurs.
      */
     public handleContextLost(): void {
         this.gl = null;
         this.currentProgram = null;
         this.currentShader = null;
+        this.currentPipelineState = null;
         for (const entry of this.shaderRegistry.values()) {
             entry.shader.destroy();
         }
@@ -181,6 +259,7 @@ export class WebGLContextManager implements IWebGLContextManager {
         this.gl = newGl;
         this.currentProgram = null;
         this.currentShader = null;
+        this.currentPipelineState = null;
 
         // Phase 1: Rebuild Shaders with active refCount > 0
         for (const entry of this.shaderRegistry.values()) {
@@ -211,6 +290,7 @@ export class WebGLContextManager implements IWebGLContextManager {
 
         this.currentProgram = null;
         this.currentShader = null;
+        this.currentPipelineState = null;
         this.gl = null;
     }
 }
