@@ -19,6 +19,6 @@ export interface IScene {
     /** Clears all scene nodes and frees resources */
     clear(): void;
 
-    /** Deterministic disposal of entire scene graph */
-    dispose(): void;
+    /** Permanent teardown of entire scene graph */
+    destroy(): void;
 }

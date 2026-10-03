@@ -58,6 +58,6 @@ export interface IDisposable {
     /** True if this resource has already been permanently disposed */
     readonly isDisposed: boolean;
 
-    /** Registers a callback to be invoked exactly once when dispose() is called */
-    onDispose(callback: () => void): void;
+    /** Registers a callback to be invoked exactly once when dispose() is called. Returns an optional unsubscribe function. */
+    onDispose(callback: () => void): (() => void) | void;
 }

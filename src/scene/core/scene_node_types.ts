@@ -45,6 +45,9 @@ export interface ISceneNode {
     /** Recursively updates local and world transformation matrices */
     updateWorldTransform(forceWorldDirty?: boolean): void;
 
+    /** Registers a callback to be invoked when destroy() is called. Returns an unsubscribe function. */
+    onDestroy(callback: () => void): () => void;
+
     /** Frees node resources and detaches from graph */
     destroy(): void;
 }

@@ -921,5 +921,65 @@ describe("SceneNode", () => {
             expect(child.parent).toBeNull();
         });
     });
+
+    describe(".onDestroy()", () => {
+        it("should register a callback and invoke it when destroy() is called", () => {
+            const node = new SceneNode("Test");
+            const callback = vi.fn();
+            node.onDestroy(callback);
+
+            expect(callback).not.toHaveBeenCalled();
+            node.destroy();
+            expect(callback).toHaveBeenCalledTimes(1);
+        });
+
+        it("should return an unsubscribe function that prevents the callback from firing", () => {
+            const node = new SceneNode("Test");
+            const callback = vi.fn();
+            const unsubscribe = node.onDestroy(callback);
+
+            unsubscribe();
+            node.destroy();
+            expect(callback).not.toHaveBeenCalled();
+        });
+
+        it("should invoke multiple registered callbacks in registration order", () => {
+            const node = new SceneNode("Test");
+            const order: number[] = [];
+            node.onDestroy(() => order.push(1));
+            node.onDestroy(() => order.push(2));
+            node.onDestroy(() => order.push(3));
+
+            node.destroy();
+            expect(order).toEqual([1, 2, 3]);
+        });
+
+        it("should invoke onDestroy callbacks before detaching from parent and before children are destroyed", () => {
+            const parent = new SceneNode("Parent");
+            const child = new SceneNode("Child");
+            parent.addChild(child);
+
+            const events: string[] = [];
+            parent.onDestroy(() => {
+                events.push(`parent:children=${parent.children.length}`);
+            });
+            child.onDestroy(() => {
+                events.push(`child:parent=${child.parent ? child.parent.name : "null"}`);
+            });
+
+            parent.destroy();
+            expect(events).toEqual(["parent:children=1", "child:parent=Parent"]);
+        });
+
+        it("should not fire callbacks again on subsequent destroy() calls", () => {
+            const node = new SceneNode("Test");
+            const callback = vi.fn();
+            node.onDestroy(callback);
+
+            node.destroy();
+            node.destroy();
+            expect(callback).toHaveBeenCalledTimes(1);
+        });
+    });
 });
 

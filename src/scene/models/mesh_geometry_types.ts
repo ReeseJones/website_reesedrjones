@@ -1,4 +1,5 @@
 import type { VertexLayoutSpec } from "../../webgl/geometry/vertex_layout_types";
+import type { IDisposable } from "../../webgl/core/subsystem_types";
 
 /**
  * CPU-side geometry buffer descriptor declaring interleaved vertex attributes,
@@ -24,7 +25,7 @@ export type GeometryDisposeListener = (geometry: IMeshGeometry) => void;
  * Public interface for pure CPU geometry representation.
  * Completely decoupled from WebGL contexts, VBOs, and shaders.
  */
-export interface IMeshGeometry {
+export interface IMeshGeometry extends IDisposable {
     /** Descriptive or debugging identifier */
     readonly id: string;
 

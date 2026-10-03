@@ -13,6 +13,8 @@ export class Material implements IMaterial {
     private readonly _uniforms: Map<string, unknown> = new Map();
     private readonly _textures: Map<TextureUnit | number, ITexture> = new Map();
     private readonly _cubeTextures: Map<TextureUnit | number, ICubeTexture> = new Map();
+    private _isDisposed: boolean = false;
+    private readonly _onDisposeCallbacks: (() => void)[] = [];
 
     constructor(options: MaterialOptions) {
         this._shaderKey = options.shaderKey;
@@ -158,10 +160,38 @@ export class Material implements IMaterial {
         });
     }
 
+    public get isDisposed(): boolean {
+        return this._isDisposed;
+    }
+
     /**
-     * Deterministic disposal: disposes assigned textures and clears uniforms.
+     * Registers a callback to be invoked when dispose() is called.
+     * Returns an unsubscribe function.
+     */
+    public onDispose(callback: () => void): () => void {
+        this._onDisposeCallbacks.push(callback);
+        return () => {
+            const index = this._onDisposeCallbacks.indexOf(callback);
+            if (index !== -1) {
+                this._onDisposeCallbacks.splice(index, 1);
+            }
+        };
+    }
+
+    /**
+     * Deterministic disposal: triggers listeners, disposes assigned textures, and clears uniforms.
      */
     public dispose(): void {
+        if (this._isDisposed) {
+            return;
+        }
+        this._isDisposed = true;
+
+        for (const cb of this._onDisposeCallbacks) {
+            cb();
+        }
+        this._onDisposeCallbacks.length = 0;
+
         for (const tex of this._textures.values()) {
             if (tex && typeof tex.dispose === "function") {
                 tex.dispose();

@@ -29,6 +29,7 @@ export class SceneNode implements ISceneNode {
     private _visible: boolean = true;
     private _computedVisible: boolean = true;
     private _isWorldDirty: boolean = true;
+    private readonly _onDestroyCallbacks: (() => void)[] = [];
 
     constructor(name: string = "SceneNode", id?: string) {
         this.name = name;
@@ -168,7 +169,22 @@ export class SceneNode implements ISceneNode {
         }
     }
 
+    public onDestroy(callback: () => void): () => void {
+        this._onDestroyCallbacks.push(callback);
+        return () => {
+            const index = this._onDestroyCallbacks.indexOf(callback);
+            if (index !== -1) {
+                this._onDestroyCallbacks.splice(index, 1);
+            }
+        };
+    }
+
     public destroy(): void {
+        for (const cb of this._onDestroyCallbacks) {
+            cb();
+        }
+        this._onDestroyCallbacks.length = 0;
+
         this.removeFromParent();
         const childrenCopy = [...this._children];
         for (let i = 0; i < childrenCopy.length; i++) {
