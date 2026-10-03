@@ -7,7 +7,7 @@ This document specifies the architectural design for the Scene Rendering Pipelin
 
 ### Key Architectural Principles
 - **Predictable Forward Rendering with Explicit `renderOrder`:** The renderer avoids complex, opaque batch-reordering or dynamic vertex buffer packing. By default, objects render in scene-graph tree order, with an optional explicit `renderOrder: number` to guarantee layering (e.g. background $\to$ opaque meshes $\to$ additive particles $\to$ HUD).
-- **Centralized Pipeline State Management in `WebGLContextManager`:** Much like shaders and vertex buffers, the active WebGL pipeline state (`depthTest`, `depthWrite`, `blendMode`, `cullFace`) is managed and cached directly by [`WebGLContextManager`](../../webgl/context_manager.ts). Redundant GPU driver calls are automatically suppressed when consecutive models share identical pipeline states.
+- **Centralized Pipeline State Management in `WebGLContextManager`:** Much like shaders and vertex buffers, the active WebGL pipeline state (`depthTest`, `depthWrite`, `blendMode`, `cullFace`) is managed and cached directly by [`WebGLContextManager`](../../webgl/core/context_manager.ts). Redundant GPU driver calls are automatically suppressed when consecutive models share identical pipeline states.
 - **Mixed-Depth Composition for Additive Stars & Opaque Geometry:** Enables flying through the galaxy while rendering solid 3D models (spaceships, asteroids, dyson spheres). Opaque objects write to depth; additive stars test against depth but disable depth writing (`depthMask: false`), preserving 100% of the galaxy's blazing radiance.
 - **Three-Tier Uniform Distribution Protocol:** Standardized separation between Frame/Camera uniforms, Instance Transform uniforms, and Material-specific domain uniforms.
 - **First-Class Canvas Integration:** A lightweight `<ScenePass />` component subscribes the entire 3D scene to the canvas via [`useWebGLPass`](../../components/webgl_canvas/use_webgl_pass.ts), automatically handling canvas resizing, device pixel ratio, and context loss recovery.
@@ -200,8 +200,8 @@ The uniform and texture distribution protocol standardizes naming and binding co
 All rendering pipeline code resides in `src/scene/renderer/` and updates in `src/webgl/`:
 
 - **Context Manager Updates (`src/webgl/`):**
-  - [`src/webgl/context_manager_types.ts`](../../webgl/context_manager_types.ts): Adds `applyPipelineState(state)` and `resetPipelineState()` methods.
-  - [`src/webgl/context_manager.ts`](../../webgl/context_manager.ts): Implements state caching for `depthTest`, `depthWrite`, `blendMode`, and `cullFace`.
+  - [`src/webgl/core/context_manager_types.ts`](../../webgl/core/context_manager_types.ts): Adds `applyPipelineState(state)` and `resetPipelineState()` methods.
+  - [`src/webgl/core/context_manager.ts`](../../webgl/core/context_manager.ts): Implements state caching for `depthTest`, `depthWrite`, `blendMode`, and `cullFace`.
 - **Renderer Type Definitions (`src/scene/renderer/`):**
   - [`src/scene/renderer/scene_renderer_types.ts`](scene_renderer_types.ts): Contracts for `ISceneRenderer`, `RenderQueueItem`, and `StandardShaderUniforms`.
 - **Core Scene Renderer (`src/scene/renderer/`):**
@@ -214,7 +214,7 @@ All rendering pipeline code resides in `src/scene/renderer/` and updates in `src
 
 ## 8. API & Type Specifications
 
-### Context Manager Extensions (`src/webgl/context_manager_types.ts`)
+### Context Manager Extensions (`src/webgl/core/context_manager_types.ts`)
 
 ```typescript
 import type { PipelineState } from "../scene/materials/material_types";
@@ -249,7 +249,7 @@ import type { IScene } from "../core/scene_types";
 import type { ICamera } from "../camera/camera_types";
 import type { IModelInstance } from "../models/model_instance_types";
 import type { CanvasDimensions, TimeInfo } from "../../components/webgl_canvas/types";
-import type { IWebGLContextManager } from "../../webgl/context_manager_types";
+import type { IWebGLContextManager } from "../../webgl/core/context_manager_types";
 
 export interface StandardShaderUniforms {
     u_viewProjectionMatrix: Float32Array;

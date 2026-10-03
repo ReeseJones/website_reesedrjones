@@ -20,10 +20,10 @@ This design document outlines a declarative layout configuration system for WebG
 
 All generic WebGL utilities and infrastructure code are grouped under `src/webgl/`:
 
-- Design Document: [`src/webgl/shader_vao_layout_design.md`](src/webgl/shader_vao_layout_design.md)
-- Generic WebGL Layout Utilities: [`src/webgl/vertex_layout.ts`](src/webgl/vertex_layout.ts)
-- Galaxy Star Buffer Schema: [`src/galaxy_backdrop/galaxy_layout.ts`](src/galaxy_backdrop/galaxy_layout.ts)
-- Refactored Renderer: [`src/galaxy_backdrop/galaxy_renderer.ts`](src/galaxy_backdrop/galaxy_renderer.ts)
+- Design Document: [`src/webgl/shaders/shader_vao_layout_design.md`](shader_vao_layout_design.md)
+- Generic WebGL Layout Utilities: [`src/webgl/geometry/vertex_layout.ts`](../geometry/vertex_layout.ts)
+- Galaxy Star Buffer Schema: [`src/galaxy_backdrop/galaxy_layout.ts`](../../galaxy_backdrop/galaxy_layout.ts)
+- Refactored Renderer: [`src/galaxy_backdrop/galaxy_renderer.ts`](../../galaxy_backdrop/galaxy_renderer.ts)
 
 ---
 

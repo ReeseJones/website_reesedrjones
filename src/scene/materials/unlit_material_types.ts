@@ -1,5 +1,5 @@
 import type { MaterialOptions } from "./material_types";
-import type { ITexture } from "../../webgl/texture_types";
+import type { ITexture } from "../../webgl/textures/texture_types";
 
 /**
  * Options for configuring an UnlitMaterial.

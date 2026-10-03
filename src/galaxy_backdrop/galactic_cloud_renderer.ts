@@ -2,10 +2,10 @@ import { GalaxyParameters, DEFAULT_GALAXY_PARAMETERS, MOBILE_GALAXY_PARAMETERS }
 import galacticCloudVert, { GalacticCloudUniforms } from "./shaders/galactic_cloud.vert";
 import galacticCloudFrag from "./shaders/galactic_cloud.frag";
 import { CanvasDimensions, TimeInfo } from "../components/webgl_canvas/types";
-import { ShaderProgram } from "../webgl/shader_program";
-import { VertexBuffer } from "../webgl/vertex_buffer";
-import { parseVertexLayoutFromGLSL } from "../webgl/vertex_layout";
-import type { IWebGLContextManager } from "../webgl/context_manager_types";
+import { ShaderProgram } from "../webgl/shaders/shader_program";
+import { VertexBuffer } from "../webgl/geometry/vertex_buffer";
+import { parseVertexLayoutFromGLSL } from "../webgl/geometry/vertex_layout";
+import type { IWebGLContextManager } from "../webgl/core/context_manager_types";
 import { OrientationInputController } from "./orientation_input";
 
 /**

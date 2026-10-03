@@ -1,5 +1,5 @@
 import React from "react";
-import type { IWebGLContextManager } from "../../webgl/context_manager_types";
+import type { IWebGLContextManager } from "../../webgl/core/context_manager_types";
 
 export interface CanvasDimensions {
     /** Backing store width in physical device pixels (canvas.width) */

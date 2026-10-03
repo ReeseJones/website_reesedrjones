@@ -8,7 +8,7 @@ This document specifies the architectural design for 3D Geometry, Materials, and
 ### Key Architectural Principles
 - **Pure Model Space Authoring:** All geometries, whether procedural meshes or particle distributions, are authored and generated in local coordinates centered around $(0, 0, 0)$ without hardcoding world positioning, orientation, or camera distances.
 - **The Geometry-Material Contract:**
-  - **`MeshGeometry` (Passive Storage & Schema):** Encapsulates the raw vertex/index byte buffers, attribute layout schema ([`VertexLayoutSpec`](../../webgl/vertex_layout_types.ts)), vertex count, and primitive type (`gl.TRIANGLES`, `gl.POINTS`, `gl.LINES`). It contains zero shaders, zero uniforms, and zero rendering logic.
+  - **`MeshGeometry` (Passive Storage & Schema):** Encapsulates the raw vertex/index byte buffers, attribute layout schema ([`VertexLayoutSpec`](../../webgl/geometry/vertex_layout_types.ts)), vertex count, and primitive type (`gl.TRIANGLES`, `gl.POINTS`, `gl.LINES`). It contains zero shaders, zero uniforms, and zero rendering logic.
   - **`Material` (Active Shader Interpreter & State Owner):** Encapsulates the visual appearance. It binds the shader program that understands the geometry's attribute layout, supplies material-specific uniform values, and asserts required WebGL pipeline states (blending presets, depth testing, culling).
   - **`ModelInstance` (Scene Citizen):** Extends `SceneNode`, marrying a `MeshGeometry` and a `Material` with a spatial `Transform` in the scene graph.
 - **Dual Support: Standard Cartesian Path vs. Procedural GPU-Evaluated Path:**
@@ -16,7 +16,7 @@ This document specifies the architectural design for 3D Geometry, Materials, and
   - Procedural systems (such as the Galaxy backdrop) use custom domain attributes (e.g. polar coordinates $[r, \theta, z]$ and simulation parameters) where the vertex shader does the heavy lifting of evaluating positions on the fly.
 - **Lightweight Demo Focus (No Game Engine Bloat):** Intentionally avoids complex Entity-Component-Systems (ECS), heavy physical material pipelines (PBR), or multi-stage deferred render graphs in favor of a direct, high-performance abstraction optimized for interactive web demos.
 - **Zero-Disruption Galaxy Integration:** The existing spiral galaxy simulation maps directly into this architecture without modifying its star math or GLSL shaders.
-- **Resource Management via Context Manager:** All GPU buffers and shaders are allocated and restored through [`WebGLContextManager`](../../webgl/context_manager.ts).
+- **Resource Management via Context Manager:** All GPU buffers (VBO, IBO, VAO) are decoupled from CPU `MeshGeometry` and managed through [`GeometryManager`](../../webgl/geometry/geometry_manager_design.md) on [`WebGLContextManager`](../../webgl/core/context_manager.ts).
 
 ---
 
@@ -152,7 +152,7 @@ All geometry, material, and instance classes reside in `src/scene/models/` and `
 
 - **Geometry Layer (`src/scene/models/`):**
   - [`src/scene/models/mesh_geometry_types.ts`](mesh_geometry_types.ts): Core interfaces (`IMeshGeometry`, `GeometryBufferData`).
-  - [`src/scene/models/mesh_geometry.ts`](mesh_geometry.ts): Base geometry class wrapping [`VertexBuffer`](../../webgl/vertex_buffer.ts) and [`VertexLayoutSpec`](../../webgl/vertex_layout_types.ts).
+  - [`src/scene/models/mesh_geometry.ts`](mesh_geometry.ts): Base geometry class wrapping [`VertexBuffer`](../../webgl/geometry/vertex_buffer.ts) and [`VertexLayoutSpec`](../../webgl/geometry/vertex_layout_types.ts).
   - [`src/scene/models/primitives/cube_geometry.ts`](primitives/cube_geometry.ts): Standard unit cube generator.
   - [`src/scene/models/primitives/sphere_geometry.ts`](primitives/sphere_geometry.ts): Standard unit sphere generator.
   - [`src/scene/models/primitives/quad_geometry.ts`](primitives/quad_geometry.ts): Standard unit quad / billboard generator.
@@ -173,9 +173,9 @@ All geometry, material, and instance classes reside in `src/scene/models/` and `
 ### Geometry Interfaces (`src/scene/models/mesh_geometry_types.ts`)
 
 ```typescript
-import type { VertexBuffer } from "../../webgl/vertex_buffer";
-import type { VertexLayoutSpec } from "../../webgl/vertex_layout_types";
-import type { IWebGLContextManager } from "../../webgl/context_manager_types";
+import type { VertexBuffer } from "../../webgl/geometry/vertex_buffer";
+import type { VertexLayoutSpec } from "../../webgl/geometry/vertex_layout_types";
+import type { IWebGLContextManager } from "../../webgl/core/context_manager_types";
 
 export interface GeometryBufferData {
     /** Interleaved vertex attribute data array */

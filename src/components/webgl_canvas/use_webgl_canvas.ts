@@ -6,7 +6,7 @@ import {
     WebGLSubscriber,
 } from "./types";
 
-import { WebGLContextManager } from "../../webgl/context_manager";
+import { WebGLContextManager } from "../../webgl/core/context_manager";
 
 declare global {
     interface Window {

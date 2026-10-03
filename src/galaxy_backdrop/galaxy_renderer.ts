@@ -22,10 +22,10 @@ import galaxyPinprickFrag from "./shaders/galaxy_pinprick.frag";
 import galaxyOrbVert, { GalaxyOrbUniforms } from "./shaders/galaxy_orb.vert";
 import galaxyOrbFrag from "./shaders/galaxy_orb.frag";
 import { CanvasDimensions, TimeInfo } from "../components/webgl_canvas/types";
-import { ShaderProgram } from "../webgl/shader_program";
-import { VertexBuffer } from "../webgl/vertex_buffer";
-import { parseVertexLayoutFromGLSL } from "../webgl/vertex_layout";
-import type { IWebGLContextManager } from "../webgl/context_manager_types";
+import { ShaderProgram } from "../webgl/shaders/shader_program";
+import { VertexBuffer } from "../webgl/geometry/vertex_buffer";
+import { parseVertexLayoutFromGLSL } from "../webgl/geometry/vertex_layout";
+import type { IWebGLContextManager } from "../webgl/core/context_manager_types";
 import { OrientationInputController } from "./orientation_input";
 
 type GalaxyShaderUniforms = GalaxyPinprickUniforms | GalaxyOrbUniforms;

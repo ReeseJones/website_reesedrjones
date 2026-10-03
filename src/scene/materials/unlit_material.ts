@@ -1,6 +1,6 @@
 import { Material } from "./material";
 import type { UnlitMaterialOptions } from "./unlit_material_types";
-import { TextureUnit, type ITexture } from "../../webgl/texture_types";
+import { TextureUnit, type ITexture } from "../../webgl/textures/texture_types";
 
 /**
  * Unlit material for rendering geometry with a solid/tinted color and optional 2D texture,

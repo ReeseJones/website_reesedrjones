@@ -1,6 +1,4 @@
-import type { VertexBuffer } from "../../webgl/vertex_buffer";
-import type { VertexLayoutSpec } from "../../webgl/vertex_layout_types";
-import type { IWebGLContextManager } from "../../webgl/context_manager_types";
+import type { VertexLayoutSpec } from "../../webgl/geometry/vertex_layout_types";
 
 /**
  * CPU-side geometry buffer descriptor declaring interleaved vertex attributes,
@@ -18,32 +16,59 @@ export interface GeometryBufferData {
 }
 
 /**
- * Public interface for passive GPU geometry storage.
- * Encapsulates vertex buffers, attribute schema, primitive type, and index count
- * without coupling to materials, shaders, or rendering logic.
+ * Callback invoked when a geometry triggers its disposal lifecycle.
+ */
+export type GeometryDisposeListener = (geometry: IMeshGeometry) => void;
+
+/**
+ * Public interface for pure CPU geometry representation.
+ * Completely decoupled from WebGL contexts, VBOs, and shaders.
  */
 export interface IMeshGeometry {
-    /** Unique identifier for GPU buffer caching and inspection */
+    /** Descriptive or debugging identifier */
     readonly id: string;
 
-    /** Managed VertexBuffer wrapping VBO and VAO handles */
-    readonly vertexBuffer: VertexBuffer | null;
+    /** Whether this geometry has been disposed */
+    readonly isDisposed: boolean;
+
+    /** Monotonically increasing revision version tracking buffer mutations */
+    readonly version: number;
 
     /** Total vertex count for draw calls */
     readonly vertexCount: number;
 
-    /** WebGL primitive type (e.g. gl.TRIANGLES, gl.POINTS, gl.LINES) */
+    /** WebGL primitive type (e.g. 0x0004 = gl.TRIANGLES, 0x0000 = gl.POINTS) */
     readonly primitiveType: number;
 
     /** Optional index count (null if non-indexed) */
     readonly indexCount: number | null;
 
-    /** Allocates GPU buffers via WebGLContextManager */
-    init(gl: WebGL2RenderingContext, contextManager: IWebGLContextManager): void;
+    /** Active CPU buffer data specification */
+    readonly bufferData: GeometryBufferData;
 
-    /** Binds the underlying VAO for drawing */
-    bind(): void;
+    /**
+     * Replaces or updates the interleaved vertex attributes, incrementing the revision version.
+     */
+    setAttributes(attributes: Float32Array, vertexCount?: number): void;
 
-    /** Releases GPU buffer handles and cleans up resources */
-    destroy(): void;
+    /**
+     * Replaces or updates index data, incrementing the revision version.
+     */
+    setIndices(indices: Uint16Array | Uint32Array | undefined): void;
+
+    /**
+     * Manually marks CPU geometry data as modified, forcing a GPU re-upload on next bind.
+     */
+    markDirty(): void;
+
+    /**
+     * Subscribes a listener to be notified when this geometry is disposed.
+     * Returns an unsubscribe callback.
+     */
+    onDispose(listener: GeometryDisposeListener): () => void;
+
+    /**
+     * Triggers deterministic disposal, notifying the GeometryManager to free GPU resources.
+     */
+    dispose(): void;
 }

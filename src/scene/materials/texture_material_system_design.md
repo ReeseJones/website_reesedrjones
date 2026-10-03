@@ -95,7 +95,7 @@ flowchart TD
 
 ## 4. Types & Interfaces Specification
 
-All contracts and interfaces reside in `src/webgl/texture_types.ts`, separate from runtime implementations.
+All contracts and interfaces reside in `src/webgl/textures/texture_types.ts`, separate from runtime implementations.
 
 ### Filtering and Wrapping Types
 ```typescript
@@ -226,7 +226,7 @@ export interface ITexture {
 
 ## 5. Subsystem Design & Component Procedures
 
-### 1. WebGL Texture Resource Wrapper (`src/webgl/texture.ts`)
+### 1. WebGL Texture Resource Wrapper (`src/webgl/textures/texture.ts`)
 - **Constructor:**
   - Receives `IWebGLContextManager` and optional `TextureOptions`.
   - Immediately allocates a `WebGLTexture` and uploads a 1x1 RGBA pixel buffer `[255, 255, 255, 255]`.
@@ -246,7 +246,7 @@ export interface ITexture {
   - Maintains the source URL or image reference.
   - On `onContextRestored(gl)`: recreates the GPU handle, re-uploads the 1x1 fallback, and asynchronously re-uploads the source image.
 
-### 2. Context Manager Texture State Caching (`src/webgl/context_manager.ts`)
+### 2. Context Manager Texture State Caching (`src/webgl/core/context_manager.ts`)
 To prevent redundant driver overhead:
 - **State Map:** `_boundTextures: Map<number, WebGLTexture | null>` tracks which texture handle is currently bound to each texture unit index ($0 \to 31$).
 - **`bindTexture(unit: number, texture: WebGLTexture | null)`:**
@@ -259,7 +259,7 @@ To prevent redundant driver overhead:
   - Initialized during context creation and restored during context recovery.
   - Provides a shared fallback for any unbound or untextured material slots without allocating duplicate GPU memory.
 
-### 3. `ShaderProgram` Automated Sampler Binding (`src/webgl/shader_program.ts`)
+### 3. `ShaderProgram` Automated Sampler Binding (`src/webgl/shaders/shader_program.ts`)
 - **Automated GPU Reflection at Link Time:**
   - Upon program link, `reflectActiveUniforms(gl)` iterates all active uniforms.
   - When encountering `SAMPLER_2D`, `SAMPLER_CUBE`, `SAMPLER_2D_SHADOW`, `SAMPLER_2D_ARRAY`, or `SAMPLER_3D`:
@@ -330,10 +330,10 @@ Hardware limits guarantee at least 16 texture units in WebGL 2 fragment shaders 
 ## 7. Implementation Roadmap
 
 - **Phase 1: Type Contracts & WebGL Texture Wrapper** (Completed)
-  - Create `src/webgl/texture_types.ts`.
-  - Implement `src/webgl/texture.ts` with 1x1 fallback and async decode.
+  - Create `src/webgl/textures/texture_types.ts`.
+  - Implement `src/webgl/textures/texture.ts` with 1x1 fallback and async decode.
 - **Phase 2: Context Manager Texture State Caching** (Completed)
-  - Update `src/webgl/context_manager_types.ts` and `src/webgl/context_manager.ts`.
+  - Update `src/webgl/core/context_manager_types.ts` and `src/webgl/core/context_manager.ts`.
   - Add active unit tracking, hardware limits (`MAX_TEXTURE_IMAGE_UNITS`), and default 1x1 white texture singleton.
 - **Phase 3: Material Texture Support & Polymorphic Cloning** (Completed)
   - Implement `setTexture(unit, tex)`, `getTexture(unit)`, `getTextures()`, and `clone()` on `Material` and `UnlitMaterial`.
@@ -341,8 +341,8 @@ Hardware limits guarantee at least 16 texture units in WebGL 2 fragment shaders 
   - Update `src/scene/renderer/scene_renderer.ts` to synchronize texture unit bindings in `renderFrame()`.
   - Verified with `npm run build`.
 - **Phase 5: 16-Slot Conventional Registry, Pre-Build Validation & Automated Sampler Binding** (Completed)
-  - Define full 16-slot `TextureUnit` enum and `DEFAULT_TEXTURE_UNIT_MAP` in `src/webgl/texture_types.ts`.
+  - Define full 16-slot `TextureUnit` enum and `DEFAULT_TEXTURE_UNIT_MAP` in `src/webgl/textures/texture_types.ts`.
   - Integrate build-time GLSL sampler validation into `scripts/generate_shader_types.js`.
-  - Implement automatic sampler unit reflection and binding in `src/webgl/shader_program.ts`.
+  - Implement automatic sampler unit reflection and binding in `src/webgl/shaders/shader_program.ts`.
   - Cleaned redundant manual sampler assignments from `src/scene/renderer/scene_renderer.ts`.
   - Verified with `npm run build`.

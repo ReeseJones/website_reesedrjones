@@ -15,7 +15,7 @@ This document outlines the architectural blueprint for a modern, decoupled 3D Sc
 - **Separate Types from Implementations:** Every component separates interfaces and data contracts into dedicated `*_types.ts` files to prevent circular dependencies and allow lightweight imports.
 - **No Barrel Files:** Modules import directly from specific target files to preserve bundler efficiency and clean dependency trees.
 - **Lazy Transform Evaluation:** Hierarchical world transforms use dirty flags (`isDirty`, `worldDirty`) to eliminate redundant matrix multiplications when nodes are static.
-- **Integration with Existing WebGL Infrastructure:** Leverages [`src/webgl/context_manager.ts`](../webgl/context_manager.ts) for GPU resource allocation, [`src/webgl/vertex_buffer.ts`](../webgl/vertex_buffer.ts) for VAO management, and [`src/components/webgl_canvas/`](../components/webgl_canvas/) via [`useWebGLPass`](../components/webgl_canvas/use_webgl_pass.ts).
+- **Integration with Existing WebGL Infrastructure:** Leverages [`src/webgl/core/context_manager.ts`](../webgl/core/context_manager.ts) for GPU resource allocation, [`src/webgl/geometry/vertex_buffer.ts`](../webgl/geometry/vertex_buffer.ts) for VAO management, and [`src/components/webgl_canvas/`](../components/webgl_canvas/) via [`useWebGLPass`](../components/webgl_canvas/use_webgl_pass.ts).
 
 ---
 

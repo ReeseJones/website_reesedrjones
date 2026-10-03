@@ -1,4 +1,4 @@
-import type { VertexLayoutSpec } from "../../../webgl/vertex_layout_types";
+import type { VertexLayoutSpec } from "../../../webgl/geometry/vertex_layout_types";
 import type { GalaxyParameters } from "../../../galaxy_backdrop/parameters/types";
 
 /**

@@ -19,15 +19,15 @@ This document specifies a centralized WebGL GPU resource manager and ref-counted
 
 All generic WebGL infrastructure and lifecycle code reside in `src/webgl/`:
 
-- **Shader & Manager Design Doc:** [`src/webgl/shader_program_design.md`](shader_program_design.md)
-- **VAO Layout Design Doc:** [`src/webgl/shader_vao_layout_design.md`](shader_vao_layout_design.md)
-- **Shader Key Index & Registry Types:** [`src/webgl/shader_types.ts`](shader_types.ts)
-- **Central Context Manager:** [`src/webgl/context_manager.ts`](context_manager.ts)
-- **Managed Vertex Buffer:** [`src/webgl/vertex_buffer.ts`](vertex_buffer.ts)
-- **Shader Program Utility:** [`src/webgl/shader_program.ts`](shader_program.ts)
-- **VAO Layout Utility:** [`src/webgl/vertex_layout.ts`](vertex_layout.ts)
-- **Domain Consumer (Galaxy Renderer):** [`src/galaxy_backdrop/galaxy_renderer.ts`](../galaxy_backdrop/galaxy_renderer.ts)
-- **Domain Consumer (Cloud Renderer):** [`src/galaxy_backdrop/galactic_cloud_renderer.ts`](../galaxy_backdrop/galactic_cloud_renderer.ts)
+- **Shader & Manager Design Doc:** [`src/webgl/shaders/shader_program_design.md`](shader_program_design.md)
+- **VAO Layout Design Doc:** [`src/webgl/shaders/shader_vao_layout_design.md`](shader_vao_layout_design.md)
+- **Shader Key Index & Registry Types:** [`src/webgl/shaders/shader_types.ts`](shader_types.ts)
+- **Central Context Manager:** [`src/webgl/core/context_manager.ts`](../core/context_manager.ts)
+- **Managed Vertex Buffer:** [`src/webgl/geometry/vertex_buffer.ts`](../geometry/vertex_buffer.ts)
+- **Shader Program Utility:** [`src/webgl/shaders/shader_program.ts`](shader_program.ts)
+- **VAO Layout Utility:** [`src/webgl/geometry/vertex_layout.ts`](../geometry/vertex_layout.ts)
+- **Domain Consumer (Galaxy Renderer):** [`src/galaxy_backdrop/galaxy_renderer.ts`](../../galaxy_backdrop/galaxy_renderer.ts)
+- **Domain Consumer (Cloud Renderer):** [`src/galaxy_backdrop/galactic_cloud_renderer.ts`](../../galaxy_backdrop/galactic_cloud_renderer.ts)
 
 ---
 
