@@ -53,11 +53,11 @@ Done as needed by each item, not up front.
 
 ### A2. Geometry Foundation
 
-- **A2.1 [mesh_geometry.ts](../scene/models/mesh_geometry.ts)** — `MeshGeometry` — 🔍 Awaiting Review
+- **A2.1 [mesh_geometry.ts](../scene/models/mesh_geometry.ts)** — `MeshGeometry` — ✅ Complete
   - Test: `mesh_geometry.test.ts` (46 specs)
   - Depended on by: every primitive, `GalaxyGeometry`, `GeometryManager`
   - Focus: id uniqueness, buffer / layout getters, version or dirty flag on data updates, `onDispose` listeners, idempotent dispose
-- **A2.2 [standard_layout.ts](../scene/models/primitives/standard_layout.ts)** — `STANDARD_VERTEX_LAYOUT` — ⬜ Not Started
+- **A2.2 [standard_layout.ts](../scene/models/primitives/standard_layout.ts)** — `STANDARD_VERTEX_LAYOUT` — 🟡 In Progress
   - Focus: attribute names / sizes / offsets agree with the stride
 - **A2.3 [quad_geometry.ts](../scene/models/primitives/quad_geometry.ts)** — `buildQuadBufferData`, `QuadGeometry` — ⬜ Not Started
   - Focus: vertex / index counts, positions within the given size, normals, UV range [0,1], options and defaults
@@ -180,7 +180,7 @@ Done as needed by each item, not up front.
 
 ## Progress Summary
 
-- **Scene:** 3 / 19 complete (A6.2, A6.3 TODO)
+- **Scene:** 4 / 19 complete (A6.2, A6.3 TODO)
 - **WebGL:** 0 / 18 complete
 - **Phase 0 fixtures:** 0 / 3 (done as needed)
-- **Current item:** A2.1 [mesh_geometry.ts](../scene/models/mesh_geometry.ts)
+- **Current item:** A2.2 [standard_layout.ts](../scene/models/primitives/standard_layout.ts)
