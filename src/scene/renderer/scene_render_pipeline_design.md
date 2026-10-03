@@ -173,12 +173,25 @@ The uniform and texture distribution protocol standardizes naming and binding co
 ### Tier C: Material Domain Uniforms (Uploaded From Material Dictionary)
 - Custom domain uniforms extracted via `material.getUniforms()` (e.g. `u_color`, `u_useTexture`, `u_rotationSpeed`, `u_pointScale`).
 
-### Tier D: Semantic Texture Slots (Hardware Texture Units)
-- **Unit 0 (`u_texture`):** Base color, albedo, or diffuse texture map.
-- **Unit 1 (`u_normalMap`):** Tangent-space normal map.
-- **Unit 2 (`u_roughnessMap`):** PBR roughness / specular map.
-- **Unit 3 (`u_emissiveMap`):** Self-illumination / emissive glow map.
+### Tier D: Semantic Texture Slots (`TextureUnit` 0 to 15)
+- **`TextureUnit.Color0` / `Color` (Unit 0, `u_texture`, `u_colorMap0`, `u_diffuseMap`):** Primary base color, diffuse, or albedo map.
+- **`TextureUnit.Color1` (Unit 1, `u_colorMap1`, `u_texture1`, `u_diffuseMap1`):** Layer 2 secondary diffuse / color blend map.
+- **`TextureUnit.Color2` (Unit 2, `u_colorMap2`, `u_texture2`, `u_diffuseMap2`):** Layer 3 tertiary diffuse / color blend map.
+- **`TextureUnit.Color3` (Unit 3, `u_colorMap3`, `u_texture3`, `u_diffuseMap3`):** Layer 4 quaternary diffuse / color blend map.
+- **`TextureUnit.Normal` (Unit 4, `u_normalMap`):** Tangent-space normal map.
+- **`TextureUnit.Roughness` (Unit 5, `u_roughnessMap`):** PBR surface roughness / specular map.
+- **`TextureUnit.Metallic` (Unit 6, `u_metallicMap`, `u_metalnessMap`):** PBR surface metalness / conductivity map.
+- **`TextureUnit.Emissive` (Unit 7, `u_emissiveMap`):** Emissive self-illumination glow map.
+- **`TextureUnit.Occlusion` (Unit 8, `u_aoMap`, `u_occlusionMap`):** Ambient occlusion / cavity shadow map.
+- **`TextureUnit.Height` (Unit 9, `u_heightMap`, `u_bumpMap`):** Displacement / parallax bump height map.
+- **`TextureUnit.Mask` (Unit 10, `u_maskMap`, `u_splatMap`, `u_blendMask`):** Alpha cutoff / multi-layer splat / blend mask.
+- **`TextureUnit.Environment` (Unit 11, `u_envMap`, `u_irradianceMap`):** Image-based lighting / sky reflection cubemap.
+- **`TextureUnit.ShadowMap` (Unit 12, `u_shadowMap`):** Directional / spot light shadow depth map.
+- **`TextureUnit.Transmission` (Unit 13, `u_transmissionMap`, `u_thicknessMap`):** Glass / water / subsurface transmission and refraction map.
+- **`TextureUnit.Lut` (Unit 14, `u_brdfLut`, `u_lutMap`):** Split-sum BRDF lookup table or color grading LUT.
+- **`TextureUnit.Noise` (Unit 15, `u_noiseMap`, `u_flowMap`, `u_distortionMap`):** Procedural noise, flow vectors, or distortion map for VFX.
 - State caching in `WebGLContextManager` suppresses redundant `gl.activeTexture()` and `gl.bindTexture()` calls across sequential instances.
+- Shaders automatically link to these slots at compile time via GPU active uniform reflection in `ShaderProgram`.
 
 ---
 

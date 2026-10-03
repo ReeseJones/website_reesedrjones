@@ -144,6 +144,54 @@ export interface TextureOptions {
 }
 ```
 
+### Semantic Hardware Texture Units
+```typescript
+/**
+ * Semantic hardware texture unit slots for standard shader conventions (0 to 15).
+ * While WebGL shaders and materials can bind any arbitrary texture to any unit,
+ * these standard slots establish convention across standard shaders, materials, and automated bindings.
+ */
+export enum TextureUnit {
+    /** Primary base color / diffuse / albedo map (u_texture, u_colorMap0, u_diffuseMap) */
+    Color0 = 0,
+    /** Backwards-compatible alias for primary color (Color0) */
+    Color = 0,
+    /** Secondary layered diffuse / color blend map (u_colorMap1, u_texture1) */
+    Color1 = 1,
+    /** Tertiary layered diffuse / color blend map (u_colorMap2, u_texture2) */
+    Color2 = 2,
+    /** Quaternary layered diffuse / color blend map (u_colorMap3, u_texture3) */
+    Color3 = 3,
+
+    /** Tangent-space normal map (u_normalMap) */
+    Normal = 4,
+    /** Surface roughness / specular map (u_roughnessMap) */
+    Roughness = 5,
+    /** Surface metalness / conductivity map (u_metallicMap, u_metalnessMap) */
+    Metallic = 6,
+    /** Emissive / self-illumination glow map (u_emissiveMap) */
+    Emissive = 7,
+    /** Ambient occlusion / cavity shadow map (u_aoMap, u_occlusionMap) */
+    Occlusion = 8,
+
+    /** Displacement / parallax / bump height map (u_heightMap, u_bumpMap) */
+    Height = 9,
+    /** Alpha cutoff / multi-layer splat / blend mask (u_maskMap, u_splatMap, u_blendMask) */
+    Mask = 10,
+    /** Image-based lighting / sky reflection cubemap (u_envMap, u_irradianceMap) */
+    Environment = 11,
+
+    /** Directional / spot light shadow depth map (u_shadowMap) */
+    ShadowMap = 12,
+    /** Glass / water / subsurface transmission and refraction map (u_transmissionMap, u_thicknessMap) */
+    Transmission = 13,
+    /** Split-sum BRDF lookup table or color grading LUT (u_brdfLut, u_lutMap) */
+    Lut = 14,
+    /** Procedural noise, flow vectors, or distortion map for VFX (u_noiseMap, u_flowMap, u_distortionMap) */
+    Noise = 15,
+}
+```
+
 ### Public Texture Contract (`ITexture`)
 ```typescript
 /**
@@ -164,7 +212,7 @@ export interface ITexture {
     readonly options: Readonly<TextureOptions>;
 
     /** Binds texture to a specific hardware texture unit */
-    bind(unit?: number): void;
+    bind(unit?: TextureUnit | number): void;
     /** Releases GPU texture memory */
     destroy(): void;
     /** WebGL context lost lifecycle hook */
@@ -211,23 +259,26 @@ To prevent redundant driver overhead:
   - Initialized during context creation and restored during context recovery.
   - Provides a shared fallback for any unbound or untextured material slots without allocating duplicate GPU memory.
 
-### 3. `ShaderProgram` Sampler Binding (`src/webgl/shader_program.ts`)
-- **`setTexture(uniformName: string, unitIndex: number, texture: ITexture | WebGLTexture)`:**
-  - Resolves GPU texture handle.
-  - Delegates to `contextManager.bindTexture(unitIndex, handle)`.
-  - Sets uniform integer: `this.setInt(uniformName, unitIndex)`.
-- **Dynamic Uniform Dictionary Integration:**
-  - When `setUniforms()` encounters an `ITexture` instance in the uniform map, it automatically assigns it to an available texture unit, binds it, and sets the corresponding integer uniform.
+### 3. `ShaderProgram` Automated Sampler Binding (`src/webgl/shader_program.ts`)
+- **Automated GPU Reflection at Link Time:**
+  - Upon program link, `reflectActiveUniforms(gl)` iterates all active uniforms.
+  - When encountering `SAMPLER_2D`, `SAMPLER_CUBE`, `SAMPLER_2D_SHADOW`, `SAMPLER_2D_ARRAY`, or `SAMPLER_3D`:
+    - Looks up the uniform name in `ShaderProgramOptions.samplers` or `DEFAULT_TEXTURE_UNIT_MAP`.
+    - Automatically executes `gl.uniform1i(location, unit)` and caches the integer in `uniformCache`.
+  - Context recovery automatically re-uploads these sampler unit indices without manual renderer intervention.
+- **Manual Overrides:**
+  - `ShaderProgramOptions.samplers?: Record<string, number>` allows explicit overrides for non-standard shader setups.
+  - `setTexture(uniformName, unitIndex, texture)` remains available for dynamic imperative bindings.
 
 ### 4. Material Integration (`src/scene/materials/`)
 - **`MaterialOptions` Extension:**
-  - Adds optional `textures?: Record<string, ITexture | string>` mapping uniform sampler names to texture instances or URLs.
+  - Adds optional `textures?: Map<TextureUnit | number, ITexture> | Record<number, ITexture>` mapping texture units to texture instances.
 - **`UnlitMaterial` Updates:**
   - Constructor accepts `texture?: ITexture | string`.
-  - If provided, sets `u_useTexture = 1.0` and maps `u_texture` to unit `0`.
-  - Exposes `public setTexture(texture: ITexture | string | null): this`.
+  - If provided, sets `u_useTexture = 1.0` and maps `u_texture` to `TextureUnit.Color0` (unit `0`).
+  - Exposes `public setTexture(texture: ITexture | string | null): this` and `public get texture(): ITexture | null`.
 - **`StandardMaterial` Updates:**
-  - Standardizes `map` (albedo/color texture) and future normal/roughness map slots.
+  - Standardizes `TextureUnit.Color0` (albedo/color texture) and future normal/roughness map slots.
 
 ### 5. `SceneRenderer` Pass Execution (`src/scene/renderer/scene_renderer.ts`)
 - **Pre-Draw Texture Synchronization:**
@@ -235,9 +286,16 @@ To prevent redundant driver overhead:
     1. Apply pipeline state (`depthTest`, `blendMode`, `cullFace`).
     2. Activate shader program.
     3. Upload Tier A (camera) and Tier B (model transform) uniforms.
-    4. Bind and configure material textures.
+    4. Bind and configure material textures via `TextureUnit` slots.
     5. Upload Tier C (material domain) uniforms.
     6. Bind VAO and dispatch `gl.drawElements` / `gl.drawArrays`.
+
+### 6. Pre-Build Shader Sampler Verification (`scripts/generate_shader_types.js`)
+- **Build-Time Verification:**
+  - Scans all `.vert` and `.frag` source files during `npm run generate:shaders` (part of `npm run build`).
+  - Detects all `uniform sampler2D/samplerCube` declarations.
+  - Validates detected sampler names against the authorized 16-slot `VALID_SAMPLER_NAMES` registry.
+  - If an unrecognized sampler name is detected, the build halts immediately with `process.exit(1)` and diagnostic line numbers, preventing typo bugs from reaching runtime.
 
 ## 6. Key Architectural Decisions
 
@@ -247,16 +305,25 @@ To prevent redundant driver overhead:
 - Every `Material` instance independently manages its own uniforms dictionary and conventional texture unit bindings (`Map<number, ITexture>`).
 - Polymorphic `.clone()` allows rapid duplication of materials with distinct parameter or texture overrides while avoiding the indirection and per-frame prototype merging costs of a cascaded `MaterialInstance` tree.
 
-### Conventional Semantic Texture Slots
-- **Slot Mapping:**
-  - **Unit 0:** Base Color / Diffuse Map (`u_texture`)
-  - **Unit 1:** Normal Map (`u_normalMap`)
-  - **Unit 2:** Roughness / Specular Map (`u_roughnessMap`)
-  - **Unit 3:** Emissive / Glow Map (`u_emissiveMap`)
-- **Performance Benefits:**
-  - Shader sampler uniforms are initialized once with static unit indices (e.g. `u_texture` bound to unit `0`).
-  - Eliminates dynamic uniform mutation overhead per draw call.
-  - Allows `WebGLContextManager.bindTexture(unit, handle)` to cache hardware unit bindings and skip redundant OpenGL driver calls between meshes sharing textures.
+### Conventional 16-Slot Semantic Texture Layout (`TextureUnit`)
+Hardware limits guarantee at least 16 texture units in WebGL 2 fragment shaders (`0` to `15`). While materials and shaders can bind any arbitrary texture to any unit, standardizing slots eliminates per-frame sampler uniform mutation and enables automated reflection:
+
+- **Slot 0 (`TextureUnit.Color0` / `Color`):** Primary base color, diffuse, or albedo map (`u_texture`, `u_colorMap0`, `u_diffuseMap`).
+- **Slot 1 (`TextureUnit.Color1`):** Layer 2 secondary diffuse / color blend map (`u_colorMap1`, `u_texture1`, `u_diffuseMap1`).
+- **Slot 2 (`TextureUnit.Color2`):** Layer 3 tertiary diffuse / color blend map (`u_colorMap2`, `u_texture2`, `u_diffuseMap2`).
+- **Slot 3 (`TextureUnit.Color3`):** Layer 4 quaternary diffuse / color blend map (`u_colorMap3`, `u_texture3`, `u_diffuseMap3`).
+- **Slot 4 (`TextureUnit.Normal`):** Tangent-space normal map (`u_normalMap`).
+- **Slot 5 (`TextureUnit.Roughness`):** PBR surface roughness / specular map (`u_roughnessMap`).
+- **Slot 6 (`TextureUnit.Metallic`):** PBR surface metalness / conductivity map (`u_metallicMap`, `u_metalnessMap`).
+- **Slot 7 (`TextureUnit.Emissive`):** Emissive self-illumination glow map (`u_emissiveMap`).
+- **Slot 8 (`TextureUnit.Occlusion`):** Ambient occlusion / cavity shadow map (`u_aoMap`, `u_occlusionMap`).
+- **Slot 9 (`TextureUnit.Height`):** Displacement / parallax bump height map (`u_heightMap`, `u_bumpMap`).
+- **Slot 10 (`TextureUnit.Mask`):** Alpha cutoff / multi-layer splat / blend mask (`u_maskMap`, `u_splatMap`, `u_blendMask`).
+- **Slot 11 (`TextureUnit.Environment`):** Image-based lighting / sky reflection cubemap (`u_envMap`, `u_irradianceMap`).
+- **Slot 12 (`TextureUnit.ShadowMap`):** Directional / spot light shadow depth map (`u_shadowMap`).
+- **Slot 13 (`TextureUnit.Transmission`):** Glass / water / subsurface transmission and refraction map (`u_transmissionMap`, `u_thicknessMap`).
+- **Slot 14 (`TextureUnit.Lut`):** Split-sum BRDF lookup table or color grading LUT (`u_brdfLut`, `u_lutMap`).
+- **Slot 15 (`TextureUnit.Noise`):** Procedural noise, flow vectors, or distortion map for VFX (`u_noiseMap`, `u_flowMap`, `u_distortionMap`).
 
 ---
 
@@ -272,4 +339,10 @@ To prevent redundant driver overhead:
   - Implement `setTexture(unit, tex)`, `getTexture(unit)`, `getTextures()`, and `clone()` on `Material` and `UnlitMaterial`.
 - **Phase 4: Renderer Texture Binding & Synchronization** (Completed)
   - Update `src/scene/renderer/scene_renderer.ts` to synchronize texture unit bindings in `renderFrame()`.
+  - Verified with `npm run build`.
+- **Phase 5: 16-Slot Conventional Registry, Pre-Build Validation & Automated Sampler Binding** (Completed)
+  - Define full 16-slot `TextureUnit` enum and `DEFAULT_TEXTURE_UNIT_MAP` in `src/webgl/texture_types.ts`.
+  - Integrate build-time GLSL sampler validation into `scripts/generate_shader_types.js`.
+  - Implement automatic sampler unit reflection and binding in `src/webgl/shader_program.ts`.
+  - Cleaned redundant manual sampler assignments from `src/scene/renderer/scene_renderer.ts`.
   - Verified with `npm run build`.
