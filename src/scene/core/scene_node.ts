@@ -74,10 +74,6 @@ export class SceneNode implements ISceneNode {
         }
     }
 
-    public _setParent(parent: ISceneNode | null): void {
-        this._parent = parent;
-    }
-
     public addChild(child: ISceneNode): this {
         if (child === this) {
             return this;
@@ -92,9 +88,7 @@ export class SceneNode implements ISceneNode {
         }
 
         if (child instanceof SceneNode) {
-            child._setParent(this);
-        } else if ("_setParent" in child && typeof (child as unknown as { _setParent: unknown })._setParent === "function") {
-            (child as unknown as { _setParent: (p: ISceneNode | null) => void })._setParent(this);
+            child._parent = this;
         }
 
         this._children.push(child);
@@ -111,9 +105,7 @@ export class SceneNode implements ISceneNode {
         this._children.splice(index, 1);
 
         if (child instanceof SceneNode) {
-            child._setParent(null);
-        } else if ("_setParent" in child && typeof (child as unknown as { _setParent: unknown })._setParent === "function") {
-            (child as unknown as { _setParent: (p: ISceneNode | null) => void })._setParent(null);
+            child._parent = null;
         }
 
         child.markWorldDirty();
@@ -179,9 +171,5 @@ export class SceneNode implements ISceneNode {
             childrenCopy[i].destroy();
         }
         this._children.length = 0;
-    }
-
-    public dispose(): void {
-        this.destroy();
     }
 }

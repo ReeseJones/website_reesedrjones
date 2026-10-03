@@ -47,7 +47,4 @@ export interface ISceneNode {
 
     /** Frees node resources and detaches from graph */
     destroy(): void;
-
-    /** Deterministic disposal alias */
-    dispose(): void;
 }
