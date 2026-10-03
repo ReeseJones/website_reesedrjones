@@ -59,10 +59,13 @@ flowchart TD
     end
 
     subgraph WebGLLayer["2. WebGL Resource Layer"]
-        CubeTex["CubeTexture (implements ICubeTexture)"]
+        CubeTex["CubeTexture (implements ICubeTexture, IDisposable)"]
         Fallback["1x1 Solid Fallback (All 6 Faces)"]
         ContextMgr["WebGLContextManager"]
+        TexMgr["TextureManager (implements IContextSubsystem)"]
         Cache["_boundCubeTextures: Map<number, WebGLTexture>"]
+        ContextMgr --> TexMgr
+        TexMgr --> Cache
     end
 
     subgraph SceneLayer["3. Scene Graph & Materials"]
@@ -80,13 +83,13 @@ flowchart TD
     FaceAssets -->|"Async decode"| CubeTex
     PanoramaAsset -->|"Equirect conversion"| CubeTex
     CubeTex -->|"Allocates 1x1 black"| Fallback
-    CubeTex -->|"Binds via"| ContextMgr
-    ContextMgr -->|"Caches active binding"| Cache
+    CubeTex -->|"Binds via"| TexMgr
     CubeTex -->|"Assigned to"| SkyboxMat
     CubeTex -->|"Assigned as ambient IBL"| SceneRoot
     SkyboxMat -->|"Decorates"| SkyboxNode
     SkyboxNode -->|"Enqueued (renderOrder: 1000)"| Renderer
-    Renderer -->|"ContextManager.bindCubeTexture(11, handle)"| GPU
+    Renderer -->|"textureManager.bindCube(11, cubeTex)"| TexMgr
+    TexMgr -->|"Deduplicated bind"| GPU
     Renderer -->|"Uploads xyww ViewProjection"| Shader
     Shader -->|"Samples u_envMap"| GPU
 ```
@@ -97,7 +100,7 @@ flowchart TD
 
 All contracts reside in dedicated type definition files separate from concrete implementations.
 
-### Cubemap Faces & Construction Options (`src/webgl/cube_texture_types.ts`)
+### Cubemap Faces & Construction Options (`src/webgl/textures/cube_texture_types.ts`)
 
 ```typescript
 import type { TextureFilter, TextureFormat, TextureWrap } from "./texture_types";
@@ -171,36 +174,55 @@ export interface ICubeTexture {
 ### Skybox Material & Scene Node Contracts (`src/scene/environment/skybox_types.ts`)
 
 ```typescript
-import type { IMaterial } from "../materials/material_types";
-import type { ISceneNode } from "../core/scene_node_types";
 import type { ICubeTexture } from "../../webgl/cube_texture_types";
+import type { IMeshGeometry } from "../models/mesh_geometry_types";
+import type { IModelInstance } from "../models/model_instance_types";
+import type { IPipelineState } from "../materials/material_types";
 
 /**
  * Construction options for SkyboxMaterial.
  */
 export interface SkyboxMaterialOptions {
-    /** Cubemap texture resource */
-    envMap: ICubeTexture;
-    /** Tint color multiplier [R, G, B, A] (defaults to [1, 1, 1, 1]) */
-    tint?: [number, number, number, number];
-    /** Exposure / brightness multiplier (defaults to 1.0) */
+    /** Cubemap texture resource assigned to TextureUnit.Environment (Unit 11) */
+    cubeTexture?: ICubeTexture;
+    /** Exposure brightness multiplier (defaults to 1.0) */
     exposure?: number;
-    /** Optional Y-axis rotation in radians (defaults to 0) */
+    /** RGB color tint multiplier (defaults to [1.0, 1.0, 1.0]) */
+    tint?: [number, number, number];
+    /** Y-axis azimuth orientation rotation in radians (defaults to 0.0) */
     rotationY?: number;
+    /** Pipeline state overrides (depthWrite defaults to false, cullFace to false) */
+    pipelineState?: Partial<IPipelineState>;
+    /** Additional custom uniforms */
+    uniforms?: Record<string, unknown>;
+}
+
+/**
+ * Construction options for Skybox scene node (pure scene graph citizen, no contextManager needed).
+ */
+export interface SkyboxOptions extends SkyboxMaterialOptions {
+    /** Optional custom mesh geometry. If omitted, defaults to unit CubeGeometry */
+    geometry?: IMeshGeometry;
+    /** Descriptive scene node label (defaults to "Skybox") */
+    name?: string;
+    /** Optional explicit node identifier */
+    id?: string;
+    /** Render queue sort order (defaults to -100 so it renders first as background) */
+    renderOrder?: number;
 }
 
 /**
  * Public contract for Skybox scene nodes.
  */
-export interface ISkybox extends ISceneNode {
-    /** Active environment cubemap */
-    cubeTexture: ICubeTexture;
-    /** Tint color multiplier */
-    tint: [number, number, number, number];
-    /** Exposure multiplier */
+export interface ISkybox extends IModelInstance {
+    /** Brightness exposure multiplier */
     exposure: number;
-    /** Y-axis rotation in radians */
+    /** RGB color tint */
+    tint: [number, number, number];
+    /** Y-axis azimuth orientation rotation in radians */
     rotationY: number;
+    /** Active cubemap texture */
+    cubeTexture: ICubeTexture | undefined;
 }
 ```
 
@@ -232,7 +254,7 @@ To guarantee the rendering pipeline never blocks or fails when a skybox is added
   7. Calls `gl.generateMipmap(gl.TEXTURE_CUBE_MAP)` if mipmapping is enabled.
   8. Updates `this._size = images[0].width` and `this._isLoaded = true`.
 
-### 2. Context Manager Cubemap State Deduplication (`src/webgl/context_manager.ts`)
+### 2. Context Manager Cubemap State Deduplication (`src/webgl/core/context_manager.ts`)
 To prevent redundant driver calls across meshes that sample the environment:
 - **State Map:** Maintains `_boundCubeTextures: Map<number, WebGLTexture | null>` tracking the active cubemap bound per texture unit.
 - **`bindCubeTexture(unit: number, texture: WebGLTexture | null)`:**
@@ -334,17 +356,18 @@ void main() {
 
 ## 7. Implementation Roadmap
 
-- **Phase 1: Contracts & Types (`src/webgl/cube_texture_types.ts`)**
+- **Phase 1: Contracts & Types (`src/webgl/textures/cube_texture_types.ts`)** (Completed)
   - Define `CubeTextureFaces`, `CubeTextureOptions`, and `ICubeTexture`.
-- **Phase 2: Context Manager Cubemap Support (`src/webgl/context_manager.ts`)**
+- **Phase 2: Context Manager Cubemap Support (`src/webgl/core/context_manager.ts`)** (Completed)
   - Add `bindCubeTexture(unit, handle)` with redundant call deduplication.
   - Add default 1x1 black cubemap fallback singleton.
-- **Phase 3: CubeTexture Resource Class (`src/webgl/cube_texture.ts`)**
+- **Phase 3: CubeTexture Resource Class (`src/webgl/textures/cube_texture.ts`)** (Completed)
   - Implement 6-face asynchronous image loading and 1x1 solid fallback.
   - Implement automated context loss and recovery lifecycle.
-- **Phase 4: Skybox Shaders & Material (`src/scene/environment/`)**
+- **Phase 4: Skybox Shaders & Material (`src/scene/environment/`)** (Completed)
   - Create `skybox.vert` (using $xyww$ depth projection) and `skybox.frag`.
   - Create `SkyboxMaterial` extending `Material` with `shaderKey: "skybox"`.
-- **Phase 5: Skybox Scene Node & Pass Integration (`src/scene/environment/skybox.ts`)**
-  - Create `Skybox` class inheriting `ModelInstance` using inverted `CubeGeometry`.
-  - Verify with `npm run build`.
+- **Phase 5: Skybox Scene Node & Pass Integration (`src/scene/environment/skybox.ts`)** (Completed)
+  - Create `Skybox` class inheriting `ModelInstance` using `CubeGeometry`.
+  - Synchronize cubemaps and `"skybox"` shader in `SceneRenderer`.
+  - Verified with `npm run build`.

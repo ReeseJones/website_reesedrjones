@@ -1,6 +1,7 @@
 import type { IMaterial, MaterialOptions, PipelineState } from "./material_types";
-import type { ShaderKey } from "../../webgl/shader_types";
-import type { ITexture, TextureUnit } from "../../webgl/texture_types";
+import type { ShaderKey } from "../../webgl/shaders/shader_types";
+import type { ITexture, TextureUnit } from "../../webgl/textures/texture_types";
+import type { ICubeTexture } from "../../webgl/textures/cube_texture_types";
 
 /**
  * Base material class encapsulating shader selection, uniform parameters,
@@ -11,6 +12,7 @@ export class Material implements IMaterial {
     private _pipelineState: PipelineState;
     private readonly _uniforms: Map<string, unknown> = new Map();
     private readonly _textures: Map<TextureUnit | number, ITexture> = new Map();
+    private readonly _cubeTextures: Map<TextureUnit | number, ICubeTexture> = new Map();
 
     constructor(options: MaterialOptions) {
         this._shaderKey = options.shaderKey;
@@ -28,8 +30,18 @@ export class Material implements IMaterial {
         }
 
         if (options.textures) {
-            for (const [unitStr, tex] of Object.entries(options.textures)) {
-                this._textures.set(Number(unitStr), tex);
+            for (const [unit, tex] of Object.entries(options.textures)) {
+                if (tex !== undefined) {
+                    this._textures.set(Number(unit), tex);
+                }
+            }
+        }
+
+        if (options.cubeTextures) {
+            for (const [unit, cubeTex] of Object.entries(options.cubeTextures)) {
+                if (cubeTex !== undefined) {
+                    this._cubeTextures.set(Number(unit), cubeTex);
+                }
             }
         }
     }
@@ -98,6 +110,32 @@ export class Material implements IMaterial {
     }
 
     /**
+     * Binds a cubemap resource to a specific hardware texture unit (e.g. TextureUnit.Environment).
+     */
+    public setCubeTexture(unit: TextureUnit | number, texture: ICubeTexture | null): this {
+        if (texture) {
+            this._cubeTextures.set(unit, texture);
+        } else {
+            this._cubeTextures.delete(unit);
+        }
+        return this;
+    }
+
+    /**
+     * Retrieves the cubemap bound to a specific hardware texture unit, if any.
+     */
+    public getCubeTexture(unit: TextureUnit | number): ICubeTexture | null {
+        return this._cubeTextures.get(unit) ?? null;
+    }
+
+    /**
+     * Retrieves all assigned cubemaps mapped by hardware texture unit.
+     */
+    public getCubeTextures(): ReadonlyMap<TextureUnit | number, ICubeTexture> {
+        return this._cubeTextures;
+    }
+
+    /**
      * Duplicates this material preserving pipeline state, uniforms, and texture bindings.
      */
     public clone(): Material {
@@ -106,11 +144,37 @@ export class Material implements IMaterial {
             clonedTextures[unit] = tex;
         }
 
+        const clonedCubeTextures: Record<number, ICubeTexture> = {};
+        for (const [unit, cubeTex] of this._cubeTextures.entries()) {
+            clonedCubeTextures[unit] = cubeTex;
+        }
+
         return new Material({
             shaderKey: this._shaderKey,
             pipelineState: { ...this._pipelineState },
             uniforms: this.getUniforms(),
             textures: clonedTextures,
+            cubeTextures: clonedCubeTextures,
         });
+    }
+
+    /**
+     * Deterministic disposal: disposes assigned textures and clears uniforms.
+     */
+    public dispose(): void {
+        for (const tex of this._textures.values()) {
+            if (tex && typeof tex.dispose === "function") {
+                tex.dispose();
+            }
+        }
+        this._textures.clear();
+
+        for (const cubeTex of this._cubeTextures.values()) {
+            if (cubeTex && typeof cubeTex.dispose === "function") {
+                cubeTex.dispose();
+            }
+        }
+        this._cubeTextures.clear();
+        this._uniforms.clear();
     }
 }

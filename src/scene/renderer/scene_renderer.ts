@@ -4,17 +4,19 @@ import type { ICamera } from "../camera/camera_types";
 import type { IModelInstance } from "../models/model_instance_types";
 import type { IMaterial } from "../materials/material_types";
 import type { CanvasDimensions, TimeInfo } from "../../components/webgl_canvas/types";
-import type { IWebGLContextManager } from "../../webgl/context_manager_types";
-import type { ShaderProgram } from "../../webgl/shader_program";
+import type { IWebGLContextManager } from "../../webgl/core/context_manager_types";
+import type { ShaderProgram } from "../../webgl/shaders/shader_program";
 import type { ISceneRenderer, RenderQueueItem } from "./scene_renderer_types";
-import type { ShaderKey } from "../../webgl/shader_types";
+import type { ShaderKey } from "../../webgl/shaders/shader_types";
 import galaxyPinprickVert from "../../galaxy_backdrop/shaders/galaxy_pinprick.vert";
 import galaxyPinprickFrag from "../../galaxy_backdrop/shaders/galaxy_pinprick.frag";
 import galaxyOrbVert from "../../galaxy_backdrop/shaders/galaxy_orb.vert";
 import galaxyOrbFrag from "../../galaxy_backdrop/shaders/galaxy_orb.frag";
 import unlitVert from "../shaders/unlit.vert";
 import unlitFrag from "../shaders/unlit.frag";
-import { TextureUnit } from "../../webgl/texture_types";
+import skyboxVert from "../shaders/skybox.vert";
+import skyboxFrag from "../shaders/skybox.frag";
+import { TextureUnit } from "../../webgl/textures/texture_types";
 
 /**
  * Concrete 3D Scene Renderer executing hierarchical scene graph traversal,
@@ -76,11 +78,6 @@ export class SceneRenderer implements ISceneRenderer {
             const { instance } = item;
             const { geometry, material } = instance;
 
-            // Ensure geometry GPU buffers are allocated
-            if (!geometry.vertexBuffer) {
-                geometry.init(gl, this.contextManager);
-            }
-
             // Stage 4: Centralized pipeline state deduplication
             this.contextManager.applyPipelineState(material.pipelineState);
 
@@ -88,7 +85,7 @@ export class SceneRenderer implements ISceneRenderer {
             const shader = this.getOrResolveShader(material);
             if (!shader) continue;
 
-            this.contextManager.useShader(shader);
+            this.contextManager.shaders.bind(shader);
 
             // Compute instance matrices
             mat4.multiply(
@@ -118,38 +115,33 @@ export class SceneRenderer implements ISceneRenderer {
             const textures = material.getTextures();
             if (textures.size > 0) {
                 for (const [unit, tex] of textures.entries()) {
-                    if (tex && tex.handle) {
-                        this.contextManager.bindTexture(unit, tex.handle);
-                    } else {
-                        this.contextManager.bindTexture(unit, this.contextManager.getDefaultWhiteTexture());
-                    }
+                    this.contextManager.textures.bind(unit, tex, "white");
                 }
             } else if ((material.getUniforms().u_useTexture as number) > 0.5) {
-                this.contextManager.bindTexture(TextureUnit.Color, this.contextManager.getDefaultWhiteTexture());
+                this.contextManager.textures.bind(TextureUnit.Color, null, "white");
+            }
+
+            const cubeTextures = material.getCubeTextures();
+            if (cubeTextures.size > 0) {
+                for (const [unit, cubeTex] of cubeTextures.entries()) {
+                    this.contextManager.textures.bindCube(unit, cubeTex);
+                }
             }
 
             shader.setUniforms(material.getUniforms());
 
-            // Bind VAO and issue draw call
-            geometry.bind();
+            // Bind geometry (lazily allocated, updated, and deduplicated)
+            const record = this.contextManager.geometries.bind(geometry);
 
-            if (geometry.indexCount !== null && geometry.indexCount > 0) {
-                const isUint32 =
-                    (geometry as unknown as { bufferData?: { indices?: unknown } }).bufferData?.indices instanceof
-                    Uint32Array;
-                gl.drawElements(
-                    geometry.primitiveType,
-                    geometry.indexCount,
-                    isUint32 ? gl.UNSIGNED_INT : gl.UNSIGNED_SHORT,
-                    0
-                );
+            if (record.indexCount !== null && record.indexCount > 0) {
+                gl.drawElements(geometry.primitiveType, record.indexCount, record.indexType, 0);
             } else {
                 gl.drawArrays(geometry.primitiveType, 0, geometry.vertexCount);
             }
         }
 
         // Clean up VAO binding after pass execution
-        gl.bindVertexArray(null);
+        this.contextManager.geometries.unbind();
     }
 
     public onContextLost(): void {
@@ -166,25 +158,31 @@ export class SceneRenderer implements ISceneRenderer {
     }
 
     private getOrResolveShader(material: IMaterial): ShaderProgram | null {
-        let shader = this.contextManager.getShader(material.shaderKey);
+        let shader = this.contextManager.shaders.get(material.shaderKey);
         if (!shader) {
             if (material.shaderKey === "galaxy_pinprick") {
-                shader = this.contextManager.getOrCreateShader("galaxy_pinprick", {
+                shader = this.contextManager.shaders.getOrCreate("galaxy_pinprick", {
                     vertSource: galaxyPinprickVert,
                     fragSource: galaxyPinprickFrag,
                     label: "galaxy_pinprick",
                 });
             } else if (material.shaderKey === "galaxy_orb") {
-                shader = this.contextManager.getOrCreateShader("galaxy_orb", {
+                shader = this.contextManager.shaders.getOrCreate("galaxy_orb", {
                     vertSource: galaxyOrbVert,
                     fragSource: galaxyOrbFrag,
                     label: "galaxy_orb",
                 });
             } else if (material.shaderKey === "unlit") {
-                shader = this.contextManager.getOrCreateShader("unlit", {
+                shader = this.contextManager.shaders.getOrCreate("unlit", {
                     vertSource: unlitVert,
                     fragSource: unlitFrag,
                     label: "unlit",
+                });
+            } else if (material.shaderKey === "skybox") {
+                shader = this.contextManager.shaders.getOrCreate("skybox", {
+                    vertSource: skyboxVert,
+                    fragSource: skyboxFrag,
+                    label: "skybox",
                 });
             }
         }
