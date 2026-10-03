@@ -6,6 +6,7 @@ export const AVAILABLE_SHADER_KEYS = [
     "galaxy_orb",
     "galactic_cloud",
     "unlit",
+    "skybox",
 ] as const;
 
 /**

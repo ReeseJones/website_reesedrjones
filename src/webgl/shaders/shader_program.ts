@@ -2,9 +2,9 @@ import type {
     ShaderProgramOptions,
     CachedUniform,
 } from "./shader_program_types";
-import type { IWebGLContextManager } from "./context_manager_types";
+import type { IWebGLContextManager } from "../core/context_manager_types";
 import { compileShader } from "./shader_compiler";
-import { DEFAULT_TEXTURE_UNIT_MAP } from "./texture_types";
+import { DEFAULT_TEXTURE_UNIT_MAP } from "../textures/texture_types";
 
 /**
  * Robust WebGL2 Shader Program wrapper.

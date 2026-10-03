@@ -1,31 +1,31 @@
-import type { VertexBuffer } from "../../webgl/vertex_buffer";
-import type { IWebGLContextManager } from "../../webgl/context_manager_types";
-import type { GeometryBufferData, IMeshGeometry } from "./mesh_geometry_types";
+import type {
+    GeometryBufferData,
+    GeometryDisposeListener,
+    IMeshGeometry,
+} from "./mesh_geometry_types";
 
 let nextGeometryId = 0;
 function generateGeometryId(prefix: string = "MeshGeometry"): string {
-    return `${prefix}_${++nextGeometryId}_${Math.random().toString(36).substring(2, 7)}`;
+    return `${prefix}_${++nextGeometryId}`;
 }
 
 /**
- * Passive GPU geometry representation wrapping vertex and index buffer data.
- * Adheres to the Geometry-Material separation principle: contains zero shaders,
- * zero uniforms, and zero rendering passes.
+ * Pure CPU-side geometry representation wrapping vertex and index buffer data.
+ * Completely decoupled from WebGL contexts, VBOs, and shaders.
  */
 export class MeshGeometry implements IMeshGeometry {
     public readonly id: string;
 
-    private readonly _bufferData: GeometryBufferData;
+    private _bufferData: GeometryBufferData;
     private readonly _primitiveType: number;
-    private _vertexBuffer: VertexBuffer | null = null;
-    private _indexBuffer: WebGLBuffer | null = null;
-    private _contextManager: IWebGLContextManager | null = null;
-    private _gl: WebGL2RenderingContext | null = null;
+    private _version: number = 0;
+    private readonly _disposeListeners: Set<GeometryDisposeListener> = new Set();
+    private _isDisposed: boolean = false;
 
     /**
      * @param bufferData Interleaved vertex data, layout specification, and optional indices.
      * @param primitiveType WebGL primitive type (defaults to 0x0004 = gl.TRIANGLES).
-     * @param id Optional explicit identifier.
+     * @param id Optional explicit debugging identifier.
      */
     constructor(
         bufferData: GeometryBufferData,
@@ -37,8 +37,8 @@ export class MeshGeometry implements IMeshGeometry {
         this.id = id ?? generateGeometryId();
     }
 
-    public get vertexBuffer(): VertexBuffer | null {
-        return this._vertexBuffer;
+    public get version(): number {
+        return this._version;
     }
 
     public get vertexCount(): number {
@@ -57,64 +57,69 @@ export class MeshGeometry implements IMeshGeometry {
         return this._bufferData;
     }
 
-    public get indexBuffer(): WebGLBuffer | null {
-        return this._indexBuffer;
+    public get isDisposed(): boolean {
+        return this._isDisposed;
     }
 
     /**
-     * Allocates GPU buffer handles via the context manager and uploads vertex/index data.
+     * Replaces or updates the interleaved vertex attributes, incrementing the revision version.
      */
-    public init(gl: WebGL2RenderingContext, contextManager: IWebGLContextManager): void {
-        this._gl = gl;
-        this._contextManager = contextManager;
-
-        if (this._vertexBuffer) {
-            contextManager.releaseVertexBuffer(this._vertexBuffer);
-            this._vertexBuffer = null;
+    public setAttributes(attributes: Float32Array, vertexCount?: number): void {
+        this._bufferData.attributes = attributes;
+        if (vertexCount !== undefined) {
+            this._bufferData.vertexCount = vertexCount;
         }
+        this._version++;
+    }
 
-        if (this._indexBuffer) {
-            gl.deleteBuffer(this._indexBuffer);
-            this._indexBuffer = null;
+    /**
+     * Replaces or updates index data, incrementing the revision version.
+     */
+    public setIndices(indices: Uint16Array | Uint32Array | undefined): void {
+        this._bufferData.indices = indices;
+        this._version++;
+    }
+
+    /**
+     * Manually marks CPU geometry data as modified, forcing a GPU re-upload on next bind.
+     */
+    public markDirty(): void {
+        this._version++;
+    }
+
+    /**
+     * Subscribes a listener to be notified when this geometry is disposed.
+     * Returns an unsubscribe callback.
+     */
+    public onDispose(listener: GeometryDisposeListener): () => void {
+        this._disposeListeners.add(listener);
+        return () => {
+            this._disposeListeners.delete(listener);
+        };
+    }
+
+    /**
+     * Triggers deterministic disposal, notifying the GeometryManager to free GPU resources.
+     */
+    public dispose(): void {
+        if (this._isDisposed) {
+            return;
         }
-
-        this._vertexBuffer = contextManager.createVertexBuffer(this._bufferData.layout);
-        this._vertexBuffer.setData(this._bufferData.attributes);
-
-        if (this._bufferData.indices) {
-            this._vertexBuffer.bind();
-            this._indexBuffer = gl.createBuffer();
-            if (this._indexBuffer) {
-                gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this._indexBuffer);
-                gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, this._bufferData.indices, gl.STATIC_DRAW);
+        this._isDisposed = true;
+        for (const listener of this._disposeListeners) {
+            try {
+                listener(this);
+            } catch (err) {
+                console.error("[MeshGeometry] Error in dispose listener:", err);
             }
-            this._vertexBuffer.unbind();
-            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
         }
+        this._disposeListeners.clear();
     }
 
     /**
-     * Binds the underlying VAO for drawing.
-     */
-    public bind(): void {
-        this._vertexBuffer?.bind();
-    }
-
-    /**
-     * Releases GPU buffer allocations and detaches context references.
+     * Backwards-compatible alias for dispose().
      */
     public destroy(): void {
-        if (this._indexBuffer && this._gl && !this._gl.isContextLost()) {
-            this._gl.deleteBuffer(this._indexBuffer);
-            this._indexBuffer = null;
-        }
-
-        if (this._vertexBuffer && this._contextManager) {
-            this._contextManager.releaseVertexBuffer(this._vertexBuffer);
-            this._vertexBuffer = null;
-        }
-
-        this._gl = null;
-        this._contextManager = null;
+        this.dispose();
     }
 }

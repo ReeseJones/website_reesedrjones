@@ -1,47 +1,88 @@
-import { ShaderProgram } from "./shader_program";
-import type { ShaderProgramOptions } from "./shader_program_types";
-import { VertexBuffer } from "./vertex_buffer";
-import type { VertexLayoutSpec } from "./vertex_layout_types";
-import type { ShaderEntry, IWebGLContextManager } from "./context_manager_types";
-import type { PipelineState } from "../scene/materials/material_types";
-import type { ShaderKey } from "./shader_types";
+import type { ShaderProgram } from "../shaders/shader_program";
+import type { ShaderProgramOptions } from "../shaders/shader_program_types";
+import { VertexBuffer } from "../geometry/vertex_buffer";
+import type { VertexLayoutSpec } from "../geometry/vertex_layout_types";
+import type { IWebGLContextManager } from "./context_manager_types";
+import type { PipelineState } from "../../scene/materials/material_types";
+import type { ShaderKey } from "../shaders/shader_types";
+import type { IContextSubsystem, SubsystemDiagnostics } from "./subsystem_types";
+import { GeometryManager } from "../geometry/geometry_manager";
+import { TextureManager } from "../textures/texture_manager";
+import { ShaderManager } from "../shaders/shader_manager";
 
 /**
- * Central WebGL GPU resource manager and lifecycle allocator.
- * Manages ref-counted persistent ShaderProgram instances, tracks managed VertexBuffers via a
- * request/release pattern, and executes a 2-phase automated context restoration sequence
- * upon receiving webglcontextrestored events.
+ * Central WebGL GPU resource manager and microkernel coordinator.
+ * Coordinates priority-based context recovery across registered subsystems (Shaders, Textures, Geometries),
+ * tracks managed VertexBuffers via a request/release pattern, and caches pipeline state.
  */
 export class WebGLContextManager implements IWebGLContextManager {
+    public readonly shaders: ShaderManager;
+    public readonly textures: TextureManager;
+    public readonly geometries: GeometryManager;
+
+    private readonly _subsystems: IContextSubsystem[] = [];
     private gl: WebGL2RenderingContext | null = null;
-    private shaderRegistry = new Map<string, ShaderEntry<never>>();
     private activeBuffers = new Set<VertexBuffer>();
-    private currentProgram: WebGLProgram | null = null;
-    private currentShader: ShaderProgram<never> | null = null;
     private currentPipelineState: PipelineState | null = null;
-    private readonly _boundTextures: Map<number, WebGLTexture | null> = new Map();
-    private _activeTextureUnit: number = 0;
     private _maxTextureUnits: number = 16;
-    private _defaultWhiteTexture: WebGLTexture | null = null;
 
     constructor(gl?: WebGL2RenderingContext) {
+        this.shaders = this.registerSubsystem(new ShaderManager(this));
+        this.textures = this.registerSubsystem(new TextureManager(this));
+        this.geometries = this.registerSubsystem(new GeometryManager(this));
+
         if (gl) {
             this.setContext(gl);
         }
     }
+
+    // --- Backwards-Compatible Subsystem Aliases ---
+
+    public get shaderManager(): ShaderManager {
+        return this.shaders;
+    }
+
+    public get textureManager(): TextureManager {
+        return this.textures;
+    }
+
+    public get geometryManager(): GeometryManager {
+        return this.geometries;
+    }
+
+    // --- Microkernel Subsystem Management ---
+
+    public registerSubsystem<T extends IContextSubsystem>(subsystem: T): T {
+        this._subsystems.push(subsystem);
+        return subsystem;
+    }
+
+    public getSubsystem<T extends IContextSubsystem>(name: string): T | null {
+        return (this._subsystems.find((s) => s.name === name) as T) ?? null;
+    }
+
+    public getDiagnostics(): Record<string, SubsystemDiagnostics> {
+        const diagnostics: Record<string, SubsystemDiagnostics> = {};
+        for (const subsystem of this._subsystems) {
+            diagnostics[subsystem.name] = subsystem.getDiagnostics();
+        }
+        return diagnostics;
+    }
+
+    // --- Context & State Lifecycle ---
 
     /**
      * Sets or updates the active WebGL2 rendering context.
      */
     public setContext(gl: WebGL2RenderingContext): void {
         this.gl = gl;
-        this.currentProgram = null;
-        this.currentShader = null;
         this.currentPipelineState = null;
-        this._boundTextures.clear();
-        this._activeTextureUnit = 0;
         this._maxTextureUnits = gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS) || 16;
-        this.initDefaultWhiteTexture(gl);
+
+        const sorted = [...this._subsystems].sort((a, b) => a.restorationPriority - b.restorationPriority);
+        for (const sub of sorted) {
+            sub.onContextRestored(gl);
+        }
     }
 
     /**
@@ -52,133 +93,81 @@ export class WebGLContextManager implements IWebGLContextManager {
     }
 
     /**
-     * Retrieves the currently active WebGLProgram without querying the GPU (no pipeline stall).
+     * Retrieves the currently active WebGLProgram without querying the GPU.
      */
     public getCurrentProgram(): WebGLProgram | null {
-        return this.currentProgram;
+        return this.shaders.activeProgram;
     }
 
     /**
      * Retrieves the currently active ShaderProgram instance, if any.
      */
     public getCurrentShader(): ShaderProgram<never> | null {
-        return this.currentShader;
+        return this.shaders.activeShader;
     }
 
     /**
-     * Binds the specified ShaderProgram to the WebGL context and updates tracked state.
-     * Skips redundant GPU driver calls if the shader is already active.
+     * Binds the specified ShaderProgram to the WebGL context with redundant-call skipping.
      */
     public useShader<TUniforms extends object = never>(shader: ShaderProgram<TUniforms> | null): void {
-        if (this.currentShader === (shader as unknown as ShaderProgram<never>)) return;
-
-        const program = shader ? shader.getProgram() : null;
-        if (this.currentProgram !== program) {
-            if (this.gl) {
-                this.gl.useProgram(program);
-            }
-            this.currentProgram = program;
-        }
-        this.currentShader = shader as unknown as ShaderProgram<never>;
+        this.shaders.bind(shader);
     }
 
     /**
      * Low-level bind for a raw WebGLProgram.
      */
     public useProgram(program: WebGLProgram | null): void {
-        if (this.currentProgram === program) return;
-        if (this.gl) {
-            this.gl.useProgram(program);
-        }
-        this.currentProgram = program;
-        this.currentShader = null;
+        this.shaders.bindProgram(program);
     }
 
     /**
-     * Factory & Registry: Retrieves a shared ShaderProgram (incrementing refCount) or
-     * compiles and caches a new one (refCount = 1) with strong uniform typing.
+     * Factory & Registry: Retrieves a cached ShaderProgram or compiles and caches a new one.
      */
     public getOrCreateShader<TUniforms extends object = Record<string, unknown>>(
         key: ShaderKey,
         options: ShaderProgramOptions
     ): ShaderProgram<TUniforms> {
-        let entry = this.shaderRegistry.get(key);
-        if (!entry) {
-            if (!this.gl) {
-                throw new Error(`WebGLContextManager: Cannot create shader '${key}' before context is set.`);
-            }
-            const shader = new ShaderProgram<TUniforms>(this, options);
-            entry = { shader: shader as unknown as ShaderProgram<never>, refCount: 0 };
-            this.shaderRegistry.set(key, entry);
-        }
-        entry.refCount++;
-        return entry.shader as unknown as ShaderProgram<TUniforms>;
+        return this.shaders.getOrCreate<TUniforms>(key, options);
     }
 
     /**
-     * Registry Query: Retrieves an existing compiled ShaderProgram if registered, without altering refCount.
+     * Registry Query: Retrieves an existing compiled ShaderProgram if registered.
      */
     public getShader<TUniforms extends object = Record<string, unknown>>(
         key: ShaderKey
     ): ShaderProgram<TUniforms> | null {
-        const entry = this.shaderRegistry.get(key);
-        return entry ? (entry.shader as unknown as ShaderProgram<TUniforms>) : null;
+        return this.shaders.get<TUniforms>(key);
     }
 
     /**
-     * Release Pattern: Decrements a ShaderProgram's reference count.
-     * When refCount reaches 0 (no renderers are using it), destroys the GPU program and unregisters it.
+     * Releases or disposes of a ShaderProgram.
      */
     public releaseShader<TUniforms extends object = Record<string, unknown>>(
         keyOrInstance: ShaderKey | ShaderProgram<TUniforms>
     ): void {
-        let targetKey: string | null = null;
-        if (typeof keyOrInstance === "string") {
-            targetKey = keyOrInstance;
-        } else {
-            for (const [k, entry] of this.shaderRegistry.entries()) {
-                if ((entry.shader as unknown) === keyOrInstance) {
-                    targetKey = k;
-                    break;
-                }
-            }
-        }
-
-        if (!targetKey) return;
-
-        const entry = this.shaderRegistry.get(targetKey);
-        if (!entry) return;
-
-        entry.refCount--;
-        if (entry.refCount <= 0) {
-            if (this.currentShader === entry.shader) {
-                this.useShader(null);
-            }
-            entry.shader.destroy();
-            this.shaderRegistry.delete(targetKey);
-        }
+        this.shaders.dispose(keyOrInstance);
     }
 
     /**
-     * Factory Request: Allocates a new managed VertexBuffer tracking VBO and VAO GPU resources.
-     * Optionally accepts an associated ShaderProgram or WebGLProgram for dynamic symbol location lookups.
+     * Factory Request: Allocates a new managed VertexBuffer tracking VBO and VAO handles.
      */
     public createVertexBuffer<TUniforms extends object = Record<string, unknown>>(
         layout: VertexLayoutSpec,
         shader?: ShaderProgram<TUniforms> | WebGLProgram
     ): VertexBuffer {
-        const buffer = new VertexBuffer(this.gl, layout, shader);
+        const buffer = new VertexBuffer(this, layout, shader);
         this.activeBuffers.add(buffer);
         return buffer;
     }
 
     /**
-     * Release Pattern: Deletes GPU resources associated with a VertexBuffer and removes it
-     * from manager tracking.
+     * Release Pattern: Deletes GPU resources associated with a VertexBuffer.
      */
     public releaseVertexBuffer(buffer: VertexBuffer): void {
-        buffer.destroy();
-        this.activeBuffers.delete(buffer);
+        if (this.activeBuffers.has(buffer)) {
+            buffer.destroy();
+            this.activeBuffers.delete(buffer);
+        }
     }
 
     /**
@@ -188,34 +177,25 @@ export class WebGLContextManager implements IWebGLContextManager {
         const gl = this.gl;
         if (!gl) return;
 
-        const prev = this.currentPipelineState;
+        const current = this.currentPipelineState;
 
-        if (!prev || prev.depthTest !== state.depthTest) {
+        if (!current || current.depthTest !== state.depthTest) {
             if (state.depthTest) {
                 gl.enable(gl.DEPTH_TEST);
-                gl.depthFunc(gl.LEQUAL);
             } else {
                 gl.disable(gl.DEPTH_TEST);
             }
         }
 
-        if (!prev || prev.depthWrite !== state.depthWrite) {
+        if (!current || current.depthWrite !== state.depthWrite) {
             gl.depthMask(state.depthWrite);
         }
 
-        if (!prev || prev.blendMode !== state.blendMode) {
-            if (state.blendMode === "opaque") {
-                gl.disable(gl.BLEND);
-            } else if (state.blendMode === "alpha") {
-                gl.enable(gl.BLEND);
-                gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-            } else if (state.blendMode === "additive") {
-                gl.enable(gl.BLEND);
-                gl.blendFunc(gl.ONE, gl.ONE);
-            }
+        if (!current || current.depthFunc !== state.depthFunc) {
+            gl.depthFunc(state.depthFunc);
         }
 
-        if (!prev || prev.cullFace !== state.cullFace) {
+        if (!current || current.cullFace !== state.cullFace) {
             if (state.cullFace) {
                 gl.enable(gl.CULL_FACE);
             } else {
@@ -223,11 +203,48 @@ export class WebGLContextManager implements IWebGLContextManager {
             }
         }
 
+        if (state.cullFace && (!current || current.cullFaceMode !== state.cullFaceMode)) {
+            gl.cullFace(state.cullFaceMode);
+        }
+
+        if (!current || current.blend !== state.blend) {
+            if (state.blend) {
+                gl.enable(gl.BLEND);
+            } else {
+                gl.disable(gl.BLEND);
+            }
+        }
+
+        if (
+            state.blend &&
+            (!current ||
+                current.blendSrcRGB !== state.blendSrcRGB ||
+                current.blendDstRGB !== state.blendDstRGB ||
+                current.blendSrcAlpha !== state.blendSrcAlpha ||
+                current.blendDstAlpha !== state.blendDstAlpha)
+        ) {
+            gl.blendFuncSeparate(
+                state.blendSrcRGB,
+                state.blendDstRGB,
+                state.blendSrcAlpha,
+                state.blendDstAlpha
+            );
+        }
+
+        if (
+            state.blend &&
+            (!current ||
+                current.blendEquationRGB !== state.blendEquationRGB ||
+                current.blendEquationAlpha !== state.blendEquationAlpha)
+        ) {
+            gl.blendEquationSeparate(state.blendEquationRGB, state.blendEquationAlpha);
+        }
+
         this.currentPipelineState = { ...state };
     }
 
     /**
-     * Resets cached pipeline state to null (forcing next applyPipelineState to re-assert all states).
+     * Resets cached pipeline state to default or canvas baseline.
      */
     public resetPipelineState(): void {
         this.currentPipelineState = null;
@@ -256,27 +273,28 @@ export class WebGLContextManager implements IWebGLContextManager {
      * Retrieves the shared 1x1 solid white fallback texture handle.
      */
     public getDefaultWhiteTexture(): WebGLTexture | null {
-        return this._defaultWhiteTexture;
+        return this.textures.getFallbackHandle("white");
+    }
+
+    /**
+     * Retrieves the shared 1x1 solid black fallback cubemap texture handle.
+     */
+    public getDefaultBlackCubeTexture(): WebGLTexture | null {
+        return this.textures.getFallbackHandle("black_cube");
     }
 
     /**
      * Binds a WebGLTexture to a hardware texture unit with redundant call skipping.
      */
     public bindTexture(unit: number, texture: WebGLTexture | null): void {
-        const gl = this.gl;
-        if (!gl) return;
+        this.textures.bindHandle(unit, texture);
+    }
 
-        if (this._boundTextures.get(unit) === texture) {
-            return;
-        }
-
-        if (this._activeTextureUnit !== unit) {
-            gl.activeTexture(gl.TEXTURE0 + unit);
-            this._activeTextureUnit = unit;
-        }
-
-        gl.bindTexture(gl.TEXTURE_2D, texture);
-        this._boundTextures.set(unit, texture);
+    /**
+     * Binds a WebGLTexture cubemap to a hardware texture unit with redundant call skipping.
+     */
+    public bindCubeTexture(unit: number, texture: WebGLTexture | null): void {
+        this.textures.bindCubeHandle(unit, texture);
     }
 
     /**
@@ -284,96 +302,49 @@ export class WebGLContextManager implements IWebGLContextManager {
      */
     public handleContextLost(): void {
         this.gl = null;
-        this.currentProgram = null;
-        this.currentShader = null;
         this.currentPipelineState = null;
-        this._boundTextures.clear();
-        this._activeTextureUnit = 0;
-        this._defaultWhiteTexture = null;
-        for (const entry of this.shaderRegistry.values()) {
-            entry.shader.destroy();
+        for (const sub of this._subsystems) {
+            sub.onContextLost();
         }
     }
 
     /**
-     * Automated 2-Phase Context Loss Recovery:
-     * - Phase 1: Re-compiles all registered ShaderPrograms with active demand (refCount > 0)
-     *            and re-queries uniform locations.
-     * - Phase 2: Re-allocates GPU VBO/VAO handles for all active VertexBuffers and re-uploads cached CPU data.
+     * Automated Priority-based Context Loss Recovery:
+     * - Phase 1 (Priority 10): Shaders rebuild programs and uniform locations.
+     * - Phase 2 (Priority 20): Textures recreate fallbacks and re-upload active textures.
+     * - Phase 3 (Priority 30): Geometries rebind buffer layouts.
      */
     public handleContextRestored(newGl: WebGL2RenderingContext): void {
         this.gl = newGl;
-        this.currentProgram = null;
-        this.currentShader = null;
         this.currentPipelineState = null;
-        this._boundTextures.clear();
-        this._activeTextureUnit = 0;
         this._maxTextureUnits = newGl.getParameter(newGl.MAX_TEXTURE_IMAGE_UNITS) || 16;
-        this.initDefaultWhiteTexture(newGl);
 
-        // Phase 1: Rebuild Shaders with active refCount > 0
-        for (const entry of this.shaderRegistry.values()) {
-            if (entry.refCount > 0) {
-                entry.shader.rebuild();
-            }
+        const sorted = [...this._subsystems].sort((a, b) => a.restorationPriority - b.restorationPriority);
+        for (const sub of sorted) {
+            sub.onContextRestored(newGl);
         }
 
-        // Phase 2: Rebuild Buffers & VAOs
+        // Rebuild active VertexBuffers
         for (const buffer of this.activeBuffers.values()) {
             buffer.rebuild(newGl);
         }
     }
 
     /**
-     * Disposes all shader programs, vertex buffers, and context references.
+     * Disposes all subsystems, vertex buffers, and context references.
      */
     public destroy(): void {
+        for (const sub of this._subsystems) {
+            sub.destroy();
+        }
+        this._subsystems.length = 0;
+
         for (const buffer of this.activeBuffers.values()) {
             buffer.destroy();
         }
         this.activeBuffers.clear();
 
-        for (const entry of this.shaderRegistry.values()) {
-            entry.shader.destroy();
-        }
-        this.shaderRegistry.clear();
-
-        if (this.gl && this._defaultWhiteTexture) {
-            this.gl.deleteTexture(this._defaultWhiteTexture);
-        }
-        this._defaultWhiteTexture = null;
-        this._boundTextures.clear();
-
-        this.currentProgram = null;
-        this.currentShader = null;
         this.currentPipelineState = null;
         this.gl = null;
-    }
-
-    private initDefaultWhiteTexture(gl: WebGL2RenderingContext): void {
-        const tex = gl.createTexture();
-        if (tex) {
-            gl.activeTexture(gl.TEXTURE0);
-            gl.bindTexture(gl.TEXTURE_2D, tex);
-            gl.texImage2D(
-                gl.TEXTURE_2D,
-                0,
-                gl.RGBA,
-                1,
-                1,
-                0,
-                gl.RGBA,
-                gl.UNSIGNED_BYTE,
-                new Uint8Array([255, 255, 255, 255])
-            );
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-            gl.bindTexture(gl.TEXTURE_2D, null);
-            this._defaultWhiteTexture = tex;
-            this._boundTextures.set(0, null);
-            this._activeTextureUnit = 0;
-        }
     }
 }

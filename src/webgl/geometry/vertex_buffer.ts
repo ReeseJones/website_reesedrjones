@@ -1,6 +1,8 @@
 import { configureVAO } from "./vertex_layout";
 import type { VertexLayoutSpec } from "./vertex_layout_types";
-import { ShaderProgram } from "./shader_program";
+import { ShaderProgram } from "../shaders/shader_program";
+
+import type { IWebGLContextManager } from "../core/context_manager_types";
 
 /**
  * Managed GPU Vertex Buffer Object (VBO) and Vertex Array Object (VAO) wrapper.
@@ -11,33 +13,40 @@ export class VertexBuffer {
     public readonly layout: VertexLayoutSpec;
     public shader?: ShaderProgram | WebGLProgram;
 
-    private gl: WebGL2RenderingContext | null = null;
+    private readonly contextManager: IWebGLContextManager;
     private vbo: WebGLBuffer | null = null;
     private vao: WebGLVertexArrayObject | null = null;
     private cpuData: Float32Array | null = null;
     private usage: number;
 
+    private get gl(): WebGL2RenderingContext | null {
+        return this.contextManager.getContext();
+    }
+
     constructor(
-        gl: WebGL2RenderingContext | null,
+        contextManager: IWebGLContextManager,
         layout: VertexLayoutSpec,
         shader?: ShaderProgram | WebGLProgram
     ) {
-        this.gl = gl;
+        this.contextManager = contextManager;
         this.layout = layout;
         this.shader = shader;
-        this.usage = gl ? gl.STATIC_DRAW : 0x88e4; // 0x88e4 is gl.STATIC_DRAW
+        const currentGl = this.gl;
+        this.usage = currentGl ? currentGl.STATIC_DRAW : 0x88e4; // 0x88e4 is gl.STATIC_DRAW
 
-        if (this.gl && !this.gl.isContextLost()) {
+        if (currentGl && !currentGl.isContextLost()) {
             this.buildGPUResources();
         }
     }
 
     /**
-     * Initializes or updates the active WebGL context.
+     * Initializes or updates GPU resources when a context becomes available.
      */
-    public init(gl: WebGL2RenderingContext): void {
-        this.gl = gl;
-        this.usage = gl.STATIC_DRAW;
+    public init(_gl?: WebGL2RenderingContext): void {
+        const currentGl = this.gl;
+        if (currentGl) {
+            this.usage = currentGl.STATIC_DRAW;
+        }
         if (!this.vao || !this.vbo) {
             this.buildGPUResources();
         }
@@ -52,10 +61,11 @@ export class VertexBuffer {
             this.usage = usage;
         }
 
-        if (this.gl && !this.gl.isContextLost() && this.vbo) {
-            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vbo);
-            this.gl.bufferData(this.gl.ARRAY_BUFFER, data, this.usage);
-            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, null);
+        const currentGl = this.gl;
+        if (currentGl && !currentGl.isContextLost() && this.vbo) {
+            currentGl.bindBuffer(currentGl.ARRAY_BUFFER, this.vbo);
+            currentGl.bufferData(currentGl.ARRAY_BUFFER, data, this.usage);
+            currentGl.bindBuffer(currentGl.ARRAY_BUFFER, null);
         }
     }
 
@@ -63,8 +73,9 @@ export class VertexBuffer {
      * Binds the underlying VAO for rendering (gl.bindVertexArray(this.vao)).
      */
     public bind(): void {
-        if (this.gl && !this.gl.isContextLost() && this.vao) {
-            this.gl.bindVertexArray(this.vao);
+        const currentGl = this.gl;
+        if (currentGl && !currentGl.isContextLost() && this.vao) {
+            currentGl.bindVertexArray(this.vao);
         }
     }
 
@@ -72,8 +83,9 @@ export class VertexBuffer {
      * Unbinds the VAO (gl.bindVertexArray(null)).
      */
     public unbind(): void {
-        if (this.gl && !this.gl.isContextLost()) {
-            this.gl.bindVertexArray(null);
+        const currentGl = this.gl;
+        if (currentGl && !currentGl.isContextLost()) {
+            currentGl.bindVertexArray(null);
         }
     }
 
@@ -88,8 +100,7 @@ export class VertexBuffer {
      * Re-allocates GPU VBO and VAO handles on a restored WebGL context,
      * re-uploads cached CPU array data, and re-configures layout attribute pointers.
      */
-    public rebuild(gl: WebGL2RenderingContext, program?: WebGLProgram | ShaderProgram): void {
-        this.gl = gl;
+    public rebuild(_gl?: WebGL2RenderingContext, program?: WebGLProgram | ShaderProgram): void {
         this.destroyGPUResources();
         this.buildGPUResources(program);
     }
@@ -100,7 +111,6 @@ export class VertexBuffer {
     public destroy(): void {
         this.destroyGPUResources();
         this.cpuData = null;
-        this.gl = null;
     }
 
     // --- Private Helpers ---

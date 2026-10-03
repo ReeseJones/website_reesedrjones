@@ -180,4 +180,8 @@ export class SceneNode implements ISceneNode {
         }
         this._children.length = 0;
     }
+
+    public dispose(): void {
+        this.destroy();
+    }
 }

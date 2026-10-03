@@ -130,6 +130,8 @@ export const DEFAULT_TEXTURE_UNIT_MAP: Readonly<Record<string, TextureUnit>> = {
  * Configuration options for constructing or updating a Texture.
  */
 export interface TextureOptions {
+    /** Image source element, bitmap, canvas, or URL string */
+    source?: TextureSource | string;
     /** Horizontal wrap mode (defaults to "clamp_to_edge") */
     wrapS?: TextureWrap;
     /** Vertical wrap mode (defaults to "clamp_to_edge") */
@@ -146,10 +148,12 @@ export interface TextureOptions {
     label?: string;
 }
 
+import type { IDisposable } from "../core/subsystem_types";
+
 /**
  * Public contract for managed WebGL texture resources.
  */
-export interface ITexture {
+export interface ITexture extends IDisposable {
     /** Unique debug label */
     readonly label: string;
 
@@ -167,6 +171,12 @@ export interface ITexture {
 
     /** Active configuration options */
     readonly options: Readonly<TextureOptions>;
+
+    /** Allocates the GPU texture handle with initial fallback and uploads source */
+    init(gl: WebGL2RenderingContext): void;
+
+    /** Re-uploads pixel data from the stored image or canvas source */
+    updateFromSource(): void;
 
     /** Binds texture to a specific hardware texture unit via context manager */
     bind(unit?: TextureUnit | number): void;

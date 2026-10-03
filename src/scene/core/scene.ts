@@ -47,4 +47,9 @@ export class Scene implements IScene {
             children[i].destroy();
         }
     }
+
+    public dispose(): void {
+        this.clear();
+        this.root.destroy();
+    }
 }
