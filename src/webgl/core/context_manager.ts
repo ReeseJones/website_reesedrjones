@@ -182,6 +182,7 @@ export class WebGLContextManager implements IWebGLContextManager {
         if (!current || current.depthTest !== state.depthTest) {
             if (state.depthTest) {
                 gl.enable(gl.DEPTH_TEST);
+                gl.depthFunc(gl.LEQUAL);
             } else {
                 gl.disable(gl.DEPTH_TEST);
             }
@@ -191,8 +192,16 @@ export class WebGLContextManager implements IWebGLContextManager {
             gl.depthMask(state.depthWrite);
         }
 
-        if (!current || current.depthFunc !== state.depthFunc) {
-            gl.depthFunc(state.depthFunc);
+        if (!current || current.blendMode !== state.blendMode) {
+            if (state.blendMode === "opaque") {
+                gl.disable(gl.BLEND);
+            } else if (state.blendMode === "alpha") {
+                gl.enable(gl.BLEND);
+                gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+            } else if (state.blendMode === "additive") {
+                gl.enable(gl.BLEND);
+                gl.blendFunc(gl.ONE, gl.ONE);
+            }
         }
 
         if (!current || current.cullFace !== state.cullFace) {
@@ -201,43 +210,6 @@ export class WebGLContextManager implements IWebGLContextManager {
             } else {
                 gl.disable(gl.CULL_FACE);
             }
-        }
-
-        if (state.cullFace && (!current || current.cullFaceMode !== state.cullFaceMode)) {
-            gl.cullFace(state.cullFaceMode);
-        }
-
-        if (!current || current.blend !== state.blend) {
-            if (state.blend) {
-                gl.enable(gl.BLEND);
-            } else {
-                gl.disable(gl.BLEND);
-            }
-        }
-
-        if (
-            state.blend &&
-            (!current ||
-                current.blendSrcRGB !== state.blendSrcRGB ||
-                current.blendDstRGB !== state.blendDstRGB ||
-                current.blendSrcAlpha !== state.blendSrcAlpha ||
-                current.blendDstAlpha !== state.blendDstAlpha)
-        ) {
-            gl.blendFuncSeparate(
-                state.blendSrcRGB,
-                state.blendDstRGB,
-                state.blendSrcAlpha,
-                state.blendDstAlpha
-            );
-        }
-
-        if (
-            state.blend &&
-            (!current ||
-                current.blendEquationRGB !== state.blendEquationRGB ||
-                current.blendEquationAlpha !== state.blendEquationAlpha)
-        ) {
-            gl.blendEquationSeparate(state.blendEquationRGB, state.blendEquationAlpha);
         }
 
         this.currentPipelineState = { ...state };
