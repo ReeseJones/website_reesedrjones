@@ -23,34 +23,22 @@ export function ScenePass({
 
     useWebGLPass({
         priority,
-        init: (gl, dims) => {
-            rendererRef.current?.init(gl, dims);
-        },
-        render: (gl, timeInfo, dims) => {
-            if (clearDepth) {
-                contextManager.setDepthMask(true);
-                gl.clear(gl.DEPTH_BUFFER_BIT);
-            }
-            rendererRef.current?.renderFrame(gl, scene, camera, timeInfo, dims);
-        },
-        resize: (_gl, _dims) => {
-            // Camera aspect ratio and projection matrices are synchronized on renderFrame
-        },
-        onContextLost: () => {
-            rendererRef.current?.onContextLost();
-        },
-        onContextRestored: (gl, dims) => {
-            rendererRef.current?.onContextRestored(gl, dims);
+        render: (_gl, timeInfo, dims) => {
+            rendererRef.current?.render(scene, camera, {
+                timeInfo,
+                dimensions: dims,
+                clearDepth,
+            });
         },
         destroy: () => {
-            rendererRef.current?.destroy();
+            rendererRef.current?.reset();
             rendererRef.current = null;
         },
     });
 
     useEffect(() => {
         return () => {
-            rendererRef.current?.destroy();
+            rendererRef.current?.reset();
             rendererRef.current = null;
         };
     }, []);

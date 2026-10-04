@@ -1,12 +1,11 @@
 import { mat3, mat4 } from "gl-matrix";
 import type { IScene } from "../core/scene_types";
 import type { ICamera } from "../camera/camera_types";
-import type { IModelInstance } from "../models/model_instance_types";
+import { isRenderable } from "../models/model_instance_types";
 import type { IMaterial } from "../materials/material_types";
-import type { CanvasDimensions, TimeInfo } from "../../components/webgl_canvas/types";
 import type { IWebGLContextManager } from "../../webgl/core/context_manager_types";
 import type { ShaderProgram } from "../../webgl/shaders/shader_program";
-import type { ISceneRenderer, RenderQueueItem } from "./scene_renderer_types";
+import type { ISceneRenderer, RenderOptions, RenderQueueItem } from "./scene_renderer_types";
 import type { ShaderKey } from "../../webgl/shaders/shader_types";
 import galaxyPinprickVert from "../../galaxy_backdrop/shaders/galaxy_pinprick.vert";
 import galaxyPinprickFrag from "../../galaxy_backdrop/shaders/galaxy_pinprick.frag";
@@ -17,6 +16,17 @@ import unlitFrag from "../shaders/unlit.frag";
 import skyboxVert from "../shaders/skybox.vert";
 import skyboxFrag from "../shaders/skybox.frag";
 import { TextureUnit } from "../../webgl/textures/texture_types";
+import {
+    MAT4_ELEMENT_COUNT,
+    MAT3_ELEMENT_COUNT,
+    MAT4_TRANSLATION_X_INDEX,
+    MAT4_TRANSLATION_Y_INDEX,
+    MAT4_TRANSLATION_Z_INDEX,
+    DEFAULT_RENDER_ORDER,
+    TEXTURE_ENABLED_THRESHOLD,
+    DRAW_ELEMENTS_OFFSET,
+    DRAW_ARRAYS_START_INDEX,
+} from "./scene_renderer_constants";
 
 /**
  * Concrete 3D Scene Renderer executing hierarchical scene graph traversal,
@@ -26,8 +36,8 @@ import { TextureUnit } from "../../webgl/textures/texture_types";
 export class SceneRenderer implements ISceneRenderer {
     public readonly contextManager: IWebGLContextManager;
 
-    private readonly _modelViewMatrix: Float32Array = new Float32Array(16);
-    private readonly _normalMatrix: Float32Array = new Float32Array(9);
+    private readonly _modelViewMatrix: Float32Array = new Float32Array(MAT4_ELEMENT_COUNT);
+    private readonly _normalMatrix: Float32Array = new Float32Array(MAT3_ELEMENT_COUNT);
     private readonly _cameraPosition: [number, number, number] = [0, 0, 0];
     private readonly _renderQueue: RenderQueueItem[] = [];
     private readonly _warnedShaders: Set<ShaderKey> = new Set();
@@ -36,36 +46,39 @@ export class SceneRenderer implements ISceneRenderer {
         this.contextManager = contextManager;
     }
 
-    public init(gl: WebGL2RenderingContext, _dims: CanvasDimensions): void {
-        this.contextManager.setContext(gl);
-    }
-
-    public renderFrame(
-        gl: WebGL2RenderingContext,
+    public render(
         scene: IScene,
         camera: ICamera,
-        timeInfo: TimeInfo,
-        dims: CanvasDimensions
+        options: RenderOptions
     ): void {
+        const gl = this.contextManager.getContext();
+        if (!gl || gl.isContextLost()) {
+            return;
+        }
+
+        if (options.clearDepth) {
+            this.contextManager.setDepthMask(true);
+            gl.clear(WebGL2RenderingContext.DEPTH_BUFFER_BIT);
+        }
+
         // Stage 1: Hierarchical transform propagation
         scene.update();
 
         // Stage 2: Camera matrix synchronization
-        camera.updateAspectRatio(dims.aspect);
+        camera.updateAspectRatio(options.dimensions.aspect);
         camera.updateMatrices();
 
-        this._cameraPosition[0] = camera.worldMatrix[12];
-        this._cameraPosition[1] = camera.worldMatrix[13];
-        this._cameraPosition[2] = camera.worldMatrix[14];
+        this._cameraPosition[0] = camera.worldMatrix[MAT4_TRANSLATION_X_INDEX];
+        this._cameraPosition[1] = camera.worldMatrix[MAT4_TRANSLATION_Y_INDEX];
+        this._cameraPosition[2] = camera.worldMatrix[MAT4_TRANSLATION_Z_INDEX];
 
         // Stage 3: Collect visible renderables & stable sort by renderOrder
         this._renderQueue.length = 0;
         scene.traverseVisible((node) => {
-            if ("geometry" in node && "material" in node) {
-                const instance = node as unknown as IModelInstance;
+            if (isRenderable(node) && node.geometry && node.material) {
                 this._renderQueue.push({
-                    instance,
-                    renderOrder: instance.renderOrder ?? 0,
+                    instance: node,
+                    renderOrder: node.renderOrder ?? DEFAULT_RENDER_ORDER,
                 });
             }
         });
@@ -103,8 +116,8 @@ export class SceneRenderer implements ISceneRenderer {
             shader.setMat4("u_viewMatrix", camera.viewMatrix);
             shader.setMat4("u_projectionMatrix", camera.projectionMatrix);
             shader.setVec3("u_cameraPosition", this._cameraPosition);
-            shader.setFloat("u_time", timeInfo.time);
-            shader.setFloat("u_viewportHeight", dims.height);
+            shader.setFloat("u_time", options.timeInfo.time);
+            shader.setFloat("u_viewportHeight", options.dimensions.height);
 
             // Tier B: Instance Transform Uniforms
             shader.setMat4("u_modelMatrix", instance.worldMatrix);
@@ -117,7 +130,7 @@ export class SceneRenderer implements ISceneRenderer {
                 for (const [unit, tex] of textures.entries()) {
                     this.contextManager.textures.bind(unit, tex, "white");
                 }
-            } else if ((material.getUniforms().u_useTexture as number) > 0.5) {
+            } else if ((material.getUniforms().u_useTexture as number) > TEXTURE_ENABLED_THRESHOLD) {
                 this.contextManager.textures.bind(TextureUnit.Color, null, "white");
             }
 
@@ -134,9 +147,18 @@ export class SceneRenderer implements ISceneRenderer {
             const record = this.contextManager.geometries.bind(geometry);
 
             if (record.indexCount !== null && record.indexCount > 0) {
-                gl.drawElements(geometry.primitiveType, record.indexCount, record.indexType, 0);
+                gl.drawElements(
+                    geometry.primitiveType,
+                    record.indexCount,
+                    record.indexType,
+                    DRAW_ELEMENTS_OFFSET
+                );
             } else {
-                gl.drawArrays(geometry.primitiveType, 0, geometry.vertexCount);
+                gl.drawArrays(
+                    geometry.primitiveType,
+                    DRAW_ARRAYS_START_INDEX,
+                    geometry.vertexCount
+                );
             }
         }
 
@@ -144,17 +166,9 @@ export class SceneRenderer implements ISceneRenderer {
         this.contextManager.geometries.unbind();
     }
 
-    public onContextLost(): void {
+    public reset(): void {
         this._renderQueue.length = 0;
-        this.contextManager.handleContextLost();
-    }
-
-    public onContextRestored(gl: WebGL2RenderingContext, _dims: CanvasDimensions): void {
-        this.contextManager.handleContextRestored(gl);
-    }
-
-    public destroy(): void {
-        this._renderQueue.length = 0;
+        this.contextManager.resetPipelineState();
     }
 
     private getOrResolveShader(material: IMaterial): ShaderProgram | null {

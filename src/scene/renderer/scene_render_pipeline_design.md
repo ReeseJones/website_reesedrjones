@@ -105,7 +105,7 @@ Rather than forcing arbitrary driver resets between passes, all passes and mater
 
 ## 5. The 5-Stage Frame Rendering Loop
 
-Each animation frame tick executed by `SceneRenderer.renderFrame(gl, timeInfo, dims)` follows a strict 5-stage pipeline:
+Each animation frame tick executed by `SceneRenderer.render(scene, camera, options)` follows a strict 5-stage pipeline:
 
 ```mermaid
 sequenceDiagram
@@ -119,7 +119,7 @@ sequenceDiagram
     participant GPU as WebGL2 Driver
 
     Canvas->>Pass: render(gl, timeInfo, dims)
-    Pass->>Renderer: renderFrame(gl, scene, camera, timeInfo, dims)
+    Pass->>Renderer: render(scene, camera, options)
     
     Note over Renderer, Scene: Stage 1: Hierarchical Transform Propagation
     Renderer->>Scene: update() (evaluates dirty TRS & world matrices)
@@ -268,22 +268,16 @@ export interface RenderQueueItem {
     renderOrder: number;
 }
 
+export interface RenderOptions {
+    timeInfo: TimeInfo;
+    dimensions: CanvasDimensions;
+    clearDepth?: boolean;
+}
+
 export interface ISceneRenderer {
     readonly contextManager: IWebGLContextManager;
-    
-    init(gl: WebGL2RenderingContext, dims: CanvasDimensions): void;
-    
-    renderFrame(
-        gl: WebGL2RenderingContext,
-        scene: IScene,
-        camera: ICamera,
-        timeInfo: TimeInfo,
-        dims: CanvasDimensions
-    ): void;
-    
-    onContextLost(): void;
-    onContextRestored(gl: WebGL2RenderingContext, dims: CanvasDimensions): void;
-    destroy(): void;
+    render(scene: IScene, camera: ICamera, options: RenderOptions): void;
+    reset(): void;
 }
 ```
 

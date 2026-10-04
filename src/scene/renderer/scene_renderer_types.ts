@@ -21,6 +21,18 @@ export interface StandardShaderUniforms {
 }
 
 /**
+ * Frame-level execution options passed to ISceneRenderer.render.
+ */
+export interface RenderOptions {
+    /** Frame timing and delta seconds. */
+    timeInfo: TimeInfo;
+    /** Viewport dimensions and aspect ratio. */
+    dimensions: CanvasDimensions;
+    /** Optional flag to clear depth buffer before drawing (defaults to false). */
+    clearDepth?: boolean;
+}
+
+/**
  * Encapsulated queue element for depth-sorting and render execution.
  */
 export interface RenderQueueItem {
@@ -35,9 +47,6 @@ export interface RenderQueueItem {
 export interface ISceneRenderer {
     readonly contextManager: IWebGLContextManager;
 
-    /** Initializes rendering state and allocates resources for active canvas dimensions. */
-    init(gl: WebGL2RenderingContext, dims: CanvasDimensions): void;
-
     /**
      * Executes the 5-stage frame rendering loop:
      * 1. Evaluates dirty transforms across the scene graph.
@@ -46,20 +55,10 @@ export interface ISceneRenderer {
      * 4. Asserts pipeline states with contextManager caching.
      * 5. Uploads Tier A/B/C uniforms and issues draw calls.
      */
-    renderFrame(
-        gl: WebGL2RenderingContext,
-        scene: IScene,
-        camera: ICamera,
-        timeInfo: TimeInfo,
-        dims: CanvasDimensions
-    ): void;
+    render(scene: IScene, camera: ICamera, options: RenderOptions): void;
 
-    /** Handles WebGL context loss by invalidating GPU allocations. */
-    onContextLost(): void;
-
-    /** Handles WebGL context restoration by re-creating GPU resources. */
-    onContextRestored(gl: WebGL2RenderingContext, dims: CanvasDimensions): void;
-
-    /** Disposes all renderer resources and detaches context manager references. */
-    destroy(): void;
+    /**
+     * Clears internal transient render queues and resets pipeline state.
+     */
+    reset(): void;
 }

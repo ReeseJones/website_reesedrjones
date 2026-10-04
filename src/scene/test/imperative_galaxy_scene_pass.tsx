@@ -89,7 +89,6 @@ export function ImperativeGalaxyScenePass({
 
             // 5. Scene Renderer Setup
             const renderer = new SceneRenderer(contextManager);
-            renderer.init(gl, dims);
 
             // 6. Orientation / Input Controller
             const orientationController = new OrientationInputController({
@@ -156,32 +155,24 @@ export function ImperativeGalaxyScenePass({
                 camera.transform.setRotationQuaternion(q[0], q[1], q[2], q[3]);
             }
 
-            // Optional depth clear
-            if (clearDepth) {
-                contextManager.setDepthMask(true);
-                gl.clear(gl.DEPTH_BUFFER_BIT);
-            }
-
             // Execute scene graph render pass
-            renderer.renderFrame(gl, scene, camera, timeInfo, dims);
+            renderer.render(scene, camera, {
+                timeInfo,
+                dimensions: dims,
+                clearDepth,
+            });
         },
         resize: (_gl, dims) => {
             cameraRef.current?.updateAspectRatio(dims.aspect);
         },
-        onContextLost: () => {
-            rendererRef.current?.onContextLost();
-        },
-        onContextRestored: (gl, dims) => {
-            rendererRef.current?.onContextRestored(gl, dims);
-        },
         destroy: () => {
-            orientationControllerRef.current?.destroy();
+            orientationControllerRef.current?.detach();
             orientationControllerRef.current = null;
 
             geometryRef.current?.dispose();
             geometryRef.current = null;
 
-            rendererRef.current?.destroy();
+            rendererRef.current?.reset();
             rendererRef.current = null;
 
             sceneRef.current = null;
