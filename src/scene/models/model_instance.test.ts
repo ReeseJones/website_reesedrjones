@@ -8,8 +8,13 @@ import { CubeGeometry } from "./primitives/cube_geometry";
 import { UnlitMaterial } from "../materials/unlit_material";
 import type { IMeshGeometry } from "./mesh_geometry_types";
 import type { IMaterial } from "../materials/material_types";
-import { isRenderable, type IModelInstance } from "./model_instance_types";
+import { isRenderable, type RenderContext } from "../core/renderable_types";
+import { isModelInstance, type IModelInstance } from "./model_instance_types";
 import type { ISceneNode } from "../core/scene_node_types";
+import { createMockContextManager, createMockShaderProgram } from "../../testing/mocks/mock_context_manager";
+import { createMockWebGL2Context } from "../../testing/mocks/mock_gl_context";
+import { PerspectiveCamera } from "../camera/perspective_camera";
+import { mat4, mat3 } from "gl-matrix";
 
 describe("ModelInstance", () => {
     function createTestFixtures() {
@@ -30,6 +35,8 @@ describe("ModelInstance", () => {
             expect(instance.isRenderable).toBe(true);
             expect(isRenderable(instance)).toBe(true);
             expect(isRenderable(new SceneNode())).toBe(false);
+            expect(isModelInstance(instance)).toBe(true);
+            expect(isModelInstance(new SceneNode())).toBe(false);
         });
 
         it("accepts custom name and id", () => {
@@ -364,6 +371,76 @@ describe("ModelInstance", () => {
             expect(childDestroySpy).toHaveBeenCalledTimes(1);
             expect(instance.children.length).toBe(0);
             expect(childNode.parent).toBeNull();
+        });
+    });
+
+    describe("render", () => {
+        it("executes material application, matrix upload, and geometry draw", () => {
+            const mockGl = createMockWebGL2Context();
+            const mockCm = createMockContextManager(mockGl);
+            const mockShader = createMockShaderProgram("unlit");
+            mockCm.shaders.bindKey = vi.fn(() => mockShader as any);
+
+            const { geometry, material } = createTestFixtures();
+            const instance = new ModelInstance(geometry, material);
+            instance.transform.setPosition(2, 3, 4);
+            instance.updateWorldTransform();
+
+            const camera = new PerspectiveCamera({ fov: 60, aspect: 1.5, near: 0.1, far: 1000 });
+            camera.transform.setPosition(0, 0, 10);
+            camera.updateWorldTransform();
+            camera.updateMatrices();
+
+            const context: RenderContext = {
+                contextManager: mockCm,
+                gl: mockGl,
+                camera,
+                dimensions: { width: 800, height: 600, cssWidth: 800, cssHeight: 600, aspect: 1.5, dpr: 1 },
+                time: 5.5,
+            };
+
+            instance.render(context);
+
+            expect(mockCm.applyPipelineState).toHaveBeenCalledWith(material.pipelineState);
+            expect(mockCm.shaders.bindKey).toHaveBeenCalledWith(material.shaderKey);
+
+            expect(mockShader.setMat4).toHaveBeenCalledWith("u_viewProjectionMatrix", camera.viewProjectionMatrix);
+            expect(mockShader.setMat4).toHaveBeenCalledWith("u_viewMatrix", camera.viewMatrix);
+            expect(mockShader.setMat4).toHaveBeenCalledWith("u_projectionMatrix", camera.projectionMatrix);
+            expect(mockShader.setVec3).toHaveBeenCalledWith("u_cameraPosition", [0, 0, 10]);
+            expect(mockShader.setFloat).toHaveBeenCalledWith("u_time", 5.5);
+            expect(mockShader.setFloat).toHaveBeenCalledWith("u_viewportHeight", 600);
+
+            expect(mockShader.setMat4).toHaveBeenCalledWith("u_modelMatrix", instance.worldMatrix);
+
+            const expectedMV = mat4.multiply(mat4.create(), camera.viewMatrix as unknown as mat4, instance.worldMatrix as unknown as mat4);
+            const mvCalls = (mockShader.setMat4 as any).mock.calls.filter((c: [string, Float32Array]) => c[0] === "u_modelViewMatrix");
+            expect(mvCalls.length).toBe(1);
+            expect(mvCalls[0][1]).toBeMatrixCloseTo(expectedMV);
+
+            const expectedNormal = mat3.normalFromMat4(mat3.create(), instance.worldMatrix as unknown as mat4);
+            const normalCalls = (mockShader.setMat3 as any).mock.calls.filter((c: [string, Float32Array]) => c[0] === "u_normalMatrix");
+            expect(normalCalls.length).toBe(1);
+            expect(normalCalls[0][1]).toBeMatrixCloseTo(expectedNormal!);
+
+            expect(mockCm.geometries.draw).toHaveBeenCalledWith(geometry);
+        });
+
+        it("safely skips rendering if geometry or material is missing", () => {
+            const mockGl = createMockWebGL2Context();
+            const mockCm = createMockContextManager(mockGl);
+            const camera = new PerspectiveCamera();
+            const context: RenderContext = {
+                contextManager: mockCm,
+                gl: mockGl,
+                camera,
+                dimensions: { width: 800, height: 600, cssWidth: 800, cssHeight: 600, aspect: 1, dpr: 1 },
+                time: 0,
+            };
+
+            const instance = new ModelInstance(null as any, null as any);
+            expect(() => instance.render(context)).not.toThrow();
+            expect(mockCm.geometries.draw).not.toHaveBeenCalled();
         });
     });
 });
