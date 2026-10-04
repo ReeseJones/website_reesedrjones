@@ -104,10 +104,11 @@ Done as needed by each item, not up front.
 
 ### A5. Model Instances
 
-- **A5.1 [model_instance.ts](../scene/models/model_instance.ts)** — `ModelInstance` — 🟡 In Progress
+- **A5.1 [model_instance.ts](../scene/models/model_instance.ts)** — `ModelInstance` — ✅ Complete
+  - Test: `model_instance.test.ts` (18 specs)
   - Mocks: stub geometry / material
   - Focus: geometry / material assignment, render flags, still inherits transform-hierarchy behaviour
-- **A5.2 [skybox.ts](../scene/environment/skybox.ts)** — `Skybox` — ⬜ Not Started
+- **A5.2 [skybox.ts](../scene/environment/skybox.ts)** — `Skybox` — 🟡 In Progress
   - Depends on: `ModelInstance`, `CubeGeometry`, `SkyboxMaterial`
   - Focus: builds a cube geometry + skybox material, cube-texture setter passes through
 
