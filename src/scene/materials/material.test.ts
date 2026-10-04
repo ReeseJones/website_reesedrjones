@@ -3,57 +3,7 @@ import { Material } from "./material";
 import type { ITexture } from "../../webgl/textures/texture_types";
 import { TextureUnit } from "../../webgl/textures/texture_types";
 import type { ICubeTexture } from "../../webgl/textures/cube_texture_types";
-
-/**
- * Creates a lightweight mock 2D texture conforming to ITexture.
- */
-function createMockTexture(label: string = "mock-texture"): ITexture {
-    return {
-        label,
-        handle: null,
-        width: 64,
-        height: 64,
-        isLoaded: true,
-        options: {},
-        isDisposed: false,
-        init: vi.fn(),
-        updateFromSource: vi.fn(),
-        bind: vi.fn(),
-        destroy: vi.fn(),
-        dispose: vi.fn(),
-        onDispose: vi.fn(),
-        onContextLost: vi.fn(),
-        onContextRestored: vi.fn(),
-    } as unknown as ITexture;
-}
-
-/**
- * Creates a lightweight mock cubemap texture conforming to ICubeTexture.
- */
-function createMockCubeTexture(label: string = "mock-cubetexture"): ICubeTexture {
-    return {
-        label,
-        handle: null,
-        isReady: true,
-        isDestroyed: false,
-        isDisposed: false,
-        faces: {
-            posX: "px.jpg",
-            negX: "nx.jpg",
-            posY: "py.jpg",
-            negY: "ny.jpg",
-            posZ: "pz.jpg",
-            negZ: "nz.jpg",
-        },
-        load: vi.fn().mockResolvedValue(undefined),
-        init: vi.fn(),
-        destroy: vi.fn(),
-        dispose: vi.fn(),
-        onDispose: vi.fn(),
-        onContextLost: vi.fn(),
-        onContextRestored: vi.fn(),
-    } as unknown as ICubeTexture;
-}
+import { createMockTexture, createMockCubeTexture } from "../../testing/mocks/mock_texture";
 
 describe("Material", () => {
     describe("constructor and initialization", () => {

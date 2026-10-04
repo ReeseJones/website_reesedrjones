@@ -1,5 +1,5 @@
 import { vi } from "vitest";
-import type { IMockWebGLContextManager } from "./mock_context_manager_types";
+import type { IWebGLContextManager } from "../../webgl/core/context_manager_types";
 import type { IShaderManager } from "../../webgl/shaders/shader_manager_types";
 import type { IGeometryManager } from "../../webgl/geometry/geometry_manager_types";
 import type { ITextureManager } from "../../webgl/textures/texture_manager_types";
@@ -12,7 +12,7 @@ import { SubsystemRestorationPriority } from "../../webgl/core/subsystem_types";
 /**
  * Creates a fully spy-wrapped WebGLContextManager conforming to IWebGLContextManager.
  */
-export function createMockContextManager(gl?: WebGL2RenderingContext): IMockWebGLContextManager {
+export function createMockContextManager(gl?: WebGL2RenderingContext): IWebGLContextManager {
     let currentGl: WebGL2RenderingContext | null = gl ?? null;
 
     const mockShaders: IShaderManager = {
@@ -78,7 +78,7 @@ export function createMockContextManager(gl?: WebGL2RenderingContext): IMockWebG
         getDiagnostics: vi.fn(() => ({ name: "texture", resourceCount: 0, activeBindings: 0 })),
     };
 
-    const mockCM: IMockWebGLContextManager = {
+    const mockCM: IWebGLContextManager = {
         setContext: vi.fn((newGl: WebGL2RenderingContext) => {
             currentGl = newGl;
         }),

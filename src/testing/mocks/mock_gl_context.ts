@@ -1,13 +1,12 @@
 import { vi } from "vitest";
-import type { IMockWebGL2RenderingContext } from "./mock_gl_context_types";
-
+ 
 /**
  * Creates a fully spy-wrapped WebGL2RenderingContext test fake for headless unit tests.
  */
-export function createMockWebGL2Context(): WebGL2RenderingContext & IMockWebGL2RenderingContext {
+export function createMockWebGL2Context(): WebGL2RenderingContext {
     let handleId = 0;
 
-    const mock: IMockWebGL2RenderingContext = {
+    const mock = {
         // Context State
         isContextLost: vi.fn(() => false),
         viewport: vi.fn(),
@@ -112,5 +111,5 @@ export function createMockWebGL2Context(): WebGL2RenderingContext & IMockWebGL2R
         MAX_COMBINED_TEXTURE_IMAGE_UNITS: WebGL2RenderingContext.MAX_COMBINED_TEXTURE_IMAGE_UNITS,
     };
 
-    return mock as unknown as WebGL2RenderingContext & IMockWebGL2RenderingContext;
+    return mock as unknown as WebGL2RenderingContext;
 }

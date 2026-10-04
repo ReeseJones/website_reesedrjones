@@ -91,9 +91,11 @@ Done as needed by each item, not up front.
   - Depended on by: `UnlitMaterial`, `GalaxyMaterial`, `SkyboxMaterial`, `SceneRenderer`
   - Mocks: stub `ITexture` / `ICubeTexture`
   - Focus: shaderKey, pipeline-state defaults, uniform / texture get-set, `clone()` deep vs. shared references, dispose
-- **A4.2 [unlit_material.ts](../scene/materials/unlit_material.ts)** — `UnlitMaterial` — 🟡 In Progress
+- **A4.2 [unlit_material.ts](../scene/materials/unlit_material.ts)** — `UnlitMaterial` — ✅ Complete
+  - Test: `unlit_material.test.ts` (40 specs)
+  - Mocks: `createMockTexture()`
   - Focus: color tint → uniforms, optional texture on / off paths, polymorphic `clone()`
-- **A4.3 [galaxy_material.ts](../scene/materials/specialized/galaxy_material.ts)** — `GalaxyMaterial` — ⬜ Not Started
+- **A4.3 [galaxy_material.ts](../scene/materials/specialized/galaxy_material.ts)** — `GalaxyMaterial` — 🟡 In Progress
   - Focus: style → shaderKey switch (`galaxy_orb` / `galaxy_pinprick`), parameter → uniform mapping, blend / depth state
 - **A4.4 [skybox_material.ts](../scene/environment/skybox_material.ts)** — `SkyboxMaterial` — ⬜ Not Started
   - Focus: cube-texture binding, depth / cull state for a skybox, missing-texture fallback

@@ -161,19 +161,33 @@ Shared testing utilities live in `src/testing/` to prevent duplicate test code a
 
 ## 5. Mocking Architecture
 
-### A. Context Manager Stubbing (`createMockContextManager()`)
-- High-level scene components ([`ModelInstance`](../scene/models/model_instance.ts), [`Material`](../scene/materials/material.ts), [`SceneRenderer`](../scene/renderer/scene_renderer.ts)) consume the [`IWebGLContextManager`](../webgl/core/context_manager_types.ts) interface.
-- Never instantiate a real `WebGLContextManager` when testing scene nodes or materials.
-- Use [`createMockContextManager()`](../testing/mocks/mock_context_manager.ts), which provides pre-configured `vi.fn()` spies for pipeline states, geometry binding, and shader acquisition.
+### A. Zero Mock Interfaces Policy
+- **No `IMock*` or `mock_*_types.ts`:** Never create dedicated mock interfaces or mock type files. Test fakes and mock factory functions must type their return values directly as the production domain interfaces (e.g. [`IWebGLContextManager`](../webgl/core/context_manager_types.ts), `WebGL2RenderingContext`, [`ITexture`](../webgl/textures/texture_types.ts), [`ICubeTexture`](../webgl/textures/cube_texture_types.ts)).
+- **Contract Fidelity:** Returning production interfaces ensures tests assert against real API contracts, eliminates dual-interface maintenance drift, and provides seamless compatibility with production code.
+- **Configurable Overrides:** Mock factory functions should accept optional `(label?: string, overrides?: Partial<T>)` to allow test-specific property customizations without bespoke type declarations.
 
-### B. Hardware WebGL Context Mocking (`createMockWebGL2Context()`)
-- Subsystems like [`GeometryManager`](../webgl/geometry/geometry_manager.ts), [`TextureManager`](../webgl/textures/texture_manager.ts), or [`VertexBuffer`](../webgl/geometry/vertex_buffer.ts) interact directly with `WebGL2RenderingContext`.
-- Use [`createMockWebGL2Context()`](../testing/mocks/mock_gl_context.ts), which implements the WebGL2 state machine calls (`createBuffer`, `bindVertexArray`, `bufferData`, `deleteBuffer`) as spy functions.
+### B. Centralized Mock Generators (`src/testing/mocks/`)
+Group all shared mock generators in `src/testing/mocks/` rather than duplicating stubs inline across test files:
+- **Hardware WebGL Context (`createMockWebGL2Context()`):**
+  - File: [`src/testing/mocks/mock_gl_context.ts`](../testing/mocks/mock_gl_context.ts)
+  - Returns: `WebGL2RenderingContext`
+  - Used by low-level subsystems ([`GeometryManager`](../webgl/geometry/geometry_manager.ts), [`TextureManager`](../webgl/textures/texture_manager.ts), [`VertexBuffer`](../webgl/geometry/vertex_buffer.ts)).
+  - Implements the WebGL2 state machine calls (`createBuffer`, `bindVertexArray`, `bufferData`, `deleteBuffer`) as `vi.fn()` spies. Never instantiate real WebGL contexts.
+- **Context Manager Stubbing (`createMockContextManager()`):**
+  - File: [`src/testing/mocks/mock_context_manager.ts`](../testing/mocks/mock_context_manager.ts)
+  - Returns: [`IWebGLContextManager`](../webgl/core/context_manager_types.ts)
+  - Used by high-level scene components ([`ModelInstance`](../scene/models/model_instance.ts), [`Material`](../scene/materials/material.ts), [`SceneRenderer`](../scene/renderer/scene_renderer.ts)).
+  - Provides pre-configured `vi.fn()` spies for pipeline states, geometry binding, and shader acquisition.
+- **Texture & Cubemap Mocking (`createMockTexture()`, `createMockCubeTexture()`):**
+  - File: [`src/testing/mocks/mock_texture.ts`](../testing/mocks/mock_texture.ts)
+  - Returns: [`ITexture`](../webgl/textures/texture_types.ts), [`ICubeTexture`](../webgl/textures/cube_texture_types.ts)
+  - Used by material tests, skybox tests, and rendering pipeline tests. Provides pure CPU mocks with spy-wrapped lifecycle hooks (`dispose`, `onDispose`, `bind`).
 
 ### C. Spy & Lifecycle Verification
-- Spy on callbacks using `vi.fn()`:
+- Spy on callbacks and lifecycle methods using `vi.fn()`:
   - Example: `const listener = vi.fn(); geometry.onDispose(listener);`
-  - Assert call counts and arguments: `expect(listener).toHaveBeenCalledTimes(1);`
+  - Assert call counts, arguments, and execution order: `expect(listener).toHaveBeenCalledTimes(1);`
+- For mocking return values or async behavior on standard interface methods, use Vitest's `vi.mocked()` or configure spy behaviors on creation.
 
 ---
 
