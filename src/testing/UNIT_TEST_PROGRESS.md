@@ -63,9 +63,10 @@ Done as needed by each item, not up front.
 - **A2.3 [cube_geometry.ts](../scene/models/primitives/cube_geometry.ts)** — `buildCubeBufferData`, `CubeGeometry` — ✅ Complete
   - Test: `cube_geometry.test.ts` (22 specs)
   - Focus: vertex / index counts, outward unit normals per face, winding order, indices in bounds
-- **A2.4 [sphere_geometry.ts](../scene/models/primitives/sphere_geometry.ts)** — `buildSphereBufferData`, `SphereGeometry` — 🟡 In Progress
+- **A2.4 [sphere_geometry.ts](../scene/models/primitives/sphere_geometry.ts)** — `buildSphereBufferData`, `SphereGeometry` — ✅ Complete
+  - Test: `sphere_geometry.test.ts` (32 specs)
   - Focus: count formula from segments / rings, every vertex at the radius (`toBeCloseTo`), unit normals, min-segment edge cases
-- **A2.5 [galaxy_geometry.ts](../scene/models/specialized/galaxy_geometry.ts)** — `GalaxyGeometry` — ⬜ Not Started
+- **A2.5 [galaxy_geometry.ts](../scene/models/specialized/galaxy_geometry.ts)** — `GalaxyGeometry` — 🟡 In Progress
   - Depends on: `galaxy_backdrop/galaxy_math`, pinprick preset
   - Focus: particle count matches the parameters, layout stride vs. buffer length, deterministic output for fixed inputs
 
