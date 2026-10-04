@@ -108,13 +108,14 @@ Done as needed by each item, not up front.
   - Test: `model_instance.test.ts` (18 specs)
   - Mocks: stub geometry / material
   - Focus: geometry / material assignment, render flags, still inherits transform-hierarchy behaviour
-- **A5.2 [skybox.ts](../scene/environment/skybox.ts)** — `Skybox` — 🟡 In Progress
+- **A5.2 [skybox.ts](../scene/environment/skybox.ts)** — `Skybox` — ✅ Complete
+  - Test: `skybox.test.ts` (25 specs)
   - Depends on: `ModelInstance`, `CubeGeometry`, `SkyboxMaterial`
   - Focus: builds a cube geometry + skybox material, cube-texture setter passes through
 
 ### A6. Renderer (leaf / top consumer)
 
-- **A6.1 [scene_renderer.ts](../scene/renderer/scene_renderer.ts)** — `SceneRenderer` — ⬜ Not Started
+- **A6.1 [scene_renderer.ts](../scene/renderer/scene_renderer.ts)** — `SceneRenderer` — 🟡 In Progress
   - Mocks: `createMockContextManager()` + `createMockWebGL2Context()`
   - Focus: renderable collection, shader acquire per shaderKey, pipeline state per material, texture sync before draw, camera uniforms, draw per instance, resize, dispose releases shaders
 - **A6.2 [scene_pass.tsx](../scene/renderer/scene_pass.tsx)** — `ScenePass` (React) — 📝 TODO

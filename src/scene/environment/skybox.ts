@@ -48,11 +48,11 @@ export class Skybox extends ModelInstance implements ISkybox {
         this.skyboxMaterial.rotationY = value;
     }
 
-    public get cubeTexture(): ICubeTexture | undefined {
+    public get cubeTexture(): ICubeTexture | null {
         return this.skyboxMaterial.cubeTexture;
     }
 
-    public set cubeTexture(texture: ICubeTexture | undefined) {
+    public set cubeTexture(texture: ICubeTexture | null | undefined) {
         this.skyboxMaterial.cubeTexture = texture;
     }
 }

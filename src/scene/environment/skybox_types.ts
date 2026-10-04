@@ -29,5 +29,5 @@ export interface ISkybox extends IModelInstance {
     /** Y-axis azimuth orientation rotation in radians */
     rotationY: number;
     /** Active cubemap texture */
-    cubeTexture: ICubeTexture | undefined;
+    cubeTexture: ICubeTexture | null;
 }
