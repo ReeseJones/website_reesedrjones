@@ -497,7 +497,7 @@ describe("OrthographicCamera", () => {
 
             camera.transform.setPosition(15, 25, 35);
             camera.updateMatrices();
-w
+
             // Projection should NOT have recomputed
             expect(spyProj).not.toHaveBeenCalled();
             expect(camera.projectionMatrix[15]).toBe(777.0);

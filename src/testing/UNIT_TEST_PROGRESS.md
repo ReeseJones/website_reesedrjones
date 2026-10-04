@@ -86,11 +86,12 @@ Done as needed by each item, not up front.
 
 ### A4. Materials
 
-- **A4.1 [material.ts](../scene/materials/material.ts)** — `Material` — 🟡 In Progress
+- **A4.1 [material.ts](../scene/materials/material.ts)** — `Material` — ✅ Complete
+  - Test: `material.test.ts` (37 specs)
   - Depended on by: `UnlitMaterial`, `GalaxyMaterial`, `SkyboxMaterial`, `SceneRenderer`
   - Mocks: stub `ITexture` / `ICubeTexture`
   - Focus: shaderKey, pipeline-state defaults, uniform / texture get-set, `clone()` deep vs. shared references, dispose
-- **A4.2 [unlit_material.ts](../scene/materials/unlit_material.ts)** — `UnlitMaterial` — ⬜ Not Started
+- **A4.2 [unlit_material.ts](../scene/materials/unlit_material.ts)** — `UnlitMaterial` — 🟡 In Progress
   - Focus: color tint → uniforms, optional texture on / off paths, polymorphic `clone()`
 - **A4.3 [galaxy_material.ts](../scene/materials/specialized/galaxy_material.ts)** — `GalaxyMaterial` — ⬜ Not Started
   - Focus: style → shaderKey switch (`galaxy_orb` / `galaxy_pinprick`), parameter → uniform mapping, blend / depth state
