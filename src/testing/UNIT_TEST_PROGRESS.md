@@ -60,9 +60,10 @@ Done as needed by each item, not up front.
 - **A2.2 [quad_geometry.ts](../scene/models/primitives/quad_geometry.ts)** — `buildQuadBufferData`, `QuadGeometry` — ✅ Complete
   - Test: `quad_geometry.test.ts` (18 specs)
   - Focus: vertex / index counts, positions within the given size, normals, UV range [0,1], options and defaults
-- **A2.3 [cube_geometry.ts](../scene/models/primitives/cube_geometry.ts)** — `buildCubeBufferData`, `CubeGeometry` — 🟡 In Progress
+- **A2.3 [cube_geometry.ts](../scene/models/primitives/cube_geometry.ts)** — `buildCubeBufferData`, `CubeGeometry` — ✅ Complete
+  - Test: `cube_geometry.test.ts` (22 specs)
   - Focus: vertex / index counts, outward unit normals per face, winding order, indices in bounds
-- **A2.4 [sphere_geometry.ts](../scene/models/primitives/sphere_geometry.ts)** — `buildSphereBufferData`, `SphereGeometry` — ⬜ Not Started
+- **A2.4 [sphere_geometry.ts](../scene/models/primitives/sphere_geometry.ts)** — `buildSphereBufferData`, `SphereGeometry` — 🟡 In Progress
   - Focus: count formula from segments / rings, every vertex at the radius (`toBeCloseTo`), unit normals, min-segment edge cases
 - **A2.5 [galaxy_geometry.ts](../scene/models/specialized/galaxy_geometry.ts)** — `GalaxyGeometry` — ⬜ Not Started
   - Depends on: `galaxy_backdrop/galaxy_math`, pinprick preset
