@@ -10,6 +10,31 @@ import type { ShaderKey } from "../../webgl/shaders/shader_types";
 import { SubsystemRestorationPriority } from "../../webgl/core/subsystem_types";
 
 /**
+ * Creates a spy-wrapped ShaderProgram conforming to the methods used during rendering.
+ */
+export function createMockShaderProgram(key: string = "unlit"): ShaderProgram<never> {
+    return {
+        id: 1,
+        key: key as ShaderKey,
+        program: {} as WebGLProgram,
+        uniforms: {},
+        use: vi.fn(),
+        destroy: vi.fn(),
+        dispose: vi.fn(),
+        setMat4: vi.fn(),
+        setMat3: vi.fn(),
+        setVec2: vi.fn(),
+        setVec3: vi.fn(),
+        setVec4: vi.fn(),
+        setFloat: vi.fn(),
+        setInt: vi.fn(),
+        setUniform: vi.fn(),
+        setUniforms: vi.fn(),
+        onDispose: vi.fn(),
+    } as unknown as ShaderProgram<never>;
+}
+
+/**
  * Creates a fully spy-wrapped WebGLContextManager conforming to IWebGLContextManager.
  */
 export function createMockContextManager(gl?: WebGL2RenderingContext): IWebGLContextManager {
@@ -21,17 +46,14 @@ export function createMockContextManager(gl?: WebGL2RenderingContext): IWebGLCon
         activeProgram: null,
         activeShader: null,
         shaderCount: 0,
-        getOrCreateShader: vi.fn(
-            (_key: ShaderKey, _options: ShaderProgramOptions) =>
-                ({
-                    id: 1,
-                    key: _key,
-                    program: {} as WebGLProgram,
-                    uniforms: {},
-                    use: vi.fn(),
-                    destroy: vi.fn(),
-                } as unknown as ShaderProgram<never>)
-        ),
+        getOrCreate: vi.fn((_key: ShaderKey, _options: ShaderProgramOptions) => createMockShaderProgram(_key)),
+        get: vi.fn(() => null),
+        has: vi.fn(() => false),
+        dispose: vi.fn(),
+        bind: vi.fn(),
+        bindProgram: vi.fn(),
+        unbind: vi.fn(),
+        getOrCreateShader: vi.fn((_key: ShaderKey, _options: ShaderProgramOptions) => createMockShaderProgram(_key)),
         getShader: vi.fn(() => null),
         releaseShader: vi.fn(),
         useShader: vi.fn(),
@@ -48,7 +70,15 @@ export function createMockContextManager(gl?: WebGL2RenderingContext): IWebGLCon
         activeGeometryId: null,
         geometryCount: 0,
         allocatedCount: 0,
-        bind: vi.fn(),
+        bind: vi.fn((geometry) => ({
+            id: 1,
+            vertexBuffer: {} as VertexBuffer,
+            indexBuffer: null,
+            indexCount: geometry?.indexCount ?? null,
+            indexType: 5123,
+            uploadedVersion: geometry?.version ?? 0,
+            disposeListener: vi.fn(),
+        })),
         unbind: vi.fn(),
         dispose: vi.fn(),
         release: vi.fn(),
@@ -63,15 +93,19 @@ export function createMockContextManager(gl?: WebGL2RenderingContext): IWebGLCon
     const mockTextures: ITextureManager = {
         name: "texture",
         restorationPriority: SubsystemRestorationPriority.Texture,
-        activeBindingsCount: 0,
-        boundTextures: new Map(),
-        whiteTexture: {} as WebGLTexture,
-        blackCubeTexture: {} as WebGLTexture,
-        bindTexture: vi.fn(),
-        bindCubeTexture: vi.fn(),
-        resetBindings: vi.fn(),
-        registerTexture: vi.fn(),
-        unregisterTexture: vi.fn(),
+        textureCount: 0,
+        cubeTextureCount: 0,
+        getOrCreate: vi.fn(),
+        get: vi.fn(() => null),
+        has: vi.fn(() => false),
+        bind: vi.fn(),
+        bindHandle: vi.fn(),
+        bindCube: vi.fn(),
+        bindCubeHandle: vi.fn(),
+        unbind: vi.fn(),
+        unbindAll: vi.fn(),
+        getFallbackHandle: vi.fn(() => ({} as WebGLTexture)),
+        dispose: vi.fn(),
         onContextLost: vi.fn(),
         onContextRestored: vi.fn(),
         destroy: vi.fn(),
@@ -87,9 +121,9 @@ export function createMockContextManager(gl?: WebGL2RenderingContext): IWebGLCon
         getCurrentShader: vi.fn(() => null),
         useShader: vi.fn(),
         useProgram: vi.fn(),
-        getOrCreateShader: mockShaders.getOrCreateShader,
-        getShader: mockShaders.getShader,
-        releaseShader: mockShaders.releaseShader,
+        getOrCreateShader: vi.fn((key, options) => mockShaders.getOrCreate(key, options)),
+        getShader: vi.fn((key) => mockShaders.get(key)),
+        releaseShader: vi.fn((keyOrInst) => mockShaders.dispose(keyOrInst)),
         createVertexBuffer: vi.fn(
             () =>
                 ({
@@ -104,8 +138,8 @@ export function createMockContextManager(gl?: WebGL2RenderingContext): IWebGLCon
         applyPipelineState: vi.fn(),
         resetPipelineState: vi.fn(),
         setDepthMask: vi.fn(),
-        bindTexture: mockTextures.bindTexture,
-        bindCubeTexture: mockTextures.bindCubeTexture,
+        bindTexture: vi.fn(),
+        bindCubeTexture: vi.fn(),
         getDefaultWhiteTexture: vi.fn(() => ({} as WebGLTexture)),
         getDefaultBlackCubeTexture: vi.fn(() => ({} as WebGLTexture)),
         shaders: mockShaders,

@@ -205,8 +205,8 @@ export class GalaxyRenderer {
 
         // 3. Upload Dynamic Frame Uniforms with compile-time type safety
         this.activeShader.setUniforms({
-            u_viewProjectionMatrix: this.viewProjMatrix,
-            u_modelViewMatrix: this.modelViewMatrix,
+            u_viewProjectionMatrix: this.viewProjMatrix as Float32Array,
+            u_modelViewMatrix: this.modelViewMatrix as Float32Array,
             u_time: timeInfo.time,
             u_viewportHeight: height,
         });

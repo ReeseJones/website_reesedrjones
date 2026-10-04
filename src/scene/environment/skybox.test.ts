@@ -89,7 +89,7 @@ describe("Skybox", () => {
 
     describe("constructor parameter resolution and options", () => {
         it("accepts custom geometry (e.g. custom CubeGeometry or MeshGeometry override)", () => {
-            const customGeo: IMeshGeometry = new CubeGeometry({ size: 2.0 });
+            const customGeo: IMeshGeometry = new CubeGeometry({ width: 2.0, height: 2.0, depth: 2.0 });
             const skybox = new Skybox({ geometry: customGeo });
 
             expect(skybox.geometry).toBe(customGeo);
