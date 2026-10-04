@@ -159,35 +159,38 @@ Shared testing utilities live in `src/testing/` to prevent duplicate test code a
 
 ---
 
-## 5. Mocking Architecture
+## 5. Mocking Architecture & Boundaries
 
-### A. Zero Mock Interfaces Policy
+### A. Real Implementations Over Synthetic Mocks
+- **Use Real Pure-CPU Classes First:** If a domain class executes purely in CPU memory without GPU drivers or browser DOM dependencies (e.g. [`Scene`](../scene/core/scene.ts), [`SceneNode`](../scene/core/scene_node.ts), [`PerspectiveCamera`](../scene/camera/perspective_camera.ts), [`OrthographicCamera`](../scene/camera/orthographic_camera.ts), [`QuadGeometry`](../scene/models/primitives/quad_geometry.ts), [`CubeGeometry`](../scene/models/primitives/cube_geometry.ts), [`SphereGeometry`](../scene/models/primitives/sphere_geometry.ts), [`UnlitMaterial`](../scene/materials/unlit_material.ts), [`GalaxyMaterial`](../scene/materials/specialized/galaxy_material.ts), [`ModelInstance`](../scene/models/model_instance.ts)), **instantiate the real class directly** in tests.
+- **Never Write Synthetic Inline Mocks:** Do not author 50-line hand-rolled fake objects (e.g. `createMockCamera()`, `createMockMaterial()`, `createMockGeometry()`) inside test suites. Synthetic fakes duplicate class logic, drift silently from real production code, and undermine test fidelity.
+- **Observe Behavior via Spies:** When testing orchestration or leaf systems (like [`SceneRenderer`](../scene/renderer/scene_renderer.ts)) that interact with scene nodes, instantiate real classes and attach targeted Vitest spies (`vi.spyOn(camera, "updateMatrices")`, `vi.spyOn(scene, "update")`).
+
+### B. Hardware Mock Boundary (`src/testing/mocks/`)
+Centralized mock generators in `src/testing/mocks/` are reserved exclusively for non-instantiable hardware, driver, or browser environmental barriers:
+- **Hardware WebGL Context (`createMockWebGL2Context()`):**
+  - File: [`src/testing/mocks/mock_gl_context.ts`](../testing/mocks/mock_gl_context.ts)
+  - Returns: `WebGL2RenderingContext`
+  - Required because Node.js has no native OpenGL/WebGL2 driver. Implements state machine calls (`createBuffer`, `bindVertexArray`, `drawArrays`, `drawElements`) as `vi.fn()` spies.
+- **Context Manager Microkernel (`createMockContextManager()`):**
+  - File: [`src/testing/mocks/mock_context_manager.ts`](../testing/mocks/mock_context_manager.ts)
+  - Returns: [`IWebGLContextManager`](../webgl/core/context_manager_types.ts)
+  - Coordinates GPU resource subsystems (`shaders`, `textures`, `geometries`) with spy-wrapped microkernel methods.
+- **Texture Asset Stubs (`createMockTexture()`, `createMockCubeTexture()`):**
+  - File: [`src/testing/mocks/mock_texture.ts`](../testing/mocks/mock_texture.ts)
+  - Returns: [`ITexture`](../webgl/textures/texture_types.ts), [`ICubeTexture`](../webgl/textures/cube_texture_types.ts)
+  - Required because image assets rely on DOM image decoders (`HTMLImageElement`, `ImageBitmap`) unavailable in headless Node.js.
+
+### C. Zero Mock Interfaces Policy
 - **No `IMock*` or `mock_*_types.ts`:** Never create dedicated mock interfaces or mock type files. Test fakes and mock factory functions must type their return values directly as the production domain interfaces (e.g. [`IWebGLContextManager`](../webgl/core/context_manager_types.ts), `WebGL2RenderingContext`, [`ITexture`](../webgl/textures/texture_types.ts), [`ICubeTexture`](../webgl/textures/cube_texture_types.ts)).
 - **Contract Fidelity:** Returning production interfaces ensures tests assert against real API contracts, eliminates dual-interface maintenance drift, and provides seamless compatibility with production code.
 - **Configurable Overrides:** Mock factory functions should accept optional `(label?: string, overrides?: Partial<T>)` to allow test-specific property customizations without bespoke type declarations.
 
-### B. Centralized Mock Generators (`src/testing/mocks/`)
-Group all shared mock generators in `src/testing/mocks/` rather than duplicating stubs inline across test files:
-- **Hardware WebGL Context (`createMockWebGL2Context()`):**
-  - File: [`src/testing/mocks/mock_gl_context.ts`](../testing/mocks/mock_gl_context.ts)
-  - Returns: `WebGL2RenderingContext`
-  - Used by low-level subsystems ([`GeometryManager`](../webgl/geometry/geometry_manager.ts), [`TextureManager`](../webgl/textures/texture_manager.ts), [`VertexBuffer`](../webgl/geometry/vertex_buffer.ts)).
-  - Implements the WebGL2 state machine calls (`createBuffer`, `bindVertexArray`, `bufferData`, `deleteBuffer`) as `vi.fn()` spies. Never instantiate real WebGL contexts.
-- **Context Manager Stubbing (`createMockContextManager()`):**
-  - File: [`src/testing/mocks/mock_context_manager.ts`](../testing/mocks/mock_context_manager.ts)
-  - Returns: [`IWebGLContextManager`](../webgl/core/context_manager_types.ts)
-  - Used by high-level scene components ([`ModelInstance`](../scene/models/model_instance.ts), [`Material`](../scene/materials/material.ts), [`SceneRenderer`](../scene/renderer/scene_renderer.ts)).
-  - Provides pre-configured `vi.fn()` spies for pipeline states, geometry binding, and shader acquisition.
-- **Texture & Cubemap Mocking (`createMockTexture()`, `createMockCubeTexture()`):**
-  - File: [`src/testing/mocks/mock_texture.ts`](../testing/mocks/mock_texture.ts)
-  - Returns: [`ITexture`](../webgl/textures/texture_types.ts), [`ICubeTexture`](../webgl/textures/cube_texture_types.ts)
-  - Used by material tests, skybox tests, and rendering pipeline tests. Provides pure CPU mocks with spy-wrapped lifecycle hooks (`dispose`, `onDispose`, `bind`).
-
-### C. Spy & Lifecycle Verification
+### D. Spy & Lifecycle Verification
 - Spy on callbacks and lifecycle methods using `vi.fn()`:
   - Example: `const listener = vi.fn(); geometry.onDispose(listener);`
   - Assert call counts, arguments, and execution order: `expect(listener).toHaveBeenCalledTimes(1);`
-- For mocking return values or async behavior on standard interface methods, use Vitest's `vi.mocked()` or configure spy behaviors on creation.
+- For observing method execution on real class instances, use `vi.spyOn(instance, "methodName")`. Restore spies when necessary with `spy.mockRestore()`.
 
 ---
 
@@ -206,8 +209,10 @@ Group all shared mock generators in `src/testing/mocks/` rather than duplicating
 
 ## 7. Execution Commands & Workflows
 
-- **Full Suite Run (All Tests):**
-  - `npm test` (executes `vitest run` across all test files and exits).
+- **Type Check (TypeScript Validation):**
+  - `npm run typecheck` (executes `tsc --noEmit` across all project source and test files).
+- **Full Suite Run (All Tests & Type Check):**
+  - `npm test` (executes `tsc --noEmit` followed by `vitest run` across all test files and exits).
 - **Targeted Incremental Development (Watch Mode):**
   - `npm run test:watch` (launches Vitest interactive watcher; re-runs only changed files on save).
 - **Targeted Directory / File Run:**

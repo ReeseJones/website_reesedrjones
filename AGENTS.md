@@ -13,7 +13,8 @@
 - `npm run build` — Production build to `./dist`
 - `npm run preview` — Build and run local Cloudflare preview (`wrangler dev`) (Not for agents)
 - `npm run deploy` — Build and deploy directly to Cloudflare (`wrangler deploy`) (Not for agents)
-- `npm test` — Run all unit tests with Vitest
+- `npm run typecheck` — Run TypeScript type-checker without emitting code (`tsc --noEmit`)
+- `npm test` — Run TypeScript type checking (`tsc --noEmit`) and all unit tests with Vitest
 - `npm run test:watch` — Incremental targeted test runner in watch mode
 - `npm run test:coverage` — Run unit tests with V8 code coverage report
 
@@ -36,6 +37,7 @@
   - TypeScript & typing standards: [typescript_guidelines.md](src/project_guidelines/typescript_guidelines.md)
   - Parcel imports & asset indexing: [using_parcel_guideline.md](src/project_guidelines/using_parcel_guideline.md)
   - Unit testing standards & mocking: [unit_testing_guidelines.md](src/project_guidelines/unit_testing_guidelines.md)
+  - Agent test authoring & subagent protocol: [agent_test_implementor_guidelines.md](src/project_guidelines/agent_test_implementor_guidelines.md)
 
 ## Rules
 - **Unit Testing Benchmark:** Agents must create, use, and run unit tests as the benchmark for compiling code and asserting behavior and returns. Adhere to [unit_testing_guidelines.md](src/project_guidelines/unit_testing_guidelines.md): map each explicit public interface method/property to a `describe` block, test input code paths and edge conditions in `it` specs, assert return values and chaining contracts, verify domain requirements (math invariants, matrix ordering, dirty-flag cascading, deterministic resource disposal), and mock dependencies with test fixtures rather than instantiating real WebGL contexts.
@@ -69,16 +71,14 @@ When instructed to implement a feature or design document, the main agent must a
 
 ### Phase 3: Independent Unit Test Delegation (Subagent 2)
 - The main agent spawns a second, independent test authoring subagent:
-  - Instruct the subagent to read `src/project_guidelines/unit_testing_guidelines.md`.
-  - Map every explicit public interface method/property into `describe` blocks.
-  - Enumerate code path inputs and edge cases into `it` specs.
-  - Explicitly assert expected behavior and returns (return values, chaining contracts, status codes).
-  - Use mock fixtures (`createMockWebGL2Context()`, `createMockContextManager()`); never instantiate real WebGL.
-  - Verify tests run and pass using `npx vitest run <path>`.
+  - Instruct the subagent to read [agent_test_implementor_guidelines.md](src/project_guidelines/agent_test_implementor_guidelines.md) and [unit_testing_guidelines.md](src/project_guidelines/unit_testing_guidelines.md).
+  - Subagent maps every explicit public interface method/property into `describe` blocks.
+  - Subagent uses real domain classes + `vi.spyOn()` rather than synthetic mocks; reserves mocks strictly for hardware boundaries (`createMockWebGL2Context()`, `createMockContextManager()`).
+  - Subagent verifies tests pass (`npx vitest run <path>`) and types pass (`npm run typecheck`), then reports back without committing.
 
 ### Phase 4: Test Verification & Quality Gate (Main Agent)
 - The main agent reviews the test suite:
   - Verify that tests assert return values and contracts rather than just testing internal side-effects.
-  - Run the full suite: `npm test`.
+  - Run the full test and type suite: `npm test` (which runs `tsc --noEmit` followed by Vitest).
   - Verify the production build: `npm run build`.
   - Report the results back to the user with a concise summary.
