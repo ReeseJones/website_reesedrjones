@@ -1,10 +1,10 @@
 import { Material } from "../material";
 import {
-    DEFAULT_GALAXY_PARAMETERS,
     DEFAULT_ORB_PARAMETERS,
     DEFAULT_PINPRICK_PARAMETERS,
 } from "../../../galaxy_backdrop/parameters/index";
 import type { GalaxyParameters } from "../../../galaxy_backdrop/parameters/types";
+import type { GalaxyShaderKey } from "../../../webgl/shaders/shader_types";
 import type { GalaxyMaterialOptions } from "./galaxy_material_types";
 
 /**
@@ -16,8 +16,8 @@ export class GalaxyMaterial extends Material {
     public readonly galaxyParams: GalaxyParameters;
 
     constructor(options?: GalaxyMaterialOptions) {
-        const isOrb = (options?.params?.style ?? DEFAULT_GALAXY_PARAMETERS.style) === "orb";
-        const defaultParams = isOrb ? DEFAULT_ORB_PARAMETERS : DEFAULT_PINPRICK_PARAMETERS;
+        const resolvedShaderKey: GalaxyShaderKey = options?.shaderKey ?? "galaxy_orb";
+        const defaultParams = resolvedShaderKey === "galaxy_orb" ? DEFAULT_ORB_PARAMETERS : DEFAULT_PINPRICK_PARAMETERS;
         const resolvedParams: GalaxyParameters = {
             ...defaultParams,
             ...options?.params,
@@ -42,7 +42,7 @@ export class GalaxyMaterial extends Material {
         };
 
         super({
-            shaderKey: options?.shaderKey ?? (resolvedParams.style === "orb" ? "galaxy_orb" : "galaxy_pinprick"),
+            shaderKey: resolvedShaderKey,
             pipelineState: {
                 blendMode: options?.pipelineState?.blendMode ?? "additive",
                 depthTest: options?.pipelineState?.depthTest ?? false,
@@ -55,13 +55,18 @@ export class GalaxyMaterial extends Material {
         this.galaxyParams = resolvedParams;
     }
 
+    public override get shaderKey(): GalaxyShaderKey {
+        return super.shaderKey as GalaxyShaderKey;
+    }
+
+    public override set shaderKey(key: GalaxyShaderKey) {
+        super.shaderKey = key;
+    }
+
     /**
      * Dynamically updates simulation uniforms when galaxy parameters change.
      */
     public updateParameters(params: Partial<GalaxyParameters>): void {
-        if (params.style && params.style !== this.galaxyParams.style) {
-            this.shaderKey = params.style === "orb" ? "galaxy_orb" : "galaxy_pinprick";
-        }
 
         const uniforms: Record<string, unknown> = {};
         if (params.rotationSpeed !== undefined) uniforms.u_rotationSpeed = params.rotationSpeed;

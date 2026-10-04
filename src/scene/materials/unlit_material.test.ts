@@ -78,20 +78,20 @@ describe("UnlitMaterial", () => {
             });
         });
 
-        it("supports custom shaderKey override", () => {
-            const material = new UnlitMaterial({ shaderKey: "custom_unlit" });
-            expect(material.shaderKey).toBe("custom_unlit");
+        it("supports explicit shaderKey override", () => {
+            const material = new UnlitMaterial({ shaderKey: "unlit" });
+            expect(material.shaderKey).toBe("unlit");
         });
 
-        it("supports custom pipelineState overrides (e.g. blendMode: 'transparent', depthWrite: false)", () => {
+        it("supports custom pipelineState overrides (e.g. blendMode: 'alpha', depthWrite: false)", () => {
             const material = new UnlitMaterial({
                 pipelineState: {
-                    blendMode: "transparent",
+                    blendMode: "alpha",
                     depthWrite: false,
                 },
             });
             expect(material.pipelineState).toEqual({
-                blendMode: "transparent",
+                blendMode: "alpha",
                 depthTest: true,
                 depthWrite: false,
                 cullFace: true,
@@ -263,17 +263,17 @@ describe("UnlitMaterial", () => {
         it("preserves shaderKey, pipelineState, uniforms, and texture bindings", () => {
             const tex = createMockTexture("color");
             const material = new UnlitMaterial({
-                shaderKey: "custom_unlit",
-                pipelineState: { blendMode: "transparent", depthWrite: false },
+                shaderKey: "unlit",
+                pipelineState: { blendMode: "alpha", depthWrite: false },
                 color: [0.5, 0.5, 0.5, 0.5],
                 texture: tex,
                 uniforms: { u_custom: 42 },
             });
 
             const clone = material.clone();
-            expect(clone.shaderKey).toBe("custom_unlit");
+            expect(clone.shaderKey).toBe("unlit");
             expect(clone.pipelineState).toEqual({
-                blendMode: "transparent",
+                blendMode: "alpha",
                 depthTest: true,
                 depthWrite: false,
                 cullFace: true,

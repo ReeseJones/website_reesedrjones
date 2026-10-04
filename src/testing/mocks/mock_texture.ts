@@ -60,3 +60,4 @@ export function createMockCubeTexture(
         ...overrides,
     } as unknown as ICubeTexture;
 }
+

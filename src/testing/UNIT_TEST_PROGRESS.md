@@ -95,9 +95,10 @@ Done as needed by each item, not up front.
   - Test: `unlit_material.test.ts` (40 specs)
   - Mocks: `createMockTexture()`
   - Focus: color tint → uniforms, optional texture on / off paths, polymorphic `clone()`
-- **A4.3 [galaxy_material.ts](../scene/materials/specialized/galaxy_material.ts)** — `GalaxyMaterial` — 🟡 In Progress
-  - Focus: style → shaderKey switch (`galaxy_orb` / `galaxy_pinprick`), parameter → uniform mapping, blend / depth state
-- **A4.4 [skybox_material.ts](../scene/environment/skybox_material.ts)** — `SkyboxMaterial` — ⬜ Not Started
+- **A4.3 [galaxy_material.ts](../scene/materials/specialized/galaxy_material.ts)** — `GalaxyMaterial` — ✅ Complete
+  - Test: `galaxy_material.test.ts` (31 specs)
+  - Focus: deferral to `GalaxyShaderKey` (`galaxy_orb` / `galaxy_pinprick`), simulation parameter → uniform mapping, additive point-cloud pipeline state
+- **A4.4 [skybox_material.ts](../scene/environment/skybox_material.ts)** — `SkyboxMaterial` — 🟡 In Progress
   - Focus: cube-texture binding, depth / cull state for a skybox, missing-texture fallback
 
 ### A5. Model Instances
