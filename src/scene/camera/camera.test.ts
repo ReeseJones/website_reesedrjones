@@ -53,20 +53,6 @@ class TestCamera extends Camera {
     }
 }
 
-/**
- * Helper to assert matrix equivalence within floating point tolerance.
- */
-function expectMatricesToBeClose(
-    actual: Float32Array | number[],
-    expected: Float32Array | number[],
-    numDigits: number = 4
-): void {
-    expect(actual.length).toBe(expected.length);
-    for (let i = 0; i < actual.length; i++) {
-        expect(actual[i]).toBeCloseTo(expected[i], numDigits);
-    }
-}
-
 describe("Camera (abstract)", () => {
     describe("constructor and initial properties", () => {
         it("initializes with default near (0.1) and far (1000.0), default name 'Camera'", () => {
@@ -98,9 +84,9 @@ describe("Camera (abstract)", () => {
                 0, 0, 0, 1
             ];
 
-            expectMatricesToBeClose(camera.viewMatrix, identity);
-            expectMatricesToBeClose(camera.projectionMatrix, identity);
-            expectMatricesToBeClose(camera.viewProjectionMatrix, identity);
+            expect(camera.viewMatrix).toBeMatrixCloseTo(identity);
+            expect(camera.projectionMatrix).toBeMatrixCloseTo(identity);
+            expect(camera.viewProjectionMatrix).toBeMatrixCloseTo(identity);
         });
 
         it("is an instance of SceneNode and inherits transform, parent, children, and lifecycle methods", () => {
@@ -371,12 +357,12 @@ describe("Camera (abstract)", () => {
             // View matrix is inverse of identity worldMatrix -> identity
             const expectedView = mat4.create();
             mat4.invert(expectedView, camera.worldMatrix);
-            expectMatricesToBeClose(camera.viewMatrix, expectedView);
+            expect(camera.viewMatrix).toBeMatrixCloseTo(expectedView);
 
             // viewProjectionMatrix is projectionMatrix * viewMatrix
             const expectedVP = mat4.create();
             mat4.multiply(expectedVP, camera.projectionMatrix, camera.viewMatrix);
-            expectMatricesToBeClose(camera.viewProjectionMatrix, expectedVP);
+            expect(camera.viewProjectionMatrix).toBeMatrixCloseTo(expectedVP);
         });
 
         it("caching: subsequent updateMatrices() without modifications does NOT re-run updateProjectionMatrix or re-invert viewMatrix", () => {
@@ -405,7 +391,7 @@ describe("Camera (abstract)", () => {
             const expectedView = mat4.create();
             mat4.invert(expectedView, camera.worldMatrix);
 
-            expectMatricesToBeClose(camera.viewMatrix, expectedView);
+            expect(camera.viewMatrix).toBeMatrixCloseTo(expectedView);
             // Inverse translation of (10, 20, -30) is (-10, -20, 30)
             expect(camera.viewMatrix[12]).toBeCloseTo(-10, 5);
             expect(camera.viewMatrix[13]).toBeCloseTo(-20, 5);
@@ -424,7 +410,7 @@ describe("Camera (abstract)", () => {
             const inverted = mat4.invert(expectedView, camera.worldMatrix);
             expect(inverted).not.toBeNull();
 
-            expectMatricesToBeClose(camera.viewMatrix, expectedView);
+            expect(camera.viewMatrix).toBeMatrixCloseTo(expectedView);
         });
 
         it("rotating camera updates viewMatrix correctly", () => {
@@ -435,7 +421,7 @@ describe("Camera (abstract)", () => {
 
             const expectedView = mat4.create();
             mat4.invert(expectedView, camera.worldMatrix);
-            expectMatricesToBeClose(camera.viewMatrix, expectedView);
+            expect(camera.viewMatrix).toBeMatrixCloseTo(expectedView);
         });
 
         it("uninvertible world matrix (e.g., zero scale) falls back safely to identity viewMatrix", () => {
@@ -450,7 +436,7 @@ describe("Camera (abstract)", () => {
                 0, 0, 1, 0,
                 0, 0, 0, 1
             ];
-            expectMatricesToBeClose(camera.viewMatrix, identity);
+            expect(camera.viewMatrix).toBeMatrixCloseTo(identity);
 
             for (let i = 0; i < 16; i++) {
                 expect(Number.isNaN(camera.viewMatrix[i])).toBe(false);
@@ -478,7 +464,7 @@ describe("Camera (abstract)", () => {
             // VP matrix was re-multiplied with the dirty projection and cached view
             const expectedVP = mat4.create();
             mat4.multiply(expectedVP, camera.projectionMatrix, camera.viewMatrix);
-            expectMatricesToBeClose(camera.viewProjectionMatrix, expectedVP);
+            expect(camera.viewProjectionMatrix).toBeMatrixCloseTo(expectedVP);
         });
     });
 
@@ -529,17 +515,17 @@ describe("Camera (abstract)", () => {
             // Expected world matrix: parent.worldMatrix * camera.localMatrix
             const expectedWorld = mat4.create();
             mat4.multiply(expectedWorld, rig.worldMatrix, camera.transform.localMatrix);
-            expectMatricesToBeClose(camera.worldMatrix, expectedWorld);
+            expect(camera.worldMatrix).toBeMatrixCloseTo(expectedWorld);
 
             // Expected view matrix: inverse(expectedWorld)
             const expectedView = mat4.create();
             mat4.invert(expectedView, expectedWorld);
-            expectMatricesToBeClose(camera.viewMatrix, expectedView);
+            expect(camera.viewMatrix).toBeMatrixCloseTo(expectedView);
 
             // Expected viewProjectionMatrix: projection * view
             const expectedVP = mat4.create();
             mat4.multiply(expectedVP, camera.projectionMatrix, expectedView);
-            expectMatricesToBeClose(camera.viewProjectionMatrix, expectedVP);
+            expect(camera.viewProjectionMatrix).toBeMatrixCloseTo(expectedVP);
         });
     });
 });

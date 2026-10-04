@@ -134,3 +134,20 @@ function shimWebGLConstants() {
 }
 
 shimWebGLConstants();
+
+import { expect } from "vitest";
+import { toBeMatrixCloseTo } from "./matrix_test_helpers";
+
+expect.extend({
+    toBeMatrixCloseTo,
+});
+
+interface CustomMatchers<R = unknown> {
+    toBeMatrixCloseTo(expected: ArrayLike<number>, numDigits?: number): R;
+}
+
+declare module "vitest" {
+    interface Assertion<T = any> extends CustomMatchers<T> {}
+    interface AsymmetricMatchersContaining extends CustomMatchers {}
+}
+

@@ -77,9 +77,10 @@ Done as needed by each item, not up front.
   - Test: `camera.test.ts` (28 specs)
   - Depends on: `SceneNode`
   - Focus: view matrix = inverse of the world matrix, `lookAt`, view-projection caching and dirty invalidation
-- **A3.2 [perspective_camera.ts](../scene/camera/perspective_camera.ts)** — `PerspectiveCamera` — 🟡 In Progress
+- **A3.2 [perspective_camera.ts](../scene/camera/perspective_camera.ts)** — `PerspectiveCamera` — ✅ Complete
+  - Test: `perspective_camera.test.ts` (24 specs)
   - Focus: fov / aspect / near / far setters dirty the projection, matrix matches `gl-matrix` `perspective`, aspect edge cases
-- **A3.3 [orthographic_camera.ts](../scene/camera/orthographic_camera.ts)** — `OrthographicCamera` — ⬜ Not Started
+- **A3.3 [orthographic_camera.ts](../scene/camera/orthographic_camera.ts)** — `OrthographicCamera` — 🟡 In Progress
   - Focus: bounds / zoom setters, matrix matches `ortho`, resize behaviour
 
 ### A4. Materials

@@ -1,49 +1,170 @@
 # Unit Testing Guidelines
 
-This document specifies the testing principles, conventions, execution commands, and agent behavioral standards for unit testing across the codebase.
+This document specifies the testing principles, authoring conventions, custom matcher architecture, mock subsystems, and execution workflows across the codebase.
 
 ---
 
-## 1. Core Principles & Agent Obligations
+## 1. Core Principles & Engineering Standards
 
-- **Verification Benchmark:** Unit tests serve as the mandatory benchmark for confirming that newly written or refactored code compiles, runs without runtime exceptions, asserts expected behavior and returns, and satisfies its intended contract.
-- **Agent Duty to Verify:** Whenever an agent introduces or modifies architectural components, math routines, scene nodes, or subsystems, the agent must run the corresponding unit tests to verify behavior and returns before marking the task complete.
-- **Never Spin Up Real WebGL Contexts:** Unit tests must remain fast, deterministic, and runnable in headless CLI/CI environments. Never initialize real browser WebGL2 canvases in unit test files. Use interface stubs and mock fixtures.
+- **Mandatory Verification Benchmark:** Unit tests serve as the benchmark for confirming that newly written or refactored code compiles, runs without runtime exceptions, asserts expected behavior and returns, and satisfies its intended contract.
+- **Target Classes and Functions:** Unit tests target **classes and functions**. Plain constants, enums, and raw data structures (such as `STANDARD_VERTEX_LAYOUT` or constants in `*_types.ts`) are not tested with standalone unit test files; their correctness is asserted implicitly through the classes and generator functions that consume them.
+- **Pure CPU & Headless Execution:** Unit tests must remain fast, deterministic, and runnable in headless CLI/CI environments. Never initialize real browser WebGL2 canvases or context instances in unit tests. Use pure mathematical calculations, interface stubs, and mock fixtures.
+- **Zero Magic Numbers & High-Readability Assertions:** Never write assertions with incomprehensible raw index arithmetic (such as `expect(attrs[0]).toBeCloseTo(...)`). Instead, use structured test helper decoders (e.g., [`getVertex`](../testing/geometry_test_helpers.ts)) that unpack raw interleaved buffers into named spatial, normal, and texture coordinate fields.
+- **Foundation-First Test Progression:** Tests must be implemented and maintained in foundation-first dependency order: low-level mathematical structures and primitive geometries first, followed by composite objects, cameras, materials, and finally renderers.
+- **Assert Return Values and Contracts:** Tests must explicitly verify what a function or method **returns** (return values, status flags, fluent chaining contracts like `return this`), rather than only verifying internal side effects.
 
 ---
 
 ## 2. Test Authoring Protocol: Interface-Driven Testing
 
-When writing unit tests for any class, module, or subsystem, agents must adhere to the following three-step analysis:
+When authoring unit tests for any class, module, or function, adhere to the following three-step analysis:
 
 ### Step 1: Map the Explicit Public Interface
 - Inspect the module's exported type interface (`*_types.ts`) or class definition.
-- Create a root `describe('ClassName or ModuleName')` block.
+- Create a root `describe('ClassName or FunctionName')` block.
 - Create a nested `describe('.methodName()')` or `describe('propertyName')` block for **every** public method, getter, and setter in the interface.
 
 ### Step 2: Branch & Parameter Input Matrix
 For each public method or property, enumerate the code paths based on unique parameter inputs and edge conditions. Create an `it('should ...')` spec for each:
-- **Return Value & Output Verification:** Explicitly assert what the method **returns** for each code path—including return data structures, primitive values, boolean status flags, nullable outputs (`null` / `undefined`), and fluent method chaining (`return this`). Never verify internal side-effects alone; always assert the returns.
+- **Return Value & Output Verification:** Explicitly assert what the method **returns** for each code path—including return data structures, primitive values, boolean status flags, nullable outputs (`null` / `undefined`), and fluent method chaining (`return this`).
 - **Nominal / Happy Path:** Standard valid inputs producing expected returns and state changes.
 - **Boundary & Zero Cases:** Zero vectors, negative values, identity matrices, empty arrays, null/undefined optional parameters, asserting fallback or error returns.
 - **State Mutation & Dirty Flagging:** Verifying internal flags change, cached values are invalidated, and listeners are triggered.
-- **Idempotency & Redundancy:** Calling a method repeatedly with the same arguments (e.g. binding an already-bound buffer) must not produce side effects, duplicate operations, or unexpected returns.
+- **Idempotency & Redundancy:** Calling a method repeatedly with the same arguments (e.g. binding an already-bound buffer or disposing an already-disposed object) must not produce side effects, duplicate operations, or unexpected returns.
 
 ### Step 3: Domain-Specific Holistic Requirements
 Evaluate the component within the broader 3D engine context:
 - **Math Invariants:** Matrix multiplications compose in the correct coordinate space order ($M_{\text{world}} = M_{\text{parent}} \times M_{\text{local}}$); vector normalization results in unit length ($|\vec{v}| \approx 1.0$).
-- **Precision Tolerance:** Floating-point operations in 3D calculations must use `expect(val).toBeCloseTo(expected, numDigits)` rather than strict `toBe()`.
-- **Hierarchical Propagation:** Updating a parent transform must invalidate downstream children.
+- **Precision Tolerance:** Floating-point operations in 3D calculations must use approximate matching (`toBeCloseTo` or `.toBeMatrixCloseTo()`) rather than strict `toBe()`.
+- **Hierarchical Propagation:** Updating a parent transform must cascade dirtiness to downstream children.
 - **Deterministic Resource Cleanup:** Disposing an object (`.dispose()`, `.destroy()`) must detach listeners, unbind references, and trigger cleanup hooks without memory leaks.
 
 ---
 
-## 3. Mocking Architecture
+## 3. Custom Vitest Matchers Architecture
+
+Vitest supports custom matchers via `expect.extend({ ... })`. Custom matchers provide idiomatic Vitest assertion chaining, automatic negation handling (`.not`), and rich failure diagnostics tailored to 3D engine data types.
+
+### Step 1: Implement the Matcher Function
+Create the matcher in a shared test helper module (e.g., [`src/testing/matrix_test_helpers.ts`](../testing/matrix_test_helpers.ts)). The function receives `this` (with context like `this.isNot`), the received value, the expected value, and any optional parameters:
+
+```ts
+import type { MatcherResult } from "vitest";
+
+export function toBeMatrixCloseTo(
+    this: { isNot?: boolean } | void,
+    received: ArrayLike<number>,
+    expected: ArrayLike<number>,
+    numDigits: number = 4
+): MatcherResult {
+    // 1. Validate argument types and lengths
+    if (received.length !== expected.length) {
+        return {
+            pass: false,
+            message: () => `expected length ${expected.length}, but received ${received.length}`,
+        };
+    }
+
+    // 2. Element-wise comparison within tolerance
+    const tolerance = Math.pow(10, -numDigits) / 2;
+    let failureIndex = -1;
+    let failureDiff = 0;
+
+    for (let i = 0; i < received.length; i++) {
+        const diff = Math.abs(received[i] - expected[i]);
+        if (Number.isNaN(received[i]) || Number.isNaN(expected[i]) || diff >= tolerance) {
+            failureIndex = i;
+            failureDiff = diff;
+            break;
+        }
+    }
+
+    const pass = failureIndex === -1;
+
+    // 3. Format informative failure diagnostics
+    return {
+        pass,
+        message: () => {
+            if (pass) {
+                return `expected matrix not to match expected matrix within ${numDigits} decimal places`;
+            }
+            const is4x4 = received.length === 16;
+            const posDesc = is4x4
+                ? `index ${failureIndex} (col ${Math.floor(failureIndex / 4)}, row ${failureIndex % 4})`
+                : `index ${failureIndex}`;
+
+            return (
+                `expected matrix element at ${posDesc} to be close to ${expected[failureIndex]} ` +
+                `within ${numDigits} decimal places (tolerance: ${tolerance}), ` +
+                `but received ${received[failureIndex]} (diff: ${failureDiff})`
+            );
+        },
+        actual: received,
+        expected,
+    };
+}
+```
+
+### Step 2: Register Globally in `setup.ts`
+Vitest automatically loads [`src/testing/setup.ts`](../testing/setup.ts) before running any test suite via `setupFiles` in [`vitest.config.mts`](../../vitest.config.mts). Register the custom matcher using `expect.extend`:
+
+```ts
+import { expect } from "vitest";
+import { toBeMatrixCloseTo } from "./matrix_test_helpers";
+
+expect.extend({
+    toBeMatrixCloseTo,
+});
+```
+
+### Step 3: Augment Vitest TypeScript Interfaces
+To enable IDE autocomplete, type checking, and hover documentation without requiring manual imports in individual test files, declare module augmentation in [`src/testing/setup.ts`](../testing/setup.ts):
+
+```ts
+interface CustomMatchers<R = unknown> {
+    toBeMatrixCloseTo(expected: ArrayLike<number>, numDigits?: number): R;
+}
+
+declare module "vitest" {
+    interface Assertion<T = any> extends CustomMatchers<T> {}
+    interface AsymmetricMatchersContaining extends CustomMatchers {}
+}
+```
+
+### Step 4: Using Custom Matchers in Test Specs
+Once registered, test files can use the custom matcher directly on any `expect()` call:
+
+```ts
+// Standard positive assertion
+expect(camera.projectionMatrix).toBeMatrixCloseTo(expectedProjection);
+
+// With custom precision tolerance
+expect(camera.viewMatrix).toBeMatrixCloseTo(expectedView, 5);
+
+// Negated assertion
+expect(camera.projectionMatrix).not.toBeMatrixCloseTo(initialMatrix);
+```
+
+---
+
+## 4. Shared Test Helpers & Decoders
+
+Shared testing utilities live in `src/testing/` to prevent duplicate test code and ensure consistent assertions across suites:
+
+- **Matrix Test Matcher & Helper:** [`src/testing/matrix_test_helpers.ts`](../testing/matrix_test_helpers.ts)
+  - `toBeMatrixCloseTo`: Custom Vitest matcher for comparing matrices and vectors of any size with column/row diagnostic error messages.
+  - `expectMatricesToBeClose`: Functional fallback wrapper.
+- **Geometry Attribute Decoder:** [`src/testing/geometry_test_helpers.ts`](../testing/geometry_test_helpers.ts)
+  - `getVertex(attributes, vertexIndex)`: Unpacks interleaved vertex buffer data into a typed `{ x, y, z, nx, ny, nz, u, v }` record, avoiding magic offset calculations.
+
+---
+
+## 5. Mocking Architecture
 
 ### A. Context Manager Stubbing (`createMockContextManager()`)
 - High-level scene components ([`ModelInstance`](../scene/models/model_instance.ts), [`Material`](../scene/materials/material.ts), [`SceneRenderer`](../scene/renderer/scene_renderer.ts)) consume the [`IWebGLContextManager`](../webgl/core/context_manager_types.ts) interface.
 - Never instantiate a real `WebGLContextManager` when testing scene nodes or materials.
-- Use [`createMockContextManager()`](../testing/mocks/mock_context_manager.ts) which provides pre-configured `vi.fn()` spies for pipeline states, geometry binding, and shader acquisition.
+- Use [`createMockContextManager()`](../testing/mocks/mock_context_manager.ts), which provides pre-configured `vi.fn()` spies for pipeline states, geometry binding, and shader acquisition.
 
 ### B. Hardware WebGL Context Mocking (`createMockWebGL2Context()`)
 - Subsystems like [`GeometryManager`](../webgl/geometry/geometry_manager.ts), [`TextureManager`](../webgl/textures/texture_manager.ts), or [`VertexBuffer`](../webgl/geometry/vertex_buffer.ts) interact directly with `WebGL2RenderingContext`.
@@ -56,7 +177,7 @@ Evaluate the component within the broader 3D engine context:
 
 ---
 
-## 4. Parcel Import Rules in Unit Tests
+## 6. Parcel Import Rules in Unit Tests
 
 - **GLSL Shaders:**
   - Direct imports of `.vert`, `.frag`, and `.glsl` files are supported out-of-the-box by the Vitest configuration, resolving to the raw shader string (matching `@parcel/transformer-glsl`).
@@ -69,7 +190,7 @@ Evaluate the component within the broader 3D engine context:
 
 ---
 
-## 5. Execution Commands & Workflows
+## 7. Execution Commands & Workflows
 
 - **Full Suite Run (All Tests):**
   - `npm test` (executes `vitest run` across all test files and exits).
