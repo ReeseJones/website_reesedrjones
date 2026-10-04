@@ -3,6 +3,9 @@ import type { IMeshGeometry } from "../../scene/models/mesh_geometry_types";
 import type { GPUGeometryRecord, IGeometryManager } from "./geometry_manager_types";
 import { SubsystemRestorationPriority, type SubsystemDiagnostics } from "../core/subsystem_types";
 
+const DRAW_ELEMENTS_OFFSET = 0;
+const DRAW_ARRAYS_START_INDEX = 0;
+
 /**
  * Manages GPU geometry allocations (VBO, IBO, VAO), redundant binding deduplication,
  * dynamic buffer updates, and deterministic resource disposal.
@@ -26,10 +29,6 @@ export class GeometryManager implements IGeometryManager {
     }
 
     public get geometryCount(): number {
-        return this._records.size;
-    }
-
-    public get allocatedCount(): number {
         return this._records.size;
     }
 
@@ -91,10 +90,27 @@ export class GeometryManager implements IGeometryManager {
     }
 
     /**
-     * Backwards-compatible alias for dispose.
+     * Binds the geometry (allocating or updating GPU buffers if needed) and executes
+     * the appropriate draw call (gl.drawElements or gl.drawArrays).
      */
-    public release(geometry: IMeshGeometry): void {
-        this.dispose(geometry);
+    public draw(geometry: IMeshGeometry): void {
+        const gl = this._getGLContext();
+        const record = this.bind(geometry);
+
+        if (record.indexCount !== null && record.indexCount > 0) {
+            gl.drawElements(
+                geometry.primitiveType,
+                record.indexCount,
+                record.indexType,
+                DRAW_ELEMENTS_OFFSET
+            );
+        } else {
+            gl.drawArrays(
+                geometry.primitiveType,
+                DRAW_ARRAYS_START_INDEX,
+                geometry.vertexCount
+            );
+        }
     }
 
     /**

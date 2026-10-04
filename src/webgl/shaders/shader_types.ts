@@ -30,3 +30,27 @@ export const AVAILABLE_SHADER_KEYS = [
  * Guarantees materials and renderers only reference registered shader programs.
  */
 export type ShaderKey = MaterialShaderKey | GenerativeShaderKey;
+
+import type { GalaxyPinprickUniforms } from "../../galaxy_backdrop/shaders/galaxy_pinprick.frag";
+import type { GalaxyOrbUniforms } from "../../galaxy_backdrop/shaders/galaxy_orb.frag";
+import type { GalacticCloudUniforms } from "../../galaxy_backdrop/shaders/galactic_cloud.frag";
+import type { UnlitUniforms } from "../../scene/shaders/unlit.frag";
+import type { SkyboxUniforms } from "../../scene/shaders/skybox.frag";
+
+/**
+ * Mapping table from canonical ShaderKey to auto-generated GLSL uniform interface.
+ */
+export interface ShaderUniformMap {
+    galaxy_pinprick: GalaxyPinprickUniforms;
+    galaxy_orb: GalaxyOrbUniforms;
+    galactic_cloud: GalacticCloudUniforms;
+    unlit: UnlitUniforms;
+    skybox: SkyboxUniforms;
+}
+
+/**
+ * Resolves the strongly-typed uniform dictionary interface for a given ShaderKey.
+ */
+export type ShaderUniformsOf<K extends ShaderKey> = K extends keyof ShaderUniformMap
+    ? ShaderUniformMap[K]
+    : Record<string, unknown>;

@@ -1,6 +1,6 @@
 import type { ShaderProgram } from "./shader_program";
 import type { ShaderProgramOptions } from "./shader_program_types";
-import type { ShaderKey } from "./shader_types";
+import type { ShaderKey, ShaderUniformsOf } from "./shader_types";
 import type { IContextSubsystem, SubsystemDiagnostics } from "../core/subsystem_types";
 
 /**
@@ -49,6 +49,12 @@ export interface IShaderManager extends IContextSubsystem {
      * Binds the specified ShaderProgram to the WebGL context with redundant-call skipping.
      */
     bind<TUniforms extends object = never>(shader: ShaderProgram<TUniforms> | null): void;
+
+    /**
+     * Activates a ShaderProgram by canonical key, lazily compiling standard shaders if needed.
+     * Infers the strongly-typed uniform interface for the shader program.
+     */
+    bindKey<K extends ShaderKey>(key: K): ShaderProgram<ShaderUniformsOf<K>>;
 
     /**
      * Low-level bind for a raw WebGLProgram with redundant-call skipping.

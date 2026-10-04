@@ -49,6 +49,12 @@ export interface IGeometryManager extends IContextSubsystem {
     dispose(geometry: IMeshGeometry): void;
 
     /**
+     * Binds the geometry (allocating or updating GPU buffers if needed) and executes
+     * the appropriate draw call (gl.drawElements or gl.drawArrays).
+     */
+    draw(geometry: IMeshGeometry): void;
+
+    /**
      * Retrieves the active GPU record for a geometry, or null if not allocated.
      */
     getRecord(geometry: IMeshGeometry): GPUGeometryRecord | null;
@@ -67,8 +73,4 @@ export interface IGeometryManager extends IContextSubsystem {
      * Telemetry query returning active geometry count and VAO binding state.
      */
     getDiagnostics(): SubsystemDiagnostics;
-
-    // --- Backwards-Compatible Aliases ---
-    readonly allocatedCount?: number;
-    release?(geometry: IMeshGeometry): void;
 }

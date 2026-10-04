@@ -1,10 +1,48 @@
 import type { ShaderProgram } from "./shader_program";
 import type { ShaderProgramOptions } from "./shader_program_types";
-import type { ShaderKey } from "./shader_types";
+import type { ShaderKey, ShaderUniformsOf } from "./shader_types";
 import type { IShaderManager } from "./shader_manager_types";
 import type { IWebGLContextManager } from "../core/context_manager_types";
 import { SubsystemRestorationPriority, type SubsystemDiagnostics } from "../core/subsystem_types";
 import { ShaderProgram as ShaderProgramImpl } from "./shader_program";
+import galaxyPinprickVert from "../../galaxy_backdrop/shaders/galaxy_pinprick.vert";
+import galaxyPinprickFrag from "../../galaxy_backdrop/shaders/galaxy_pinprick.frag";
+import galaxyOrbVert from "../../galaxy_backdrop/shaders/galaxy_orb.vert";
+import galaxyOrbFrag from "../../galaxy_backdrop/shaders/galaxy_orb.frag";
+import galacticCloudVert from "../../galaxy_backdrop/shaders/galactic_cloud.vert";
+import galacticCloudFrag from "../../galaxy_backdrop/shaders/galactic_cloud.frag";
+import unlitVert from "../../scene/shaders/unlit.vert";
+import unlitFrag from "../../scene/shaders/unlit.frag";
+import skyboxVert from "../../scene/shaders/skybox.vert";
+import skyboxFrag from "../../scene/shaders/skybox.frag";
+
+const STANDARD_SHADER_DEFS: Record<ShaderKey, ShaderProgramOptions> = {
+    galaxy_pinprick: {
+        vertSource: galaxyPinprickVert,
+        fragSource: galaxyPinprickFrag,
+        label: "galaxy_pinprick",
+    },
+    galaxy_orb: {
+        vertSource: galaxyOrbVert,
+        fragSource: galaxyOrbFrag,
+        label: "galaxy_orb",
+    },
+    galactic_cloud: {
+        vertSource: galacticCloudVert,
+        fragSource: galacticCloudFrag,
+        label: "galactic_cloud",
+    },
+    unlit: {
+        vertSource: unlitVert,
+        fragSource: unlitFrag,
+        label: "unlit",
+    },
+    skybox: {
+        vertSource: skyboxVert,
+        fragSource: skyboxFrag,
+        label: "skybox",
+    },
+};
 
 /**
  * Subsystem managing GLSL shader programs, location caching, redundant driver call elimination,
@@ -122,6 +160,22 @@ export class ShaderManager implements IShaderManager {
             this._currentProgram = program;
         }
         this._currentShader = shader as unknown as ShaderProgram<never>;
+    }
+
+    /**
+     * Activates a ShaderProgram by canonical key, lazily compiling standard shaders if needed.
+     * Infers the strongly-typed uniform interface for the shader program.
+     */
+    public bindKey<K extends ShaderKey>(key: K): ShaderProgram<ShaderUniformsOf<K>> {
+        let shader = this.get<ShaderUniformsOf<K>>(key);
+        if (!shader && key in STANDARD_SHADER_DEFS) {
+            shader = this.getOrCreate<ShaderUniformsOf<K>>(key, STANDARD_SHADER_DEFS[key]);
+        }
+        if (!shader) {
+            throw new Error(`[ShaderManager] Shader '${key}' is not registered with WebGLContextManager.`);
+        }
+        this.bind(shader);
+        return shader;
     }
 
     /**

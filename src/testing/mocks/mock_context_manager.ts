@@ -7,6 +7,7 @@ import type { VertexBuffer } from "../../webgl/geometry/vertex_buffer";
 import type { ShaderProgram } from "../../webgl/shaders/shader_program";
 import type { ShaderProgramOptions } from "../../webgl/shaders/shader_program_types";
 import type { ShaderKey } from "../../webgl/shaders/shader_types";
+import type { IMeshGeometry } from "../../scene/models/mesh_geometry_types";
 import { SubsystemRestorationPriority } from "../../webgl/core/subsystem_types";
 
 /**
@@ -51,6 +52,7 @@ export function createMockContextManager(gl?: WebGL2RenderingContext): IWebGLCon
         has: vi.fn(() => false),
         dispose: vi.fn(),
         bind: vi.fn(),
+        bindKey: vi.fn((key: ShaderKey) => (mockShaders.get(key) as any) ?? createMockShaderProgram(key)),
         bindProgram: vi.fn(),
         unbind: vi.fn(),
         getOrCreateShader: vi.fn((_key: ShaderKey, _options: ShaderProgramOptions) => createMockShaderProgram(_key)),
@@ -69,7 +71,6 @@ export function createMockContextManager(gl?: WebGL2RenderingContext): IWebGLCon
         restorationPriority: SubsystemRestorationPriority.Geometry,
         activeGeometryId: null,
         geometryCount: 0,
-        allocatedCount: 0,
         bind: vi.fn((geometry) => ({
             id: 1,
             vertexBuffer: {} as VertexBuffer,
@@ -79,9 +80,18 @@ export function createMockContextManager(gl?: WebGL2RenderingContext): IWebGLCon
             uploadedVersion: geometry?.version ?? 0,
             disposeListener: vi.fn(),
         })),
+        draw: vi.fn((geometry: IMeshGeometry) => {
+            const record = mockGeometries.bind(geometry);
+            if (currentGl) {
+                if (record.indexCount !== null && record.indexCount > 0) {
+                    currentGl.drawElements(geometry.primitiveType, record.indexCount, record.indexType, 0);
+                } else {
+                    currentGl.drawArrays(geometry.primitiveType, 0, geometry.vertexCount);
+                }
+            }
+        }),
         unbind: vi.fn(),
         dispose: vi.fn(),
-        release: vi.fn(),
         getRecord: vi.fn(() => null),
         hasRecord: vi.fn(() => false),
         onContextLost: vi.fn(),
