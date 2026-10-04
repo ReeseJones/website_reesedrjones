@@ -1,6 +1,7 @@
 import { Material } from "../materials/material";
 import { TextureUnit } from "../../webgl/textures/texture_types";
 import type { ICubeTexture } from "../../webgl/textures/cube_texture_types";
+import type { SkyboxShaderKey } from "../../webgl/shaders/shader_types";
 import type { SkyboxMaterialOptions } from "./skybox_material_types";
 
 /**
@@ -12,7 +13,7 @@ import type { SkyboxMaterialOptions } from "./skybox_material_types";
 export class SkyboxMaterial extends Material {
     constructor(options: SkyboxMaterialOptions = {}) {
         super({
-            shaderKey: "skybox",
+            shaderKey: options.shaderKey ?? "skybox",
             pipelineState: {
                 blendMode: options.pipelineState?.blendMode ?? "opaque",
                 depthTest: options.pipelineState?.depthTest ?? true,
@@ -27,6 +28,14 @@ export class SkyboxMaterial extends Material {
                 ...options.uniforms,
             },
         });
+    }
+
+    public override get shaderKey(): SkyboxShaderKey {
+        return super.shaderKey as SkyboxShaderKey;
+    }
+
+    public override set shaderKey(key: SkyboxShaderKey) {
+        super.shaderKey = key;
     }
 
     public get exposure(): number {
@@ -53,11 +62,26 @@ export class SkyboxMaterial extends Material {
         this.setUniform("u_rotationY", value);
     }
 
-    public get cubeTexture(): ICubeTexture | undefined {
+    public get cubeTexture(): ICubeTexture | null {
         return this.getCubeTexture(TextureUnit.Environment);
     }
 
-    public set cubeTexture(texture: ICubeTexture | undefined) {
-        this.setCubeTexture(TextureUnit.Environment, texture);
+    public set cubeTexture(texture: ICubeTexture | null | undefined) {
+        this.setCubeTexture(TextureUnit.Environment, texture ?? null);
+    }
+
+    /**
+     * Duplicates this SkyboxMaterial preserving parameters and cube texture bindings.
+     */
+    public override clone(): SkyboxMaterial {
+        return new SkyboxMaterial({
+            shaderKey: this.shaderKey,
+            pipelineState: { ...this.pipelineState },
+            cubeTexture: this.cubeTexture,
+            exposure: this.exposure,
+            tint: [...this.tint],
+            rotationY: this.rotationY,
+            uniforms: this.getUniforms(),
+        });
     }
 }

@@ -5,7 +5,7 @@ import type { GalaxyShaderKey } from "../../../webgl/shaders/shader_types";
 /**
  * Configuration options for creating a GalaxyMaterial.
  */
-export interface GalaxyMaterialOptions extends Omit<Partial<MaterialOptions>, "shaderKey"> {
+export interface GalaxyMaterialOptions extends Partial<MaterialOptions> {
     /** Galaxy starfield shader program ("galaxy_pinprick" | "galaxy_orb"). Defaults to "galaxy_orb". */
     shaderKey?: GalaxyShaderKey;
     /** Galaxy simulation parameters determining uniform constants */

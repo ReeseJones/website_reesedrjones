@@ -98,12 +98,13 @@ Done as needed by each item, not up front.
 - **A4.3 [galaxy_material.ts](../scene/materials/specialized/galaxy_material.ts)** — `GalaxyMaterial` — ✅ Complete
   - Test: `galaxy_material.test.ts` (31 specs)
   - Focus: deferral to `GalaxyShaderKey` (`galaxy_orb` / `galaxy_pinprick`), simulation parameter → uniform mapping, additive point-cloud pipeline state
-- **A4.4 [skybox_material.ts](../scene/environment/skybox_material.ts)** — `SkyboxMaterial` — 🟡 In Progress
+- **A4.4 [skybox_material.ts](../scene/environment/skybox_material.ts)** — `SkyboxMaterial` — ✅ Complete
+  - Test: `skybox_material.test.ts` (29 specs)
   - Focus: cube-texture binding, depth / cull state for a skybox, missing-texture fallback
 
 ### A5. Model Instances
 
-- **A5.1 [model_instance.ts](../scene/models/model_instance.ts)** — `ModelInstance` — ⬜ Not Started
+- **A5.1 [model_instance.ts](../scene/models/model_instance.ts)** — `ModelInstance` — 🟡 In Progress
   - Mocks: stub geometry / material
   - Focus: geometry / material assignment, render flags, still inherits transform-hierarchy behaviour
 - **A5.2 [skybox.ts](../scene/environment/skybox.ts)** — `Skybox` — ⬜ Not Started
