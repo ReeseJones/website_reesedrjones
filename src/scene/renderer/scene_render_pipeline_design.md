@@ -148,7 +148,7 @@ sequenceDiagram
 3. **Stage 3 (Visibility Filtering & Stable Sort):** Traverses the scene graph collecting all `ModelInstance` nodes where `computedVisible === true`. Performs a stable sort on `renderOrder` (preserving tree insertion order for ties).
 4. **Stage 4 (Pipeline State Assertion):** Passes `material.pipelineState` to `contextManager.applyPipelineState()`, deduplicating driver calls.
 5. **Stage 5 (Texture Binding, Uniform Upload & Draw Call):**
-   - Synchronizes material textures via `contextManager.bindTexture(unit, handle)`. If a material requests texture sampling (`u_useTexture > 0.5`) but its texture is pending decode, falls back to `contextManager.getDefaultWhiteTexture()`.
+   - Synchronizes material textures via `contextManager.textures.bind(unit, texture, "white")`. Defaults unit 0 to white fallback if unassigned.
    - Activates shader program, uploads standard (Tier A/B) and material (Tier C) uniforms, binds the geometry VAO, and issues the WebGL draw call.
 
 ---
@@ -171,7 +171,7 @@ The uniform and texture distribution protocol standardizes naming and binding co
 - `uniform mat3 u_normalMatrix`: Inverse-transpose of the $3 \times 3$ model matrix for lighting normals.
 
 ### Tier C: Material Domain Uniforms (Uploaded From Material Dictionary)
-- Custom domain uniforms extracted via `material.getUniforms()` (e.g. `u_color`, `u_useTexture`, `u_rotationSpeed`, `u_pointScale`).
+- Custom domain uniforms extracted via `material.getUniforms()` (e.g. `u_color`, `u_rotationSpeed`, `u_pointScale`).
 
 ### Tier D: Semantic Texture Slots (`TextureUnit` 0 to 15)
 - **`TextureUnit.Color0` / `Color` (Unit 0, `u_texture`, `u_colorMap0`, `u_diffuseMap`):** Primary base color, diffuse, or albedo map.

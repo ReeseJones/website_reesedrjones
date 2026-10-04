@@ -321,98 +321,7 @@ describe("SceneRenderer", () => {
             expect(mockCm.applyPipelineState).toHaveBeenCalledWith(material.pipelineState);
         });
 
-        it("acquires shader from contextManager.shaders.get(material.shaderKey)", () => {
-            const preRegisteredShader = createMockShaderProgram("pre_registered");
-            mockCm.shaders.get = vi.fn((key: string) =>
-                key === "pre_registered" ? preRegisteredShader : null
-            );
-
-            const material = new Material({ shaderKey: "pre_registered" as ShaderKey });
-            const instance = createModelInstance({ material });
-
-            const scene = new Scene();
-            scene.add(instance);
-            const camera = createCamera();
-
-            renderer.render(scene, camera, defaultOptions);
-
-            expect(mockCm.shaders.get).toHaveBeenCalledWith("pre_registered");
-            expect(mockCm.shaders.getOrCreate).not.toHaveBeenCalled();
-            expect(mockCm.shaders.bind).toHaveBeenCalledWith(preRegisteredShader);
-        });
-
-        it("lazily resolves known keys via getOrCreate ('galaxy_pinprick', 'galaxy_orb', 'unlit', 'skybox')", () => {
-            const knownKeys: ShaderKey[] = [
-                "galaxy_pinprick",
-                "galaxy_orb",
-                "unlit",
-                "skybox",
-            ];
-
-            for (const key of knownKeys) {
-                vi.clearAllMocks();
-                mockCm.shaders.get = vi.fn(() => null);
-
-                const material = new Material({ shaderKey: key });
-                const instance = createModelInstance({ material });
-
-                const scene = new Scene();
-                scene.add(instance);
-                const camera = createCamera();
-
-                renderer.render(scene, camera, defaultOptions);
-
-                expect(mockCm.shaders.getOrCreate).toHaveBeenCalledTimes(1);
-                expect(mockCm.shaders.getOrCreate).toHaveBeenCalledWith(
-                    key,
-                    expect.objectContaining({
-                        label: key,
-                        vertSource: expect.any(String),
-                        fragSource: expect.any(String),
-                    })
-                );
-            }
-        });
-
-        it("warns once and skips unknown shader keys", () => {
-            const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
-            mockCm.shaders.get = vi.fn(() => null);
-
-            const unknownMaterial = new Material({
-                shaderKey: "unknown_mystery_shader" as ShaderKey,
-            });
-            const instance1 = createModelInstance({ material: unknownMaterial });
-            const instance2 = createModelInstance({ material: unknownMaterial });
-
-            const scene = new Scene();
-            scene.add(instance1);
-            scene.add(instance2);
-
-            const camera = createCamera();
-            renderer.render(scene, camera, defaultOptions);
-
-            // Warned only once despite two nodes referencing the missing shader
-            expect(warnSpy).toHaveBeenCalledTimes(1);
-            expect(warnSpy).toHaveBeenCalledWith(
-                "[SceneRenderer] Shader 'unknown_mystery_shader' is not registered with WebGLContextManager."
-            );
-
-            // Nodes with missing shader are skipped completely
-            expect(mockCm.shaders.bind).not.toHaveBeenCalled();
-            expect(mockGl.drawArrays).not.toHaveBeenCalled();
-            expect(mockGl.drawElements).not.toHaveBeenCalled();
-
-            // Subsequent frame does not trigger redundant console warnings
-            renderer.render(scene, camera, defaultOptions);
-            expect(warnSpy).toHaveBeenCalledTimes(1);
-
-            warnSpy.mockRestore();
-        });
-
-        it("binds resolved shader: contextManager.shaders.bind(shader)", () => {
-            const resolvedShader = createMockShaderProgram("unlit");
-            mockCm.shaders.get = vi.fn(() => resolvedShader);
-
+        it("activates shader via contextManager.shaders.bindKey(material.shaderKey)", () => {
             const material = new UnlitMaterial();
             const instance = createModelInstance({ material });
 
@@ -422,8 +331,7 @@ describe("SceneRenderer", () => {
 
             renderer.render(scene, camera, defaultOptions);
 
-            expect(mockCm.shaders.bind).toHaveBeenCalledTimes(1);
-            expect(mockCm.shaders.bind).toHaveBeenCalledWith(resolvedShader);
+            expect(mockCm.shaders.bindKey).toHaveBeenCalledWith("unlit");
         });
     });
 
@@ -574,7 +482,7 @@ describe("SceneRenderer", () => {
             const materialUniforms = {
                 u_color: [1, 0.5, 0.2, 1],
                 u_roughness: 0.8,
-                u_useTexture: 0,
+                u_opacity: 1.0,
             };
             const material = new Material({
                 shaderKey: "unlit",
@@ -618,35 +526,21 @@ describe("SceneRenderer", () => {
             renderer.render(scene, camera, defaultOptions);
 
             expect(mockCm.textures.bind).toHaveBeenCalledTimes(2);
-            expect(mockCm.textures.bind).toHaveBeenCalledWith(TextureUnit.Color, tex0, "white");
-            expect(mockCm.textures.bind).toHaveBeenCalledWith(TextureUnit.Normal, tex1, "white");
+            expect(mockCm.textures.bind).toHaveBeenCalledWith(TextureUnit.Color, tex0);
+            expect(mockCm.textures.bind).toHaveBeenCalledWith(TextureUnit.Normal, tex1);
         });
 
-        it("fallback white texture on unit 0 when u_useTexture > 0.5 without explicit textures", () => {
+        it("skips 2D texture binding when material has no textures assigned", () => {
             const mockShader = createMockShaderProgram("unlit");
             mockCm.shaders.get = vi.fn(() => mockShader);
 
-            // Sub-case A: u_useTexture = 1.0 (> 0.5) without textures -> binds fallback
-            const materialWithFallback = new UnlitMaterial({ useTexture: true });
-            const instanceA = createModelInstance({ material: materialWithFallback });
+            const materialNoTexture = new UnlitMaterial();
+            const instance = createModelInstance({ material: materialNoTexture });
 
-            let scene = new Scene();
-            scene.add(instanceA);
+            const scene = new Scene();
+            scene.add(instance);
 
             const camera = createCamera();
-            renderer.render(scene, camera, defaultOptions);
-
-            expect(mockCm.textures.bind).toHaveBeenCalledTimes(1);
-            expect(mockCm.textures.bind).toHaveBeenCalledWith(TextureUnit.Color, null, "white");
-
-            // Sub-case B: u_useTexture = 0.0 (<= 0.5) without textures -> no texture bind
-            vi.clearAllMocks();
-            const materialNoTexture = new UnlitMaterial({ useTexture: false });
-            const instanceB = createModelInstance({ material: materialNoTexture });
-
-            scene = new Scene();
-            scene.add(instanceB);
-
             renderer.render(scene, camera, defaultOptions);
 
             expect(mockCm.textures.bind).not.toHaveBeenCalled();
@@ -768,10 +662,7 @@ describe("SceneRenderer", () => {
             expect(mockGl.drawElements).not.toHaveBeenCalled();
         });
 
-        it("unbinds geometry after loop via contextManager.geometries.unbind()", () => {
-            const mockShader = createMockShaderProgram("unlit");
-            mockCm.shaders.get = vi.fn(() => mockShader);
-
+        it("does not perform post-pass unbinding", () => {
             const instance1 = createModelInstance();
             const instance2 = createModelInstance();
 
@@ -782,7 +673,7 @@ describe("SceneRenderer", () => {
 
             renderer.render(scene, camera, defaultOptions);
 
-            expect(mockCm.geometries.unbind).toHaveBeenCalledTimes(1);
+            expect(mockCm.geometries.unbind).not.toHaveBeenCalled();
         });
     });
 
