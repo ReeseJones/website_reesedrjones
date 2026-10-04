@@ -80,12 +80,13 @@ Done as needed by each item, not up front.
 - **A3.2 [perspective_camera.ts](../scene/camera/perspective_camera.ts)** — `PerspectiveCamera` — ✅ Complete
   - Test: `perspective_camera.test.ts` (24 specs)
   - Focus: fov / aspect / near / far setters dirty the projection, matrix matches `gl-matrix` `perspective`, aspect edge cases
-- **A3.3 [orthographic_camera.ts](../scene/camera/orthographic_camera.ts)** — `OrthographicCamera` — 🟡 In Progress
+- **A3.3 [orthographic_camera.ts](../scene/camera/orthographic_camera.ts)** — `OrthographicCamera` — ✅ Complete
+  - Test: `orthographic_camera.test.ts` (38 specs)
   - Focus: bounds / zoom setters, matrix matches `ortho`, resize behaviour
 
 ### A4. Materials
 
-- **A4.1 [material.ts](../scene/materials/material.ts)** — `Material` — ⬜ Not Started
+- **A4.1 [material.ts](../scene/materials/material.ts)** — `Material` — 🟡 In Progress
   - Depended on by: `UnlitMaterial`, `GalaxyMaterial`, `SkyboxMaterial`, `SceneRenderer`
   - Mocks: stub `ITexture` / `ICubeTexture`
   - Focus: shaderKey, pipeline-state defaults, uniform / texture get-set, `clone()` deep vs. shared references, dispose
