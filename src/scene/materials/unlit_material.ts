@@ -15,11 +15,8 @@ export class UnlitMaterial extends Material {
                 : options.color
             : [1.0, 1.0, 1.0, 1.0];
 
-        const useTex = options?.useTexture ?? (options?.texture !== undefined && options?.texture !== null);
-
         const uniforms: Record<string, unknown> = {
             u_color: colorVec4,
-            u_useTexture: useTex ? 1.0 : 0.0,
             ...options?.uniforms,
         };
 
@@ -56,12 +53,8 @@ export class UnlitMaterial extends Material {
     public setTexture(unitOrTexture: TextureUnit | number | ITexture | null, maybeTexture?: ITexture | null): this {
         if (typeof unitOrTexture === "number") {
             super.setTexture(unitOrTexture, maybeTexture ?? null);
-            if (unitOrTexture === TextureUnit.Color) {
-                this.setUniform("u_useTexture", maybeTexture ? 1.0 : 0.0);
-            }
         } else {
             super.setTexture(TextureUnit.Color, unitOrTexture);
-            this.setUniform("u_useTexture", unitOrTexture ? 1.0 : 0.0);
         }
         return this;
     }
@@ -72,13 +65,6 @@ export class UnlitMaterial extends Material {
     public setColor(color: [number, number, number] | [number, number, number, number]): this {
         const colorVec4 = color.length === 3 ? [color[0], color[1], color[2], 1.0] : color;
         return this.setUniform("u_color", colorVec4);
-    }
-
-    /**
-     * Toggles texture sampling on or off.
-     */
-    public setUseTexture(useTexture: boolean): this {
-        return this.setUniform("u_useTexture", useTexture ? 1.0 : 0.0);
     }
 
     /**
@@ -97,8 +83,6 @@ export class UnlitMaterial extends Material {
             uniforms: currentUniforms,
             textures: clonedTextures,
             texture: this.getTexture(TextureUnit.Color),
-            useTexture: (currentUniforms.u_useTexture as number) > 0.5,
         });
     }
 }
-

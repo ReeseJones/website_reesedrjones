@@ -17,11 +17,6 @@ export const MAT4_TRANSLATION_Z_INDEX = 14;
 export const DEFAULT_RENDER_ORDER = 0;
 
 /**
- * Threshold for evaluating whether a material has enabled texture mapping.
- */
-export const TEXTURE_ENABLED_THRESHOLD = 0.5;
-
-/**
  * Byte offset passed to gl.drawElements for non-offset index buffers.
  */
 export const DRAW_ELEMENTS_OFFSET = 0;

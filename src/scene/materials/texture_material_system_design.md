@@ -273,7 +273,7 @@ To prevent redundant driver overhead:
   - Adds optional `textures?: Map<TextureUnit | number, ITexture> | Record<number, ITexture>` mapping texture units to texture instances.
 - **`UnlitMaterial` Updates:**
   - Constructor accepts `texture?: ITexture | string`.
-  - If provided, sets `u_useTexture = 1.0` and maps `u_texture` to `TextureUnit.Color0` (unit `0`).
+  - Maps `u_texture` to `TextureUnit.Color0` (unit `0`), defaulting to white fallback if not specified.
   - Exposes `public setTexture(texture: ITexture | string | null): this` and `public get texture(): ITexture | null`.
 
 ### 5. `SceneRenderer` Pass Execution (`src/scene/renderer/scene_renderer.ts`)

@@ -12,7 +12,5 @@ export interface UnlitMaterialOptions extends Partial<MaterialOptions> {
     color?: [number, number, number] | [number, number, number, number];
     /** 2D Texture asset bound to Semantic Unit 0 (u_texture) */
     texture?: ITexture | null;
-    /** Whether texture sampling is active */
-    useTexture?: boolean;
 }
 

@@ -16,11 +16,6 @@ describe("UnlitMaterial", () => {
             expect(material.getUniforms()["u_color"]).toEqual([1.0, 1.0, 1.0, 1.0]);
         });
 
-        it("initializes default u_useTexture to 0.0 when no texture provided", () => {
-            const material = new UnlitMaterial();
-            expect(material.getUniforms()["u_useTexture"]).toBe(0.0);
-        });
-
         it("initializes default pipelineState (blendMode: 'opaque', depthTest: true, depthWrite: true, cullFace: true)", () => {
             const material = new UnlitMaterial();
             expect(material.pipelineState).toEqual({
@@ -54,27 +49,6 @@ describe("UnlitMaterial", () => {
                 const material = new UnlitMaterial({ texture: tex });
                 expect(material.texture).toBe(tex);
                 expect(material.getTexture(TextureUnit.Color)).toBe(tex);
-            });
-
-            it("sets u_useTexture to 1.0 automatically when useTexture not explicitly specified", () => {
-                const tex = createMockTexture("color-tex");
-                const material = new UnlitMaterial({ texture: tex });
-                expect(material.getUniforms()["u_useTexture"]).toBe(1.0);
-            });
-        });
-
-        describe("explicit useTexture boolean override in options", () => {
-            it("sets u_useTexture to 0.0 when useTexture is false even with texture provided", () => {
-                const tex = createMockTexture("color-tex");
-                const material = new UnlitMaterial({ texture: tex, useTexture: false });
-                expect(material.getUniforms()["u_useTexture"]).toBe(0.0);
-                expect(material.texture).toBe(tex);
-            });
-
-            it("sets u_useTexture to 1.0 when useTexture is true even without texture provided", () => {
-                const material = new UnlitMaterial({ useTexture: true });
-                expect(material.getUniforms()["u_useTexture"]).toBe(1.0);
-                expect(material.texture).toBeNull();
             });
         });
 
@@ -131,21 +105,13 @@ describe("UnlitMaterial", () => {
                 expect(material.getTexture(TextureUnit.Color)).toBe(tex);
             });
 
-            it("automatically sets u_useTexture to 1.0 when texture is provided", () => {
-                const material = new UnlitMaterial();
-                const tex = createMockTexture("albedo");
-                material.setTexture(tex);
-                expect(material.getUniforms()["u_useTexture"]).toBe(1.0);
-            });
-
-            it("automatically sets u_useTexture to 0.0 when texture is null", () => {
+            it("clears texture when passed null", () => {
                 const tex = createMockTexture("albedo");
                 const material = new UnlitMaterial({ texture: tex });
-                expect(material.getUniforms()["u_useTexture"]).toBe(1.0);
+                expect(material.texture).toBe(tex);
 
                 material.setTexture(null);
                 expect(material.texture).toBeNull();
-                expect(material.getUniforms()["u_useTexture"]).toBe(0.0);
             });
 
             it("returns this for method chaining", () => {
@@ -158,32 +124,27 @@ describe("UnlitMaterial", () => {
 
         describe("two-argument setTexture(unit, texture)", () => {
             describe("when unit is TextureUnit.Color (0)", () => {
-                it("assigns texture and sets u_useTexture to 1.0 when texture provided", () => {
+                it("assigns texture when texture provided", () => {
                     const material = new UnlitMaterial();
                     const tex = createMockTexture("diffuse");
                     material.setTexture(TextureUnit.Color, tex);
                     expect(material.texture).toBe(tex);
-                    expect(material.getUniforms()["u_useTexture"]).toBe(1.0);
                 });
 
-                it("clears texture and sets u_useTexture to 0.0 when texture is null", () => {
+                it("clears texture when texture is null", () => {
                     const tex = createMockTexture("diffuse");
                     const material = new UnlitMaterial({ texture: tex });
                     material.setTexture(TextureUnit.Color, null);
                     expect(material.texture).toBeNull();
-                    expect(material.getUniforms()["u_useTexture"]).toBe(0.0);
                 });
             });
 
             describe("when unit is another unit (e.g. TextureUnit.Normal or 1)", () => {
-                it("assigns texture but does NOT modify u_useTexture", () => {
+                it("assigns texture to specified unit", () => {
                     const material = new UnlitMaterial();
-                    expect(material.getUniforms()["u_useTexture"]).toBe(0.0);
-
                     const normalTex = createMockTexture("normal");
                     material.setTexture(TextureUnit.Normal, normalTex);
                     expect(material.getTexture(TextureUnit.Normal)).toBe(normalTex);
-                    expect(material.getUniforms()["u_useTexture"]).toBe(0.0);
                 });
             });
 
@@ -232,26 +193,6 @@ describe("UnlitMaterial", () => {
         });
     });
 
-    describe("setUseTexture", () => {
-        it("sets u_useTexture to 1.0 when true", () => {
-            const material = new UnlitMaterial();
-            material.setUseTexture(true);
-            expect(material.getUniforms()["u_useTexture"]).toBe(1.0);
-        });
-
-        it("sets u_useTexture to 0.0 when false", () => {
-            const material = new UnlitMaterial({ useTexture: true });
-            material.setUseTexture(false);
-            expect(material.getUniforms()["u_useTexture"]).toBe(0.0);
-        });
-
-        it("returns this for method chaining", () => {
-            const material = new UnlitMaterial();
-            const result = material.setUseTexture(true);
-            expect(result).toBe(material);
-        });
-    });
-
     describe("clone", () => {
         it("produces an UnlitMaterial instance (instanceof UnlitMaterial)", () => {
             const material = new UnlitMaterial();
@@ -279,7 +220,6 @@ describe("UnlitMaterial", () => {
                 cullFace: true,
             });
             expect(clone.getUniforms()["u_color"]).toEqual([0.5, 0.5, 0.5, 0.5]);
-            expect(clone.getUniforms()["u_useTexture"]).toBe(1.0);
             expect(clone.getUniforms()["u_custom"]).toBe(42);
             expect(clone.texture).toBe(tex);
             expect(clone.getTexture(TextureUnit.Color)).toBe(tex);
