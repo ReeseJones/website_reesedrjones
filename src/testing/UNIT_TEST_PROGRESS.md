@@ -66,13 +66,14 @@ Done as needed by each item, not up front.
 - **A2.4 [sphere_geometry.ts](../scene/models/primitives/sphere_geometry.ts)** — `buildSphereBufferData`, `SphereGeometry` — ✅ Complete
   - Test: `sphere_geometry.test.ts` (32 specs)
   - Focus: count formula from segments / rings, every vertex at the radius (`toBeCloseTo`), unit normals, min-segment edge cases
-- **A2.5 [galaxy_geometry.ts](../scene/models/specialized/galaxy_geometry.ts)** — `GalaxyGeometry` — 🟡 In Progress
+- **A2.5 [galaxy_geometry.ts](../scene/models/specialized/galaxy_geometry.ts)** — `GalaxyGeometry` — ✅ Complete
+  - Test: `galaxy_geometry.test.ts` (20 specs)
   - Depends on: `galaxy_backdrop/galaxy_math`, pinprick preset
   - Focus: particle count matches the parameters, layout stride vs. buffer length, deterministic output for fixed inputs
 
 ### A3. Camera
 
-- **A3.1 [camera.ts](../scene/camera/camera.ts)** — `Camera` (abstract) — ⬜ Not Started
+- **A3.1 [camera.ts](../scene/camera/camera.ts)** — `Camera` (abstract) — 🟡 In Progress
   - Depends on: `SceneNode`
   - Mocks: minimal concrete test subclass (Phase 0.3)
   - Focus: view matrix = inverse of the world matrix, `lookAt`, view-projection caching and dirty invalidation
