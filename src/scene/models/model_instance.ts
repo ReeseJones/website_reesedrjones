@@ -8,6 +8,7 @@ import type { IModelInstance } from "./model_instance_types";
  * with spatial hierarchy and world transformations.
  */
 export class ModelInstance extends SceneNode implements IModelInstance {
+    public override readonly isRenderable: true = true;
     public geometry: IMeshGeometry;
     public material: IMaterial;
     public renderOrder: number;

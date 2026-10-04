@@ -8,7 +8,7 @@ import { CubeGeometry } from "./primitives/cube_geometry";
 import { UnlitMaterial } from "../materials/unlit_material";
 import type { IMeshGeometry } from "./mesh_geometry_types";
 import type { IMaterial } from "../materials/material_types";
-import type { IModelInstance } from "./model_instance_types";
+import { isRenderable, type IModelInstance } from "./model_instance_types";
 import type { ISceneNode } from "../core/scene_node_types";
 
 describe("ModelInstance", () => {
@@ -27,6 +27,9 @@ describe("ModelInstance", () => {
             expect(instance.material).toBe(material);
             expect(instance.name).toBe("ModelInstance");
             expect(instance.renderOrder).toBe(0);
+            expect(instance.isRenderable).toBe(true);
+            expect(isRenderable(instance)).toBe(true);
+            expect(isRenderable(new SceneNode())).toBe(false);
         });
 
         it("accepts custom name and id", () => {

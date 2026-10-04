@@ -27,6 +27,9 @@ export interface ISceneNode {
     /** Effective visibility inheriting parent state */
     readonly computedVisible: boolean;
 
+    /** Whether this node produces draw calls in the render pipeline */
+    readonly isRenderable: boolean;
+
     /** Adds a child node to this hierarchy */
     addChild(child: ISceneNode): this;
 

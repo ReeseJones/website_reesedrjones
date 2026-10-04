@@ -15,6 +15,7 @@ function generateNodeId(name: string): string {
 export class SceneNode implements ISceneNode {
     public readonly id: string;
     public name: string;
+    public readonly isRenderable: boolean = false;
 
     private readonly _transform: Transform;
     private readonly _worldMatrix: Float32Array = new Float32Array([

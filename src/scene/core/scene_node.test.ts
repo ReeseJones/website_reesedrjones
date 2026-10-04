@@ -33,6 +33,7 @@ describe("SceneNode", () => {
             expect(node.children.length).toBe(0);
             expect(node.visible).toBe(true);
             expect(node.computedVisible).toBe(true);
+            expect(node.isRenderable).toBe(false);
             expect(node.isWorldDirty).toBe(true);
         });
 
