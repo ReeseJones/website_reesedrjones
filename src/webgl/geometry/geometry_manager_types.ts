@@ -1,4 +1,5 @@
 import type { VertexBuffer } from "./vertex_buffer";
+import type { VertexLayoutSpec } from "./vertex_layout_types";
 import type { IMeshGeometry } from "../../scene/models/mesh_geometry_types";
 import type { IContextSubsystem, SubsystemDiagnostics } from "../core/subsystem_types";
 
@@ -31,6 +32,16 @@ export interface IGeometryManager extends IContextSubsystem {
 
     /** Total count of active GPU geometry records currently managed in VRAM */
     readonly geometryCount: number;
+
+    /**
+     * Factory Request: Allocates a new managed VertexBuffer tracking VBO and VAO handles.
+     */
+    createVertexBuffer(layout: VertexLayoutSpec): VertexBuffer;
+
+    /**
+     * Release Pattern: Deletes GPU resources associated with a VertexBuffer.
+     */
+    releaseVertexBuffer(buffer: VertexBuffer): void;
 
     /**
      * Binds the VAO and buffer state for a mesh geometry, lazily allocating or updating

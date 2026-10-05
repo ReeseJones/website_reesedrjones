@@ -2,6 +2,8 @@ import type { IWebGLContextManager } from "../core/context_manager_types";
 import type { IMeshGeometry } from "../../scene/models/mesh_geometry_types";
 import type { GPUGeometryRecord, IGeometryManager } from "./geometry_manager_types";
 import { SubsystemRestorationPriority, type SubsystemDiagnostics } from "../core/subsystem_types";
+import { VertexBuffer } from "./vertex_buffer";
+import type { VertexLayoutSpec } from "./vertex_layout_types";
 
 const DRAW_ELEMENTS_OFFSET = 0;
 const DRAW_ARRAYS_START_INDEX = 0;
@@ -17,6 +19,7 @@ export class GeometryManager implements IGeometryManager {
     private readonly _contextManager: IWebGLContextManager;
     private _gl: WebGL2RenderingContext | null = null;
     private readonly _records: Map<IMeshGeometry, GPUGeometryRecord> = new Map();
+    private readonly _standaloneBuffers: Set<VertexBuffer> = new Set();
     private _activeGeometryId: number | null = null;
     private _nextId: number = 0;
 
@@ -30,6 +33,25 @@ export class GeometryManager implements IGeometryManager {
 
     public get geometryCount(): number {
         return this._records.size;
+    }
+
+    /**
+     * Factory Request: Allocates a new managed VertexBuffer tracking VBO and VAO handles.
+     */
+    public createVertexBuffer(layout: VertexLayoutSpec): VertexBuffer {
+        const buffer = new VertexBuffer(this._contextManager, layout);
+        this._standaloneBuffers.add(buffer);
+        return buffer;
+    }
+
+    /**
+     * Release Pattern: Deletes GPU resources associated with a VertexBuffer.
+     */
+    public releaseVertexBuffer(buffer: VertexBuffer): void {
+        if (this._standaloneBuffers.has(buffer)) {
+            buffer.destroy();
+            this._standaloneBuffers.delete(buffer);
+        }
     }
 
     /**
@@ -85,7 +107,7 @@ export class GeometryManager implements IGeometryManager {
             record.indexBuffer = null;
         }
 
-        this._contextManager.releaseVertexBuffer(record.vertexBuffer);
+        record.vertexBuffer.destroy();
         this._records.delete(geometry);
     }
 
@@ -141,11 +163,15 @@ export class GeometryManager implements IGeometryManager {
     }
 
     /**
-     * WebGL context restored lifecycle hook: caches the new context reference.
+     * WebGL context restored lifecycle hook: caches the new context reference and restores standalone buffers.
      */
     public onContextRestored(gl: WebGL2RenderingContext): void {
         this._gl = gl;
         this._activeGeometryId = null;
+
+        for (const buffer of this._standaloneBuffers) {
+            buffer.rebuild(gl);
+        }
     }
 
     /**
@@ -161,10 +187,16 @@ export class GeometryManager implements IGeometryManager {
             if (record.indexBuffer && gl && !gl.isContextLost()) {
                 gl.deleteBuffer(record.indexBuffer);
             }
-            this._contextManager.releaseVertexBuffer(record.vertexBuffer);
+            record.vertexBuffer.destroy();
         }
 
         this._records.clear();
+
+        for (const buffer of this._standaloneBuffers) {
+            buffer.destroy();
+        }
+        this._standaloneBuffers.clear();
+
         this._gl = null;
         this._activeGeometryId = null;
     }
@@ -175,7 +207,7 @@ export class GeometryManager implements IGeometryManager {
     public getDiagnostics(): SubsystemDiagnostics {
         return {
             name: this.name,
-            resourceCount: this._records.size,
+            resourceCount: this._records.size + this._standaloneBuffers.size,
             activeBindings: this._activeGeometryId !== null ? 1 : 0,
         };
     }
@@ -196,7 +228,10 @@ export class GeometryManager implements IGeometryManager {
         existingRecord?: GPUGeometryRecord
     ): GPUGeometryRecord {
         const id = existingRecord?.id ?? ++this._nextId;
-        const vertexBuffer = this._contextManager.createVertexBuffer(geometry.bufferData.layout);
+        if (existingRecord?.vertexBuffer) {
+            existingRecord.vertexBuffer.destroy();
+        }
+        const vertexBuffer = new VertexBuffer(this._contextManager, geometry.bufferData.layout);
         vertexBuffer.setData(geometry.bufferData.attributes);
         vertexBuffer.bind();
 

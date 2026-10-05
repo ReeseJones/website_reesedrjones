@@ -1,17 +1,14 @@
 import { configureVAO } from "./vertex_layout";
 import type { VertexLayoutSpec } from "./vertex_layout_types";
-import { ShaderProgram } from "../shaders/shader_program";
-
 import type { IWebGLContextManager } from "../core/context_manager_types";
 
 /**
  * Managed GPU Vertex Buffer Object (VBO) and Vertex Array Object (VAO) wrapper.
- * Retains a CPU geometry data cache, optional associated ShaderProgram reference for symbol lookups,
- * and handles GPU memory allocation, VAO binding, and automated context restoration.
+ * Retains a CPU geometry data cache and handles GPU memory allocation, VAO binding,
+ * and automated context restoration.
  */
 export class VertexBuffer {
     public readonly layout: VertexLayoutSpec;
-    public shader?: ShaderProgram | WebGLProgram;
 
     private readonly contextManager: IWebGLContextManager;
     private vbo: WebGLBuffer | null = null;
@@ -25,12 +22,10 @@ export class VertexBuffer {
 
     constructor(
         contextManager: IWebGLContextManager,
-        layout: VertexLayoutSpec,
-        shader?: ShaderProgram | WebGLProgram
+        layout: VertexLayoutSpec
     ) {
         this.contextManager = contextManager;
         this.layout = layout;
-        this.shader = shader;
         const currentGl = this.gl;
         this.usage = currentGl ? currentGl.STATIC_DRAW : WebGL2RenderingContext.STATIC_DRAW;
 
@@ -100,9 +95,9 @@ export class VertexBuffer {
      * Re-allocates GPU VBO and VAO handles on a restored WebGL context,
      * re-uploads cached CPU array data, and re-configures layout attribute pointers.
      */
-    public rebuild(_gl?: WebGL2RenderingContext, program?: WebGLProgram | ShaderProgram): void {
+    public rebuild(_gl?: WebGL2RenderingContext): void {
         this.destroyGPUResources();
-        this.buildGPUResources(program);
+        this.buildGPUResources();
     }
 
     /**
@@ -115,7 +110,7 @@ export class VertexBuffer {
 
     // --- Private Helpers ---
 
-    private buildGPUResources(programOverride?: WebGLProgram | ShaderProgram): void {
+    private buildGPUResources(): void {
         if (!this.gl || this.gl.isContextLost()) return;
 
         this.vbo = this.gl.createBuffer();
@@ -127,14 +122,8 @@ export class VertexBuffer {
             this.gl.bindBuffer(this.gl.ARRAY_BUFFER, null);
         }
 
-        const effectiveShader = programOverride ?? this.shader;
-        const targetProgram =
-            effectiveShader instanceof ShaderProgram
-                ? effectiveShader.getProgram()
-                : effectiveShader;
-
         if (this.vao && this.vbo) {
-            configureVAO(this.gl, this.vao, this.vbo, this.layout, targetProgram ?? undefined);
+            configureVAO(this.gl, this.vao, this.vbo, this.layout);
         }
     }
 

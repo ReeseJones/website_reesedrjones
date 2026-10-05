@@ -1,7 +1,5 @@
 import type { ShaderProgram } from "../shaders/shader_program";
 import type { ShaderProgramOptions } from "../shaders/shader_program_types";
-import type { VertexBuffer } from "../geometry/vertex_buffer";
-import type { VertexLayoutSpec } from "../geometry/vertex_layout_types";
 import type { PipelineState } from "../../scene/materials/material_types";
 import type { ShaderKey } from "../shaders/shader_types";
 import type { IGeometryManager } from "../geometry/geometry_manager_types";
@@ -12,7 +10,7 @@ import type { IContextSubsystem, SubsystemDiagnostics } from "./subsystem_types"
 /**
  * Public contract for the central WebGL GPU resource manager and microkernel coordinator.
  * Coordinates priority-based context recovery across registered subsystems (Shaders, Textures, Geometries),
- * tracks managed VertexBuffers, and caches pipeline state.
+ * and caches pipeline state.
  */
 export interface IWebGLContextManager {
     /** Sets or updates the active WebGL2 rendering context. */
@@ -56,19 +54,6 @@ export interface IWebGLContextManager {
         keyOrInstance: ShaderKey | ShaderProgram<TUniforms>
     ): void;
 
-    /**
-     * Factory Request: Allocates a new managed VertexBuffer tracking VBO and VAO handles.
-     */
-    createVertexBuffer<TUniforms extends object = Record<string, unknown>>(
-        layout: VertexLayoutSpec,
-        shader?: ShaderProgram<TUniforms> | WebGLProgram
-    ): VertexBuffer;
-
-    /**
-     * Release Pattern: Deletes GPU resources associated with a VertexBuffer.
-     */
-    releaseVertexBuffer(buffer: VertexBuffer): void;
-
     /** Asserts desired WebGL pipeline state; skips redundant driver calls. */
     applyPipelineState(state: PipelineState): void;
 
@@ -101,11 +86,6 @@ export interface IWebGLContextManager {
 
     /** Aggregated diagnostics report across all registered subsystems */
     getDiagnostics(): Record<string, SubsystemDiagnostics>;
-
-    /** Backwards-compatible subsystem aliases */
-    readonly shaderManager: IShaderManager;
-    readonly geometryManager: IGeometryManager;
-    readonly textureManager: ITextureManager;
 
     /** Maximum hardware texture units supported in fragment shaders. */
     readonly maxTextureUnits: number;

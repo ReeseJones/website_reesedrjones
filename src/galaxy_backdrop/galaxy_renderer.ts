@@ -104,7 +104,7 @@ export class GalaxyRenderer {
         // Request managed VertexBuffer resource
         if (!this.starBuffer) {
             const layout = parseVertexLayoutFromGLSL(galaxyPinprickVert);
-            this.starBuffer = this.contextManager.createVertexBuffer(layout);
+            this.starBuffer = this.contextManager.geometries.createVertexBuffer(layout);
         }
         this.starBuffer.setData(generateStarBuffer(this.params));
 
@@ -205,8 +205,8 @@ export class GalaxyRenderer {
 
         // 3. Upload Dynamic Frame Uniforms with compile-time type safety
         this.activeShader.setUniforms({
-            u_viewProjectionMatrix: this.viewProjMatrix as Float32Array,
-            u_modelViewMatrix: this.modelViewMatrix as Float32Array,
+            u_viewProjectionMatrix: this.viewProjMatrix,
+            u_modelViewMatrix: this.modelViewMatrix,
             u_time: timeInfo.time,
             u_viewportHeight: height,
         });
@@ -319,7 +319,7 @@ export class GalaxyRenderer {
         this.detachEventListeners();
 
         if (this.starBuffer) {
-            this.contextManager.releaseVertexBuffer(this.starBuffer);
+            this.contextManager.geometries.releaseVertexBuffer(this.starBuffer);
             this.starBuffer = null;
         }
 

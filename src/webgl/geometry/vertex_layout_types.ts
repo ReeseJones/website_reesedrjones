@@ -1,4 +1,18 @@
 /**
+ * Standard WebGL2 attribute location slot indices (layout(location = N)).
+ */
+export const VertexAttributeLocation = {
+    Position: 0,
+    Normal: 1,
+    Uv: 2,
+    Color: 3,
+    Tangent: 4,
+} as const;
+
+export type VertexAttributeLocation =
+    (typeof VertexAttributeLocation)[keyof typeof VertexAttributeLocation];
+
+/**
  * Common step rates for WebGL2 vertex attribute advancement (gl.vertexAttribDivisor).
  */
 export const VertexStepRate = {

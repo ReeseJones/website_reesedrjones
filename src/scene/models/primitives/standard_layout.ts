@@ -1,4 +1,4 @@
-import type { VertexLayoutSpec } from "../../../webgl/geometry/vertex_layout_types";
+import { VertexAttributeLocation, type VertexLayoutSpec } from "../../../webgl/geometry/vertex_layout_types";
 
 /**
  * Standard interleaved 3D Cartesian mesh vertex layout specification.
@@ -10,19 +10,19 @@ import type { VertexLayoutSpec } from "../../../webgl/geometry/vertex_layout_typ
 export const STANDARD_VERTEX_LAYOUT: VertexLayoutSpec = {
     attributes: [
         {
-            nameOrLocation: 0,
+            nameOrLocation: VertexAttributeLocation.Position,
             description: "a_position (vec3)",
             size: 3,
             type: WebGLRenderingContext.FLOAT,
         },
         {
-            nameOrLocation: 1,
+            nameOrLocation: VertexAttributeLocation.Normal,
             description: "a_normal (vec3)",
             size: 3,
             type: WebGLRenderingContext.FLOAT,
         },
         {
-            nameOrLocation: 2,
+            nameOrLocation: VertexAttributeLocation.Uv,
             description: "a_uv (vec2)",
             size: 2,
             type: WebGLRenderingContext.FLOAT,

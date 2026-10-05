@@ -1,7 +1,5 @@
 import type { ShaderProgram } from "../shaders/shader_program";
 import type { ShaderProgramOptions } from "../shaders/shader_program_types";
-import { VertexBuffer } from "../geometry/vertex_buffer";
-import type { VertexLayoutSpec } from "../geometry/vertex_layout_types";
 import type { IWebGLContextManager } from "./context_manager_types";
 import type { PipelineState } from "../../scene/materials/material_types";
 import type { ShaderKey } from "../shaders/shader_types";
@@ -13,7 +11,7 @@ import { ShaderManager } from "../shaders/shader_manager";
 /**
  * Central WebGL GPU resource manager and microkernel coordinator.
  * Coordinates priority-based context recovery across registered subsystems (Shaders, Textures, Geometries),
- * tracks managed VertexBuffers via a request/release pattern, and caches pipeline state.
+ * and caches pipeline state.
  */
 export class WebGLContextManager implements IWebGLContextManager {
     public readonly shaders: ShaderManager;
@@ -22,7 +20,6 @@ export class WebGLContextManager implements IWebGLContextManager {
 
     private readonly _subsystems: IContextSubsystem[] = [];
     private gl: WebGL2RenderingContext | null = null;
-    private activeBuffers = new Set<VertexBuffer>();
     private currentPipelineState: PipelineState | null = null;
     private _maxTextureUnits: number = 16;
 
@@ -34,20 +31,6 @@ export class WebGLContextManager implements IWebGLContextManager {
         if (gl) {
             this.setContext(gl);
         }
-    }
-
-    // --- Backwards-Compatible Subsystem Aliases ---
-
-    public get shaderManager(): ShaderManager {
-        return this.shaders;
-    }
-
-    public get textureManager(): TextureManager {
-        return this.textures;
-    }
-
-    public get geometryManager(): GeometryManager {
-        return this.geometries;
     }
 
     // --- Microkernel Subsystem Management ---
@@ -148,27 +131,7 @@ export class WebGLContextManager implements IWebGLContextManager {
         this.shaders.dispose(keyOrInstance);
     }
 
-    /**
-     * Factory Request: Allocates a new managed VertexBuffer tracking VBO and VAO handles.
-     */
-    public createVertexBuffer<TUniforms extends object = Record<string, unknown>>(
-        layout: VertexLayoutSpec,
-        shader?: ShaderProgram<TUniforms> | WebGLProgram
-    ): VertexBuffer {
-        const buffer = new VertexBuffer(this, layout, shader);
-        this.activeBuffers.add(buffer);
-        return buffer;
-    }
 
-    /**
-     * Release Pattern: Deletes GPU resources associated with a VertexBuffer.
-     */
-    public releaseVertexBuffer(buffer: VertexBuffer): void {
-        if (this.activeBuffers.has(buffer)) {
-            buffer.destroy();
-            this.activeBuffers.delete(buffer);
-        }
-    }
 
     /**
      * Asserts desired WebGL pipeline state; skips redundant driver calls.
@@ -295,26 +258,16 @@ export class WebGLContextManager implements IWebGLContextManager {
         for (const sub of sorted) {
             sub.onContextRestored(newGl);
         }
-
-        // Rebuild active VertexBuffers
-        for (const buffer of this.activeBuffers.values()) {
-            buffer.rebuild(newGl);
-        }
     }
 
     /**
-     * Disposes all subsystems, vertex buffers, and context references.
+     * Disposes all subsystems and context references.
      */
     public destroy(): void {
         for (const sub of this._subsystems) {
             sub.destroy();
         }
         this._subsystems.length = 0;
-
-        for (const buffer of this.activeBuffers.values()) {
-            buffer.destroy();
-        }
-        this.activeBuffers.clear();
 
         this.currentPipelineState = null;
         this.gl = null;

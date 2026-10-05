@@ -71,6 +71,17 @@ export function createMockContextManager(gl?: WebGL2RenderingContext): IWebGLCon
         restorationPriority: SubsystemRestorationPriority.Geometry,
         activeGeometryId: null,
         geometryCount: 0,
+        createVertexBuffer: vi.fn(
+            () =>
+                ({
+                    bind: vi.fn(),
+                    unbind: vi.fn(),
+                    setData: vi.fn(),
+                    setSubData: vi.fn(),
+                    destroy: vi.fn(),
+                } as unknown as VertexBuffer)
+        ),
+        releaseVertexBuffer: vi.fn(),
         bind: vi.fn((geometry) => ({
             id: 1,
             vertexBuffer: {} as VertexBuffer,
@@ -134,17 +145,6 @@ export function createMockContextManager(gl?: WebGL2RenderingContext): IWebGLCon
         getOrCreateShader: vi.fn((key, options) => mockShaders.getOrCreate(key, options)),
         getShader: vi.fn((key) => mockShaders.get(key)),
         releaseShader: vi.fn((keyOrInst) => mockShaders.dispose(keyOrInst)),
-        createVertexBuffer: vi.fn(
-            () =>
-                ({
-                    bind: vi.fn(),
-                    unbind: vi.fn(),
-                    setData: vi.fn(),
-                    setSubData: vi.fn(),
-                    destroy: vi.fn(),
-                } as unknown as VertexBuffer)
-        ),
-        releaseVertexBuffer: vi.fn(),
         applyPipelineState: vi.fn(),
         resetPipelineState: vi.fn(),
         setDepthMask: vi.fn(),
@@ -155,9 +155,6 @@ export function createMockContextManager(gl?: WebGL2RenderingContext): IWebGLCon
         shaders: mockShaders,
         textures: mockTextures,
         geometries: mockGeometries,
-        shaderManager: mockShaders,
-        textureManager: mockTextures,
-        geometryManager: mockGeometries,
         maxTextureUnits: 16,
         registerSubsystem: vi.fn((sub) => sub),
         getSubsystem: vi.fn(() => null),

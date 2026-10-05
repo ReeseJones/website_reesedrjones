@@ -2,6 +2,21 @@ import type { VertexLayoutSpec } from "../../../webgl/geometry/vertex_layout_typ
 import type { GalaxyParameters } from "../../../galaxy_backdrop/parameters/types";
 
 /**
+ * Standard attribute location slot indices for procedural galaxy starfields.
+ */
+export const GalaxyAttributeLocation = {
+    Radius: 0,
+    BaseAngle: 1,
+    ZOffset: 2,
+    Size: 3,
+    SpectralType: 4,
+    DriftPhase: 5,
+} as const;
+
+export type GalaxyAttributeLocation =
+    (typeof GalaxyAttributeLocation)[keyof typeof GalaxyAttributeLocation];
+
+/**
  * 6-attribute interleaved vertex layout for the procedural spiral galaxy starfield.
  * - location 0: a_radius (float)
  * - location 1: a_baseAngle (float)
@@ -14,37 +29,37 @@ import type { GalaxyParameters } from "../../../galaxy_backdrop/parameters/types
 export const GALAXY_VERTEX_LAYOUT: VertexLayoutSpec = {
     attributes: [
         {
-            nameOrLocation: 0,
+            nameOrLocation: GalaxyAttributeLocation.Radius,
             description: "a_radius (float)",
             size: 1,
             type: WebGL2RenderingContext.FLOAT,
         },
         {
-            nameOrLocation: 1,
+            nameOrLocation: GalaxyAttributeLocation.BaseAngle,
             description: "a_baseAngle (float)",
             size: 1,
             type: WebGL2RenderingContext.FLOAT,
         },
         {
-            nameOrLocation: 2,
+            nameOrLocation: GalaxyAttributeLocation.ZOffset,
             description: "a_zOffset (float)",
             size: 1,
             type: WebGL2RenderingContext.FLOAT,
         },
         {
-            nameOrLocation: 3,
+            nameOrLocation: GalaxyAttributeLocation.Size,
             description: "a_size (float)",
             size: 1,
             type: WebGL2RenderingContext.FLOAT,
         },
         {
-            nameOrLocation: 4,
+            nameOrLocation: GalaxyAttributeLocation.SpectralType,
             description: "a_spectralType (float)",
             size: 1,
             type: WebGL2RenderingContext.FLOAT,
         },
         {
-            nameOrLocation: 5,
+            nameOrLocation: GalaxyAttributeLocation.DriftPhase,
             description: "a_driftPhase (float)",
             size: 1,
             type: WebGL2RenderingContext.FLOAT,

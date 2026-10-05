@@ -67,7 +67,7 @@ export class GalacticCloudRenderer {
 
         if (!this.quadBuffer) {
             const layout = parseVertexLayoutFromGLSL(galacticCloudVert);
-            this.quadBuffer = this.contextManager.createVertexBuffer(layout);
+            this.quadBuffer = this.contextManager.geometries.createVertexBuffer(layout);
         }
 
         // Triangle strip unit quad positions: [ -1,-1,  1,-1,  -1,1,  1,1 ]
@@ -175,7 +175,7 @@ export class GalacticCloudRenderer {
         this.detachEventListeners();
 
         if (this.quadBuffer) {
-            this.contextManager.releaseVertexBuffer(this.quadBuffer);
+            this.contextManager.geometries.releaseVertexBuffer(this.quadBuffer);
             this.quadBuffer = null;
         }
 
