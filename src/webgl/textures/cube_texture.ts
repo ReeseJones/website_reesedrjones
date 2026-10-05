@@ -1,4 +1,4 @@
-import { BaseTexture } from "./base_texture";
+import { Texture } from "./texture";
 import type {
     CubeTextureFaces,
     CubeTextureOptions,
@@ -25,9 +25,9 @@ const FACE_ORDER: FaceKey[] = ["posX", "negX", "posY", "negY", "posZ", "negZ"];
  *
  * Manages 6-face image loading, 1x1 black fallback initialization,
  * GPU texture allocation, mipmap generation, and automatic context recovery.
- * Extends BaseTexture for unified GPU resource lifecycle and unit binding.
+ * Extends Texture for unified GPU resource lifecycle and unit binding.
  */
-export class CubeTexture extends BaseTexture implements ICubeTexture {
+export class CubeTexture extends Texture implements ICubeTexture {
     public readonly faces: CubeTextureFaces;
 
     private _decodedImages: Partial<Record<FaceKey, HTMLImageElement | ImageBitmap>> = {};

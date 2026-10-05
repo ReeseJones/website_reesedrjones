@@ -1,18 +1,23 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { BaseTexture, resolveWrapMode, resolveFilterMode, applySamplerParameters } from "./base_texture";
-import type { BaseTextureOptions } from "./base_texture_types";
-import { TextureTarget, TextureUnit, type TextureFilter, type TextureWrap } from "./texture_types";
+import { Texture, resolveWrapMode, resolveFilterMode, applySamplerParameters } from "./texture";
+import {
+    TextureTarget,
+    TextureUnit,
+    type TextureFilter,
+    type TextureOptions,
+    type TextureWrap,
+} from "./texture_types";
 import { createMockWebGL2Context } from "../../testing/mocks/mock_gl_context";
 
 /**
- * Concrete subclass of BaseTexture to enable instantiation and verification
+ * Concrete subclass of Texture to enable instantiation and verification
  * of abstract base texture lifecycle and GPU binding behaviors.
  */
-class TestTexture extends BaseTexture {
+class TestTexture extends Texture {
     public uploadCallCount = 0;
     public lastUploadGl: WebGL2RenderingContext | null = null;
 
-    constructor(options: BaseTextureOptions = {}) {
+    constructor(options: TextureOptions = {}) {
         super(options);
     }
 
@@ -31,7 +36,7 @@ class TestTexture extends BaseTexture {
     }
 }
 
-describe("BaseTexture", () => {
+describe("Texture", () => {
     let gl: WebGL2RenderingContext;
 
     beforeEach(() => {
@@ -46,7 +51,7 @@ describe("BaseTexture", () => {
         it("initializes with sensible default configuration options and WebGL constants", () => {
             const texture = new TestTexture();
 
-            expect(texture.label).toBe("BaseTexture");
+            expect(texture.label).toBe("Texture");
             expect(texture.target).toBe(TextureTarget.Texture2D);
             expect(texture.options).toEqual({
                 wrapS: "clamp_to_edge",
@@ -62,7 +67,7 @@ describe("BaseTexture", () => {
         });
 
         it("initializes with custom configuration options when provided", () => {
-            const options: BaseTextureOptions = {
+            const options: TextureOptions = {
                 label: "CustomTexture",
                 target: TextureTarget.CubeMap,
                 wrapS: "repeat",

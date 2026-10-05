@@ -1,4 +1,4 @@
-import { BaseTexture } from "./base_texture";
+import { Texture } from "./texture";
 import type { CubeTextureFaces, ICubeTexture } from "./cube_texture_types";
 import type { SolidColorCubeTextureOptions } from "./solid_color_cube_texture_types";
 import { TextureTarget } from "./texture_types";
@@ -17,7 +17,7 @@ const CUBE_MAP_FACES = [
  * 1x1 solid-color WebGL cubemap texture across all 6 faces.
  * Synchronous, immediately marked ready, and implements ICubeTexture with full GPU lifecycle management.
  */
-export class SolidColorCubeTexture extends BaseTexture implements ICubeTexture {
+export class SolidColorCubeTexture extends Texture implements ICubeTexture {
     private readonly _pixelData: Uint8Array;
     private readonly _dummyFaces: CubeTextureFaces;
 

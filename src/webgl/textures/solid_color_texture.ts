@@ -1,4 +1,4 @@
-import { BaseTexture } from "./base_texture";
+import { Texture } from "./texture";
 import type { SolidColorTextureOptions } from "./solid_color_texture_types";
 import { TextureTarget } from "./texture_types";
 
@@ -6,7 +6,7 @@ import { TextureTarget } from "./texture_types";
  * 1x1 solid-color WebGL 2D texture.
  * Synchronous, immediately marked loaded, and implements ITexture with full GPU lifecycle management.
  */
-export class SolidColorTexture extends BaseTexture {
+export class SolidColorTexture extends Texture {
     private readonly _pixelData: Uint8Array;
 
     constructor(

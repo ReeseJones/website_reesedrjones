@@ -1,16 +1,16 @@
-import { BaseTexture } from "./base_texture";
+import { Texture } from "./texture";
+import type { ImageTextureOptions } from "./image_texture_types";
 import {
     TextureTarget,
-    type TextureOptions,
     type TextureSource,
 } from "./texture_types";
 
 /**
  * Image-based WebGL2 texture resource abstraction with immediate 1x1 fallback,
  * asynchronous image decoding, filtering, mipmapping, and automatic context recovery.
- * Extends BaseTexture for unified GPU texture handle and binding lifecycle.
+ * Extends Texture for unified GPU texture handle and binding lifecycle.
  */
-export class ImageTexture extends BaseTexture {
+export class ImageTexture extends Texture {
     private _source: TextureSource | string | null = null;
     private _cachedImage: HTMLImageElement | null = null;
 
@@ -19,15 +19,15 @@ export class ImageTexture extends BaseTexture {
      * @param extraOptions Optional additional options when source is provided as first argument.
      */
     constructor(
-        sourceOrOptions?: string | TextureSource | TextureOptions,
-        extraOptions?: TextureOptions
+        sourceOrOptions?: string | TextureSource | ImageTextureOptions,
+        extraOptions?: ImageTextureOptions
     ) {
-        let resolvedOptions: TextureOptions = {};
+        let resolvedOptions: ImageTextureOptions = {};
 
         if (typeof sourceOrOptions === "string" || (sourceOrOptions && "width" in sourceOrOptions)) {
             resolvedOptions = extraOptions ?? {};
         } else if (sourceOrOptions) {
-            resolvedOptions = sourceOrOptions as TextureOptions;
+            resolvedOptions = sourceOrOptions as ImageTextureOptions;
         }
 
         super({
@@ -153,21 +153,21 @@ export class ImageTexture extends BaseTexture {
     /**
      * Loads a texture asynchronously from a URL string.
      */
-    public static fromUrl(url: string, options?: TextureOptions): ImageTexture {
+    public static fromUrl(url: string, options?: ImageTextureOptions): ImageTexture {
         return new ImageTexture(url, options);
     }
 
     /**
      * Instantiates a texture from an already-decoded HTMLImageElement.
      */
-    public static fromImage(image: HTMLImageElement, options?: TextureOptions): ImageTexture {
+    public static fromImage(image: HTMLImageElement, options?: ImageTextureOptions): ImageTexture {
         return new ImageTexture(image, options);
     }
 
     /**
      * Instantiates a texture from an HTMLCanvasElement.
      */
-    public static fromCanvas(canvas: HTMLCanvasElement, options?: TextureOptions): ImageTexture {
+    public static fromCanvas(canvas: HTMLCanvasElement, options?: ImageTextureOptions): ImageTexture {
         return new ImageTexture(canvas, options);
     }
 }

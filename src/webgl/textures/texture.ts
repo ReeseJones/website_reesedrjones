@@ -1,9 +1,9 @@
-import type { BaseTextureOptions, IBaseTexture } from "./base_texture_types";
 import {
     TextureTarget,
     TextureUnit,
     type ITexture,
     type TextureFilter,
+    type TextureOptions,
     type TextureWrap,
 } from "./texture_types";
 
@@ -49,7 +49,7 @@ export function resolveFilterMode(gl: WebGL2RenderingContext, filter: TextureFil
 export function applySamplerParameters(
     gl: WebGL2RenderingContext,
     target: TextureTarget,
-    options: BaseTextureOptions
+    options: TextureOptions
 ): void {
     const wrapS = resolveWrapMode(gl, options.wrapS ?? "clamp_to_edge");
     const wrapT = resolveWrapMode(gl, options.wrapT ?? "clamp_to_edge");
@@ -71,10 +71,10 @@ export function applySamplerParameters(
  * Manages GPU handle lifecycle, parameter configuration, binding, context recovery,
  * and deterministic disposal.
  */
-export abstract class BaseTexture implements IBaseTexture, ITexture {
+export abstract class Texture implements ITexture {
     public readonly label: string;
     public readonly target: TextureTarget;
-    public readonly options: Readonly<BaseTextureOptions>;
+    public readonly options: Readonly<TextureOptions>;
 
     protected _handle: WebGLTexture | null = null;
     protected _width: number = 1;
@@ -84,8 +84,8 @@ export abstract class BaseTexture implements IBaseTexture, ITexture {
     protected _gl: WebGL2RenderingContext | null = null;
     private readonly _onDisposeCallbacks: (() => void)[] = [];
 
-    constructor(options: BaseTextureOptions = {}) {
-        this.label = options.label ?? "BaseTexture";
+    constructor(options: TextureOptions = {}) {
+        this.label = options.label ?? "Texture";
         this.target = options.target ?? TextureTarget.Texture2D;
         this.options = {
             wrapS: options.wrapS ?? "clamp_to_edge",
@@ -240,4 +240,3 @@ export abstract class BaseTexture implements IBaseTexture, ITexture {
      */
     protected abstract uploadToGPU(gl: WebGL2RenderingContext): void;
 }
-
