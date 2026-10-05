@@ -8,7 +8,7 @@ Comprehensive principles and performance rules for WebGL2 rendering in this code
 All core WebGL infrastructure and generic resource utilities reside in [`src/webgl/`](../webgl/):
 - **Declarative VAO & Attribute Specs ([`vertex_layout.ts`](../webgl/geometry/vertex_layout.ts)):** Use `VertexLayoutSpec` ([`vertex_layout_types.ts`](../webgl/geometry/vertex_layout_types.ts)) and `configureVAO()` to define vertex buffer schemas. Avoid manual byte offset math (`N * Float32Array.BYTES_PER_ELEMENT`).
 - **Shader Program Management ([`shader_program.ts`](../webgl/shaders/shader_program.ts)):** Use `ShaderProgram` composition ("has-a" relationship) rather than inheritance with options and context manager interfaces defined in [`shader_program_types.ts`](../webgl/shaders/shader_program_types.ts). Provides client-side uniform memory caching, redundant upload elimination, and automated context restoration.
-- **Resource Lifecycle Pipeline ([`pass_lifecycle.ts`](../webgl/core/pass_lifecycle.ts)):** Implement `RenderPassLifecycle` ([`pass_lifecycle_types.ts`](../webgl/core/pass_lifecycle_types.ts)) (`buildShaders` $\rightarrow$ `buildBuffers` $\rightarrow$ `configureLayout` $\rightarrow$ `uploadStaticUniforms`) and invoke `initializeRenderPass(gl, this)` to enforce strict 4-stage dependency ordering during startup and context recovery.
+- **Subsystem Resource Management ([`context_manager.ts`](../webgl/core/context_manager.ts)):** GPU hardware resources (`VertexBuffer`, `ShaderProgram`, `Texture`) are managed by domain managers (`GeometryManager`, `ShaderManager`, `TextureManager`) orchestrated by `WebGLContextManager`, ensuring deterministic disposal and phased context recovery.
 
 ---
 
