@@ -164,15 +164,16 @@ describe("texture_factory", () => {
             }
         });
 
-        it("configures cubemap texture parameters: NEAREST min/mag filters and CLAMP_TO_EDGE wrapS/wrapT on gl.TEXTURE_CUBE_MAP", () => {
+        it("configures cubemap texture parameters: NEAREST min/mag filters and CLAMP_TO_EDGE wrapS/wrapT/wrapR on gl.TEXTURE_CUBE_MAP", () => {
             const tex = createSolidCubeTexture(gl, 10, 20, 30, 40);
 
             expect(tex.handle).not.toBeNull();
-            expect(gl.texParameteri).toHaveBeenCalledTimes(4);
+            expect(gl.texParameteri).toHaveBeenCalledTimes(5);
             expect(gl.texParameteri).toHaveBeenCalledWith(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
             expect(gl.texParameteri).toHaveBeenCalledWith(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
             expect(gl.texParameteri).toHaveBeenCalledWith(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
             expect(gl.texParameteri).toHaveBeenCalledWith(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+            expect(gl.texParameteri).toHaveBeenCalledWith(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_R, gl.CLAMP_TO_EDGE);
         });
 
         it("unbinds gl.TEXTURE_CUBE_MAP (binds null) and returns the managed SolidColorCubeTexture instance", () => {

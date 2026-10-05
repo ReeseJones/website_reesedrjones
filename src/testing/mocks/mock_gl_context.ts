@@ -81,6 +81,7 @@ export function createMockWebGL2Context(): WebGL2RenderingContext {
         activeTexture: vi.fn(),
         texImage2D: vi.fn(),
         texParameteri: vi.fn(),
+        pixelStorei: vi.fn(),
         generateMipmap: vi.fn(),
 
         // Draw Calls
@@ -132,6 +133,7 @@ export function createMockWebGL2Context(): WebGL2RenderingContext {
         TEXTURE_MAG_FILTER: WebGL2RenderingContext.TEXTURE_MAG_FILTER,
         TEXTURE_WRAP_S: WebGL2RenderingContext.TEXTURE_WRAP_S,
         TEXTURE_WRAP_T: WebGL2RenderingContext.TEXTURE_WRAP_T,
+        UNPACK_FLIP_Y_WEBGL: WebGL2RenderingContext.UNPACK_FLIP_Y_WEBGL,
         NEAREST: WebGL2RenderingContext.NEAREST,
         LINEAR: WebGL2RenderingContext.LINEAR,
         CLAMP_TO_EDGE: WebGL2RenderingContext.CLAMP_TO_EDGE,

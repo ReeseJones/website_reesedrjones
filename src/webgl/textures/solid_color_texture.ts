@@ -59,7 +59,7 @@ export class SolidColorTexture extends BaseTexture {
     public override updateFromSource(): void {
         if (this._gl && this._handle && !this._gl.isContextLost()) {
             this._gl.bindTexture(this.target, this._handle);
-            this.uploadGPU(this._gl);
+            this.uploadToGPU(this._gl);
             this._gl.bindTexture(this.target, null);
         }
     }
@@ -67,7 +67,7 @@ export class SolidColorTexture extends BaseTexture {
     /**
      * Dispatches the 1x1 RGBA pixel upload to WebGL.
      */
-    protected uploadGPU(gl: WebGL2RenderingContext): void {
+    protected uploadToGPU(gl: WebGL2RenderingContext): void {
         gl.texImage2D(
             this.target,
             0,

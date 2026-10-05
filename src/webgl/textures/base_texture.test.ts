@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { BaseTexture, resolveWrapMode, resolveFilterMode } from "./base_texture";
+import { BaseTexture, resolveWrapMode, resolveFilterMode, applySamplerParameters } from "./base_texture";
 import type { BaseTextureOptions } from "./base_texture_types";
 import { TextureTarget, TextureUnit, type TextureFilter, type TextureWrap } from "./texture_types";
 import { createMockWebGL2Context } from "../../testing/mocks/mock_gl_context";
@@ -25,7 +25,7 @@ class TestTexture extends BaseTexture {
         this._isLoaded = loaded;
     }
 
-    protected uploadGPU(gl: WebGL2RenderingContext): void {
+    protected uploadToGPU(gl: WebGL2RenderingContext): void {
         this.uploadCallCount++;
         this.lastUploadGl = gl;
     }
@@ -51,6 +51,7 @@ describe("BaseTexture", () => {
             expect(texture.options).toEqual({
                 wrapS: "clamp_to_edge",
                 wrapT: "clamp_to_edge",
+                wrapR: "clamp_to_edge",
                 minFilter: "linear_mipmap_linear",
                 magFilter: "linear",
                 flipY: true,
@@ -81,6 +82,7 @@ describe("BaseTexture", () => {
                 target: TextureTarget.CubeMap,
                 wrapS: "repeat",
                 wrapT: "mirrored_repeat",
+                wrapR: "clamp_to_edge",
                 minFilter: "nearest_mipmap_nearest",
                 magFilter: "nearest",
                 flipY: false,
@@ -111,7 +113,7 @@ describe("BaseTexture", () => {
     });
 
     describe("init", () => {
-        it("allocates WebGLTexture, binds, configures sampler parameters, invokes uploadGPU, and unbinds target", () => {
+        it("allocates WebGLTexture, binds, configures sampler parameters, invokes uploadToGPU, and unbinds target", () => {
             const texture = new TestTexture({
                 wrapS: "repeat",
                 wrapT: "mirrored_repeat",
@@ -423,6 +425,56 @@ describe("BaseTexture", () => {
             it("defaults to gl.LINEAR_MIPMAP_LINEAR for unrecognized filter strings", () => {
                 expect(resolveFilterMode(gl, "invalid_filter" as TextureFilter)).toBe(gl.LINEAR_MIPMAP_LINEAR);
             });
+        });
+    });
+
+    describe("applySamplerParameters", () => {
+        it("applies wrap and filter parameters to 2D target via standalone utility function", () => {
+            applySamplerParameters(gl, TextureTarget.Texture2D, {
+                wrapS: "repeat",
+                wrapT: "mirrored_repeat",
+                minFilter: "nearest",
+                magFilter: "nearest",
+            });
+
+            expect(gl.texParameteri).toHaveBeenCalledWith(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+            expect(gl.texParameteri).toHaveBeenCalledWith(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.MIRRORED_REPEAT);
+            expect(gl.texParameteri).toHaveBeenCalledWith(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+            expect(gl.texParameteri).toHaveBeenCalledWith(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+        });
+
+        it("applies wrapR parameter when target is CubeMap", () => {
+            applySamplerParameters(gl, TextureTarget.CubeMap, {
+                wrapS: "clamp_to_edge",
+                wrapT: "clamp_to_edge",
+                wrapR: "clamp_to_edge",
+                minFilter: "linear",
+                magFilter: "linear",
+            });
+
+            expect(gl.texParameteri).toHaveBeenCalledWith(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            expect(gl.texParameteri).toHaveBeenCalledWith(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+            expect(gl.texParameteri).toHaveBeenCalledWith(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_R, gl.CLAMP_TO_EDGE);
+            expect(gl.texParameteri).toHaveBeenCalledWith(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+            expect(gl.texParameteri).toHaveBeenCalledWith(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        });
+
+        it("invokes applySamplerParameters method on initialized texture instance", () => {
+            const texture = new TestTexture({
+                wrapS: "repeat",
+                wrapT: "repeat",
+                minFilter: "linear",
+                magFilter: "linear",
+            });
+            texture.init(gl);
+            vi.mocked(gl.texParameteri).mockClear();
+
+            texture.applySamplerParameters(gl);
+
+            expect(gl.texParameteri).toHaveBeenCalledWith(texture.target, gl.TEXTURE_WRAP_S, gl.REPEAT);
+            expect(gl.texParameteri).toHaveBeenCalledWith(texture.target, gl.TEXTURE_WRAP_T, gl.REPEAT);
+            expect(gl.texParameteri).toHaveBeenCalledWith(texture.target, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+            expect(gl.texParameteri).toHaveBeenCalledWith(texture.target, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
         });
     });
 

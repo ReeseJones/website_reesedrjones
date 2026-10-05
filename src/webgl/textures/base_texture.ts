@@ -44,6 +44,29 @@ export function resolveFilterMode(gl: WebGL2RenderingContext, filter: TextureFil
 }
 
 /**
+ * Applies wrap and filter sampling parameters to a bound WebGL texture target.
+ */
+export function applySamplerParameters(
+    gl: WebGL2RenderingContext,
+    target: TextureTarget,
+    options: BaseTextureOptions
+): void {
+    const wrapS = resolveWrapMode(gl, options.wrapS ?? "clamp_to_edge");
+    const wrapT = resolveWrapMode(gl, options.wrapT ?? "clamp_to_edge");
+    const minFilter = resolveFilterMode(gl, options.minFilter ?? "linear_mipmap_linear");
+    const magFilter = resolveFilterMode(gl, options.magFilter ?? "linear");
+
+    gl.texParameteri(target, gl.TEXTURE_WRAP_S, wrapS);
+    gl.texParameteri(target, gl.TEXTURE_WRAP_T, wrapT);
+    if (target === TextureTarget.CubeMap || target === TextureTarget.Texture3D) {
+        const wrapR = resolveWrapMode(gl, options.wrapR ?? "clamp_to_edge");
+        gl.texParameteri(target, gl.TEXTURE_WRAP_R, wrapR);
+    }
+    gl.texParameteri(target, gl.TEXTURE_MIN_FILTER, minFilter);
+    gl.texParameteri(target, gl.TEXTURE_MAG_FILTER, magFilter);
+}
+
+/**
  * Abstract base class for all WebGL2 texture resources.
  * Manages GPU handle lifecycle, parameter configuration, binding, context recovery,
  * and deterministic disposal.
@@ -67,6 +90,7 @@ export abstract class BaseTexture implements IBaseTexture, ITexture {
         this.options = {
             wrapS: options.wrapS ?? "clamp_to_edge",
             wrapT: options.wrapT ?? "clamp_to_edge",
+            wrapR: options.wrapR ?? "clamp_to_edge",
             minFilter: options.minFilter ?? "linear_mipmap_linear",
             magFilter: options.magFilter ?? "linear",
             flipY: options.flipY ?? true,
@@ -117,7 +141,7 @@ export abstract class BaseTexture implements IBaseTexture, ITexture {
         this._handle = handle;
         gl.bindTexture(this.target, handle);
         this.applySamplerParameters(gl);
-        this.uploadGPU(gl);
+        this.uploadToGPU(gl);
         gl.bindTexture(this.target, null);
     }
 
@@ -203,22 +227,17 @@ export abstract class BaseTexture implements IBaseTexture, ITexture {
 
     /**
      * Applies wrap and filter sampling parameters to the active texture binding.
+     * Can be invoked externally or by subclasses when sampling parameters change.
      */
-    protected applySamplerParameters(gl: WebGL2RenderingContext): void {
-        const wrapS = resolveWrapMode(gl, this.options.wrapS ?? "clamp_to_edge");
-        const wrapT = resolveWrapMode(gl, this.options.wrapT ?? "clamp_to_edge");
-        const minFilter = resolveFilterMode(gl, this.options.minFilter ?? "linear_mipmap_linear");
-        const magFilter = resolveFilterMode(gl, this.options.magFilter ?? "linear");
-
-        gl.texParameteri(this.target, gl.TEXTURE_WRAP_S, wrapS);
-        gl.texParameteri(this.target, gl.TEXTURE_WRAP_T, wrapT);
-        gl.texParameteri(this.target, gl.TEXTURE_MIN_FILTER, minFilter);
-        gl.texParameteri(this.target, gl.TEXTURE_MAG_FILTER, magFilter);
+    public applySamplerParameters(gl?: WebGL2RenderingContext): void {
+        const context = gl ?? this._gl;
+        if (!context) return;
+        applySamplerParameters(context, this.target, this.options);
     }
 
     /**
      * Subclasses implement this method to upload pixel data to the bound GPU texture.
      */
-    protected abstract uploadGPU(gl: WebGL2RenderingContext): void;
+    protected abstract uploadToGPU(gl: WebGL2RenderingContext): void;
 }
 

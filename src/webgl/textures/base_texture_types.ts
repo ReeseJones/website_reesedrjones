@@ -9,6 +9,8 @@ export interface BaseTextureOptions {
     wrapS?: TextureWrap;
     /** Vertical wrap mode (defaults to "clamp_to_edge") */
     wrapT?: TextureWrap;
+    /** Depth / R wrap mode for 3D and Cubemap textures (defaults to "clamp_to_edge") */
+    wrapR?: TextureWrap;
     /** Minification filter (defaults to "linear_mipmap_linear" or "nearest") */
     minFilter?: TextureFilter;
     /** Magnification filter (defaults to "linear" or "nearest") */
@@ -50,6 +52,9 @@ export interface IBaseTexture extends IWebGLResource {
 
     /** Allocates GPU resources and uploads texture data */
     init(gl: WebGL2RenderingContext): void;
+
+    /** Applies wrap and filter sampling parameters to the bound texture */
+    applySamplerParameters(gl?: WebGL2RenderingContext): void;
 
     /** Binds texture to a hardware texture unit */
     bind(unit?: TextureUnit | number): void;

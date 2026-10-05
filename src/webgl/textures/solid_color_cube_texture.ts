@@ -88,7 +88,7 @@ export class SolidColorCubeTexture extends BaseTexture implements ICubeTexture {
     public override updateFromSource(): void {
         if (this._gl && this._handle && !this._gl.isContextLost()) {
             this._gl.bindTexture(this.target, this._handle);
-            this.uploadGPU(this._gl);
+            this.uploadToGPU(this._gl);
             this._gl.bindTexture(this.target, null);
         }
     }
@@ -96,7 +96,7 @@ export class SolidColorCubeTexture extends BaseTexture implements ICubeTexture {
     /**
      * Dispatches the 1x1 RGBA pixel upload to all 6 cubemap faces.
      */
-    protected uploadGPU(gl: WebGL2RenderingContext): void {
+    protected uploadToGPU(gl: WebGL2RenderingContext): void {
         for (const face of CUBE_MAP_FACES) {
             gl.texImage2D(
                 face,
