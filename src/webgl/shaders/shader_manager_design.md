@@ -91,6 +91,7 @@ export interface IShaderManager extends IContextSubsystem {
 
     /**
      * Factory & Registry: Retrieves an existing cached ShaderProgram or compiles and caches a new one.
+     * Hooks shader.onDispose() to automatically prune the shader from the registry upon disposal.
      */
     getOrCreate<TUniforms extends object = Record<string, unknown>>(
         key: ShaderKey,
@@ -108,13 +109,6 @@ export interface IShaderManager extends IContextSubsystem {
      * Checks if a shader with the given key is currently registered.
      */
     has(key: ShaderKey): boolean;
-
-    /**
-     * Deterministic Disposal: Destroys the specified ShaderProgram and frees GPU driver handles.
-     */
-    dispose<TUniforms extends object = Record<string, unknown>>(
-        keyOrInstance: ShaderKey | ShaderProgram<TUniforms>
-    ): void;
 
     /**
      * Binds the specified ShaderProgram to the WebGL context with redundant-call skipping.
@@ -153,16 +147,16 @@ export interface IShaderManager extends IContextSubsystem {
 3. **Miss:**
    - Verify that an active WebGL2 context is available via the parent context manager. If absent, throw a descriptive initialization error.
    - Instantiate `new ShaderProgram(contextManager, options)`.
+   - Attach disposal subscriber:
+     - `shader.onDispose(() => { if (this._currentShader === shader) this.unbind(); this._registry.delete(key); });`
    - Store in `_registry.set(key, shader)`.
    - Return newly compiled `shader`.
 
-### 2. Deterministic Disposal (`dispose`)
-1. **Target Identification:** Resolve `targetKey` from either the provided `ShaderKey` string or by looking up the `ShaderProgram` instance in `_registry`.
-2. **Handle Cleanup:**
-   - Retrieve shader.
-   - If the program is currently bound (`_currentShader === shader`), unbind via `unbind()`.
-   - Call `shader.destroy()` to delete native `WebGLShader` and `WebGLProgram` driver handles.
-   - Delete entry from `_registry`.
+### 2. Deterministic Single-Disposal Pattern
+- Callers and owners invoke `shader.dispose()` directly.
+- The `ShaderProgram` frees its own `WebGLProgram` GPU handle (`gl.deleteProgram`) and invokes `onDispose` listeners.
+- `ShaderManager`'s listener fires, unbinding the shader if active and deleting it from `_registry`.
+- Subsystem managers do not provide individual `dispose(shader)` methods.
 
 ### 3. Redundant Binding Deduplication (`bind` & `bindProgram`)
 1. **Object Check:** Compare `_currentShader === shader`. If identical, exit immediately (zero driver calls).
@@ -175,12 +169,10 @@ export interface IShaderManager extends IContextSubsystem {
 ### 4. Phase 1 Context Loss & Restoration
 1. **`onContextLost()`:**
    - Set `_currentProgram = null` and `_currentShader = null`.
-   - Clear active context reference.
-   - For all cached shaders, invoke `shader.destroy()`, marking handles null while preserving sources and uniforms.
+   - For all cached shaders, invoke `shader.onContextLost()`, marking handles null while preserving sources and uniforms.
 2. **`onContextRestored(newGl)`:**
-   - Update active context reference.
    - Reset tracked binding state (`_currentProgram = null`, `_currentShader = null`).
-   - Iterate through `_registry.values()`: invoke `shader.rebuild()` for each cached shader program.
+   - Iterate through `_registry.values()`: invoke `shader.onContextRestored(newGl)` for each cached shader program.
    - All shaders and their uniform location caches are now fully restored before textures (Priority 20) or geometries (Priority 30) restore.
 
 ---

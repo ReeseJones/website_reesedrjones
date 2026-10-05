@@ -39,13 +39,6 @@ export interface IShaderManager extends IContextSubsystem {
     has(key: ShaderKey): boolean;
 
     /**
-     * Deterministic Disposal: Destroys the specified ShaderProgram and frees GPU driver handles.
-     */
-    dispose<TUniforms extends object = Record<string, unknown>>(
-        keyOrInstance: ShaderKey | ShaderProgram<TUniforms>
-    ): void;
-
-    /**
      * Binds the specified ShaderProgram to the WebGL context with redundant-call skipping.
      */
     bind<TUniforms extends object = never>(shader: ShaderProgram<TUniforms> | null): void;
@@ -65,18 +58,4 @@ export interface IShaderManager extends IContextSubsystem {
      * Unbinds the currently active shader program.
      */
     unbind(): void;
-
-    /** Backwards-compatible aliases */
-    useShader?<TUniforms extends object = never>(shader: ShaderProgram<TUniforms> | null): void;
-    useProgram?(program: WebGLProgram | null): void;
-    getOrCreateShader?<TUniforms extends object = Record<string, unknown>>(
-        key: ShaderKey,
-        options: ShaderProgramOptions
-    ): ShaderProgram<TUniforms>;
-    getShader?<TUniforms extends object = Record<string, unknown>>(
-        key: ShaderKey
-    ): ShaderProgram<TUniforms> | null;
-    releaseShader?<TUniforms extends object = Record<string, unknown>>(
-        keyOrInstance: ShaderKey | ShaderProgram<TUniforms>
-    ): void;
 }

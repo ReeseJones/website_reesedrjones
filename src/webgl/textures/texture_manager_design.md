@@ -168,11 +168,6 @@ export interface ITextureManager extends IContextSubsystem {
     getFallbackHandle(type: TextureFallbackType): WebGLTexture | null;
 
     /**
-     * Deterministic Disposal: Releases a texture from the cache and deletes its GPU handle.
-     */
-    dispose(textureOrUrl: ITexture | ICubeTexture | string): void;
-
-    /**
      * Permanently destroys all managed textures, fallbacks, and caches.
      */
     destroy(): void;
@@ -188,15 +183,15 @@ export interface ITextureManager extends IContextSubsystem {
 
 ## 4. Key Procedures & Algorithms
 
-### 1. Inversion of Control Disposal Pattern
-1. When `TextureManager.getOrCreate()` creates a `Texture`, or when a user-created `Texture` is first bound, `TextureManager` attaches an internal disposal listener:
-   - `texture.onDispose(() => this.dispose(texture));`
+### 1. Inversion of Control Single-Disposal Pattern
+1. When `TextureManager.getOrCreate()` creates a `Texture`, or when a texture is first bound, `TextureManager` attaches an internal disposal listener:
+   - `texture.onDispose(() => { this._urlCache.delete(url); this._unbindHandle(texture.handle); });`
 2. When the user or scene calls `texture.dispose()`:
-   - The CPU texture marks itself disposed (`isDisposed = true`).
-   - The callback fires synchronously into `TextureManager.dispose(texture)`.
-   - `TextureManager` invokes `gl.deleteTexture(handle)`.
-   - Evicts the entry from `_urlCache`.
-   - Clears any hardware unit bindings pointing to that handle.
+   - The texture marks itself disposed (`isDisposed = true`).
+   - The texture deletes its own `WebGLTexture` GPU handle via `gl.deleteTexture(this._handle)`.
+   - The `onDispose` callback fires into `TextureManager`.
+   - `TextureManager` evicts the entry from `_urlCache` and unbinds any hardware unit bindings pointing to that handle.
+   - `TextureManager` does not provide an independent `dispose(texture)` method.
 
 ### 2. Redundant Unit Binding Deduplication
 1. For any given hardware unit $i \in [0, 15]$, compare candidate handle with `_boundTextures.get(i)` or `_boundCubeTextures.get(i)`.

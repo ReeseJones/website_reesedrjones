@@ -295,11 +295,11 @@ To prevent redundant driver overhead:
 
 ## 6. Key Architectural Decisions
 
-### Unified Material with Polymorphic `.clone()` (Approach A)
+### Pure CPU Descriptor with Polymorphic Deep `.clone()`
 - **Rationale:** Rather than introducing a distinct `MaterialInstance` class hierarchy (as in Unreal Engine), the engine adopts the unified material model (similar to Three.js).
-- In this engine, `WebGLContextManager` and `ShaderProgram` already act as the shared "Master Material" template (cached once per `ShaderKey`).
-- Every `Material` instance independently manages its own uniforms dictionary and conventional texture unit bindings (`Map<number, ITexture>`).
-- Polymorphic `.clone()` allows rapid duplication of materials with distinct parameter or texture overrides while avoiding the indirection and per-frame prototype merging costs of a cascaded `MaterialInstance` tree.
+- **Zero WebGL Ownership:** Materials are pure CPU configuration descriptors. They do **not** implement `IDisposable` and do not manage or dispose GPU resources. They are garbage-collected by the JavaScript runtime when dereferenced.
+- **Non-Owning Texture References:** A material merely stores references to `ITexture` instances. Disposing or clearing a material never disposes the underlying texture.
+- **Deep-Copying `.clone()`:** Polymorphic `.clone()` creates a new `Material` instance with a deep copy of uniform values (duplicating `Float32Array` buffers and nested arrays/objects) and non-owning references to the same shader key and textures. Modifying uniform overrides on a clone has zero side effects on the original material.
 
 ### Conventional 16-Slot Semantic Texture Layout (`TextureUnit`)
 Hardware limits guarantee at least 16 texture units in WebGL 2 fragment shaders (`0` to `15`). While materials and shaders can bind any arbitrary texture to any unit, standardizing slots eliminates per-frame sampler uniform mutation and enables automated reflection:

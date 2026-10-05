@@ -1,4 +1,4 @@
-import type { BaseTextureOptions } from "./base_texture_types";
+import type { BaseTextureOptions, IBaseTexture } from "./base_texture_types";
 import {
     TextureTarget,
     TextureUnit,
@@ -48,7 +48,7 @@ export function resolveFilterMode(gl: WebGL2RenderingContext, filter: TextureFil
  * Manages GPU handle lifecycle, parameter configuration, binding, context recovery,
  * and deterministic disposal.
  */
-export abstract class BaseTexture implements ITexture {
+export abstract class BaseTexture implements IBaseTexture, ITexture {
     public readonly label: string;
     public readonly target: TextureTarget;
     public readonly options: Readonly<BaseTextureOptions>;
@@ -90,6 +90,10 @@ export abstract class BaseTexture implements ITexture {
 
     public get isLoaded(): boolean {
         return this._isLoaded;
+    }
+
+    public get isValid(): boolean {
+        return this._handle !== null && !this._isDisposed;
     }
 
     public get isDisposed(): boolean {
@@ -145,12 +149,18 @@ export abstract class BaseTexture implements ITexture {
     /**
      * Registers a callback to be executed when this texture is disposed.
      */
-    public onDispose(callback: () => void): void {
+    public onDispose(callback: () => void): () => void {
         if (this._isDisposed) {
             callback();
-            return;
+            return () => {};
         }
         this._onDisposeCallbacks.push(callback);
+        return () => {
+            const idx = this._onDisposeCallbacks.indexOf(callback);
+            if (idx !== -1) {
+                this._onDisposeCallbacks.splice(idx, 1);
+            }
+        };
     }
 
     /**
@@ -159,22 +169,21 @@ export abstract class BaseTexture implements ITexture {
     public dispose(): void {
         if (this._isDisposed) return;
         this._isDisposed = true;
-        this.destroy();
-        for (const cb of this._onDisposeCallbacks) {
-            cb();
-        }
-        this._onDisposeCallbacks.length = 0;
-    }
 
-    /**
-     * Releases the GPU texture handle.
-     */
-    public destroy(): void {
         if (this._gl && this._handle && !this._gl.isContextLost()) {
             this._gl.deleteTexture(this._handle);
         }
         this._handle = null;
         this._gl = null;
+
+        for (const cb of this._onDisposeCallbacks) {
+            try {
+                cb();
+            } catch (err) {
+                console.error(`[${this.label}] Error in onDispose callback:`, err);
+            }
+        }
+        this._onDisposeCallbacks.length = 0;
     }
 
     /**

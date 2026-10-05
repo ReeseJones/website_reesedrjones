@@ -157,8 +157,12 @@ Done as needed by each item, not up front.
 
 ### B3. Texture Foundation
 
-- **B3.1 [texture_factory.ts](../webgl/textures/texture_factory.ts)** — `createSolid2DTexture`, `createSolidCubeTexture` — ⬜ Not Started
-  - Focus: 1×1 RGBA upload bytes, all 6 cube faces uploaded, parameter setup, null `createTexture` handling
+- **B3.0 [base_texture.ts](../webgl/textures/base_texture.ts)** — `BaseTexture` — 🔍 Awaiting Review
+  - Test: `base_texture.test.ts` (34 specs)
+  - Focus: GPU handle lifecycle, parameter configuration, binding, unbinding, context loss recovery, deterministic disposal
+- **B3.1 [solid_color_texture.ts](../webgl/textures/solid_color_texture.ts)** & **[texture_factory.ts](../webgl/textures/texture_factory.ts)** — `SolidColorTexture`, `SolidColorCubeTexture`, `createSolid2DTexture`, `createSolidCubeTexture` — 🔍 Awaiting Review
+  - Tests: `solid_color_texture.test.ts` (32 specs), `texture_factory.test.ts` (13 specs)
+  - Focus: 1×1 solid-color 2D and cubemap texture classes implementing `ITexture` and `ICubeTexture`, factory helper initialization, `setColor` re-upload, disposal
 - **B3.2 [texture_fallback.ts](../webgl/textures/texture_fallback.ts)** — `FallbackTextureRegistry` — ⬜ Not Started
   - Focus: lazy creation and caching of the fallback textures, reset on context loss, destroy
 - **B3.3 [texture.ts](../webgl/textures/texture.ts)** — `Texture` — ⬜ Not Started
@@ -195,7 +199,7 @@ Done as needed by each item, not up front.
 ## Progress Summary
 
 - **Scene:** 18 / 18 complete (A6.2, A6.3 deferred TODO) — 623 passing specs
-- **WebGL:** 5 / 13 complete (111 passing specs)
+- **WebGL:** 5 / 14 complete, 2 in review (190 passing specs)
 - **Phase 0 fixtures:** 3 / 3 operational
-- **Total Suite:** 24 test files, 730 passing specs
-- **Next Item:** B3.1 [texture_factory.ts](../webgl/textures/texture_factory.ts)
+- **Total Suite:** 27 test files, 807 passing specs
+- **Next Item:** B3.2 [texture_fallback.ts](../webgl/textures/texture_fallback.ts)

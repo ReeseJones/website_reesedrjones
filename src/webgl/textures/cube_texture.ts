@@ -26,11 +26,11 @@ const FACE_ORDER: FaceKey[] = ["posX", "negX", "posY", "negY", "posZ", "negZ"];
  */
 export class CubeTexture implements ICubeTexture {
     public readonly faces: CubeTextureFaces;
-    public readonly label?: string;
+    public label: string;
 
     private _handle: WebGLTexture | null = null;
     private _isReady: boolean = false;
-    private _isDestroyed: boolean = false;
+    private _isDisposed: boolean = false;
     private _gl: WebGL2RenderingContext | null = null;
 
     private readonly _minFilter?: number;
@@ -39,21 +39,20 @@ export class CubeTexture implements ICubeTexture {
 
     private _decodedImages: Partial<Record<FaceKey, HTMLImageElement | ImageBitmap>> = {};
     private _loadPromise: Promise<void> | null = null;
+    private readonly _onDisposeCallbacks: (() => void)[] = [];
 
     constructor(options: CubeTextureOptions) {
         this.faces = options.faces;
         this._minFilter = options.minFilter;
         this._magFilter = options.magFilter;
         this._generateMipmaps = options.generateMipmaps ?? true;
-        this.label = options.label;
+        this.label = options.label ?? "CubeTexture";
 
         // Automatically trigger parallel asynchronous image load
         this.load().catch((err) => {
-            console.error(`[CubeTexture] Failed to load cubemap faces (${this.label ?? "unlabeled"}):`, err);
+            console.error(`[CubeTexture] Failed to load cubemap faces (${this.label}):`, err);
         });
     }
-
-    private readonly _onDisposeCallbacks: (() => void)[] = [];
 
     public get handle(): WebGLTexture | null {
         return this._handle;
@@ -63,12 +62,12 @@ export class CubeTexture implements ICubeTexture {
         return this._isReady;
     }
 
-    public get isDestroyed(): boolean {
-        return this._isDestroyed;
+    public get isValid(): boolean {
+        return !!this._handle && !this._isDisposed && (!this._gl || !this._gl.isContextLost());
     }
 
     public get isDisposed(): boolean {
-        return this._isDestroyed;
+        return this._isDisposed;
     }
 
     /**
@@ -120,7 +119,7 @@ export class CubeTexture implements ICubeTexture {
      * seeds each face with a 1x1 black fallback pixel so draw calls never sample an incomplete cubemap.
      */
     public init(gl: WebGL2RenderingContext): void {
-        if (this._isDestroyed) {
+        if (this._isDisposed) {
             return;
         }
 
@@ -188,33 +187,36 @@ export class CubeTexture implements ICubeTexture {
         gl.bindTexture(gl.TEXTURE_CUBE_MAP, null);
     }
 
-    public onDispose(callback: () => void): void {
-        if (this._isDestroyed) {
+    public onDispose(callback: () => void): () => void {
+        if (this._isDisposed) {
             callback();
-            return;
+            return () => {};
         }
         this._onDisposeCallbacks.push(callback);
+        return () => {
+            const idx = this._onDisposeCallbacks.indexOf(callback);
+            if (idx !== -1) {
+                this._onDisposeCallbacks.splice(idx, 1);
+            }
+        };
     }
 
     public dispose(): void {
-        if (this._isDestroyed) {
+        if (this._isDisposed) {
             return;
         }
-        this.destroy();
-        for (const cb of this._onDisposeCallbacks) {
-            cb();
-        }
-        this._onDisposeCallbacks.length = 0;
-    }
-
-    public destroy(): void {
-        this._isDestroyed = true;
+        this._isDisposed = true;
         if (this._handle && this._gl && !this._gl.isContextLost()) {
             this._gl.deleteTexture(this._handle);
         }
         this._handle = null;
         this._gl = null;
         this._decodedImages = {};
+
+        for (const cb of this._onDisposeCallbacks) {
+            cb();
+        }
+        this._onDisposeCallbacks.length = 0;
     }
 
     public onContextLost(): void {

@@ -21,25 +21,25 @@ describe("VertexBuffer", () => {
         vi.restoreAllMocks();
     });
 
-    describe("constructor and initialization", () => {
-        it("stores contextManager and layout", () => {
+    describe("constructor", () => {
+        it("constructs successfully and stores layout and label", () => {
             const cm = createMockContextManager(gl);
-            const buffer = new VertexBuffer(cm, testLayout);
+            const buffer = new VertexBuffer(cm, testLayout, "CustomVBO");
+
             expect(buffer.layout).toBe(testLayout);
+            expect(buffer.label).toBe("CustomVBO");
             expect((buffer as any).contextManager).toBe(cm);
         });
 
-        it("initializes usage to gl.STATIC_DRAW", () => {
+        it("defaults label to 'VertexBuffer' if not provided", () => {
             const cm = createMockContextManager(gl);
             const buffer = new VertexBuffer(cm, testLayout);
 
-            expect((buffer as any).usage).toBe(gl.STATIC_DRAW);
+            expect(buffer.label).toBe("VertexBuffer");
         });
 
-        it("initializes usage to WebGL2RenderingContext.STATIC_DRAW when context is initially unavailable", () => {
-            const cm = createMockContextManager(null as unknown as WebGL2RenderingContext);
-            vi.mocked(cm.getContext).mockReturnValue(null);
-
+        it("initializes usage to WebGL2RenderingContext.STATIC_DRAW", () => {
+            const cm = createMockContextManager(gl);
             const buffer = new VertexBuffer(cm, testLayout);
 
             expect((buffer as any).usage).toBe(WebGL2RenderingContext.STATIC_DRAW);
@@ -57,7 +57,6 @@ describe("VertexBuffer", () => {
             expect(vaoHandle).toBeTruthy();
             expect(vboHandle).toBeTruthy();
 
-            // configureVAO binds VAO, binds VBO, enables attribs, and unbinds at end
             expect(gl.bindVertexArray).toHaveBeenCalledWith(vaoHandle);
             expect(gl.bindBuffer).toHaveBeenCalledWith(gl.ARRAY_BUFFER, vboHandle);
             expect(gl.enableVertexAttribArray).toHaveBeenCalledWith(0);
@@ -69,16 +68,14 @@ describe("VertexBuffer", () => {
         });
 
         it("skips GPU resource creation when context is not available or isContextLost() is true", () => {
-            // Case A: context is null
             const cmNull = createMockContextManager(null as unknown as WebGL2RenderingContext);
             vi.mocked(cmNull.getContext).mockReturnValue(null);
 
             const bufferNull = new VertexBuffer(cmNull, testLayout);
             expect((bufferNull as any).vbo).toBeNull();
             expect((bufferNull as any).vao).toBeNull();
-            expect(bufferNull.isValid()).toBe(false);
+            expect(bufferNull.isValid).toBe(false);
 
-            // Case B: isContextLost() is true
             const glLost = createMockWebGL2Context();
             vi.mocked(glLost.isContextLost).mockReturnValue(true);
             const cmLost = createMockContextManager(glLost);
@@ -88,36 +85,55 @@ describe("VertexBuffer", () => {
             expect(glLost.createVertexArray).not.toHaveBeenCalled();
             expect((bufferLost as any).vbo).toBeNull();
             expect((bufferLost as any).vao).toBeNull();
-            expect(bufferLost.isValid()).toBe(false);
-        });
-
-        it("isValid() returns true when VBO and VAO are created, false otherwise", () => {
-            const cm = createMockContextManager(gl);
-            const validBuffer = new VertexBuffer(cm, testLayout);
-            expect(validBuffer.isValid()).toBe(true);
-
-            const cmNull = createMockContextManager(null as unknown as WebGL2RenderingContext);
-            vi.mocked(cmNull.getContext).mockReturnValue(null);
-            const invalidBuffer = new VertexBuffer(cmNull, testLayout);
-            expect(invalidBuffer.isValid()).toBe(false);
+            expect(bufferLost.isValid).toBe(false);
         });
     });
 
-    describe("init", () => {
+    describe(".isValid", () => {
+        it("returns true when VBO and VAO are created and not disposed", () => {
+            const cm = createMockContextManager(gl);
+            const validBuffer = new VertexBuffer(cm, testLayout);
+            expect(validBuffer.isValid).toBe(true);
+        });
+
+        it("returns false when context is null, lost, or after disposal", () => {
+            const cmNull = createMockContextManager(null as unknown as WebGL2RenderingContext);
+            vi.mocked(cmNull.getContext).mockReturnValue(null);
+            const invalidBuffer = new VertexBuffer(cmNull, testLayout);
+            expect(invalidBuffer.isValid).toBe(false);
+
+            const cm = createMockContextManager(gl);
+            const buffer = new VertexBuffer(cm, testLayout);
+            buffer.dispose();
+            expect(buffer.isValid).toBe(false);
+        });
+    });
+
+    describe(".isDisposed", () => {
+        it("starts false and becomes true after dispose()", () => {
+            const cm = createMockContextManager(gl);
+            const buffer = new VertexBuffer(cm, testLayout);
+            expect(buffer.isDisposed).toBe(false);
+
+            buffer.dispose();
+            expect(buffer.isDisposed).toBe(true);
+        });
+    });
+
+    describe(".init()", () => {
         it("allocates GPU resources if not already allocated", () => {
             const cm = createMockContextManager(null as unknown as WebGL2RenderingContext);
             vi.mocked(cm.getContext).mockReturnValue(null);
 
             const buffer = new VertexBuffer(cm, testLayout);
-            expect(buffer.isValid()).toBe(false);
+            expect(buffer.isValid).toBe(false);
 
-            // Context becomes available
             vi.mocked(cm.getContext).mockReturnValue(gl);
             buffer.init();
 
             expect(gl.createBuffer).toHaveBeenCalledTimes(1);
             expect(gl.createVertexArray).toHaveBeenCalledTimes(1);
-            expect(buffer.isValid()).toBe(true);
+            expect(buffer.isValid).toBe(true);
         });
 
         it("no-op if GPU resources already allocated", () => {
@@ -126,7 +142,6 @@ describe("VertexBuffer", () => {
             expect(gl.createBuffer).toHaveBeenCalledTimes(1);
             expect(gl.createVertexArray).toHaveBeenCalledTimes(1);
 
-            // Subsequent init should be a no-op
             buffer.init();
             expect(gl.createBuffer).toHaveBeenCalledTimes(1);
             expect(gl.createVertexArray).toHaveBeenCalledTimes(1);
@@ -142,7 +157,7 @@ describe("VertexBuffer", () => {
         });
     });
 
-    describe("setData", () => {
+    describe(".setData()", () => {
         it("stores data in cpuData cache", () => {
             const cm = createMockContextManager(gl);
             const buffer = new VertexBuffer(cm, testLayout);
@@ -181,7 +196,6 @@ describe("VertexBuffer", () => {
         });
 
         it("skips GPU upload when context is lost or VBO is null, while safely caching cpuData", () => {
-            // Case A: context lost
             const cm = createMockContextManager(gl);
             const buffer = new VertexBuffer(cm, testLayout);
             vi.mocked(gl.isContextLost).mockReturnValue(true);
@@ -193,7 +207,6 @@ describe("VertexBuffer", () => {
             expect(gl.bufferData).not.toHaveBeenCalled();
             expect((buffer as any).cpuData).toBe(dataA);
 
-            // Case B: VBO is null
             const cmNull = createMockContextManager(null as unknown as WebGL2RenderingContext);
             vi.mocked(cmNull.getContext).mockReturnValue(null);
             const bufferNull = new VertexBuffer(cmNull, testLayout);
@@ -205,8 +218,8 @@ describe("VertexBuffer", () => {
         });
     });
 
-    describe("bind and unbind", () => {
-        it("bind: calls gl.bindVertexArray with vao handle", () => {
+    describe(".bind() and .unbind()", () => {
+        it("bind calls gl.bindVertexArray with vao handle", () => {
             const cm = createMockContextManager(gl);
             const buffer = new VertexBuffer(cm, testLayout);
             const vaoHandle = (buffer as any).vao;
@@ -218,8 +231,7 @@ describe("VertexBuffer", () => {
             expect(gl.bindVertexArray).toHaveBeenCalledWith(vaoHandle);
         });
 
-        it("bind: skips call if context is lost or vao is null", () => {
-            // Case A: context lost
+        it("bind skips call if context is lost or vao is null", () => {
             const cm = createMockContextManager(gl);
             const buffer = new VertexBuffer(cm, testLayout);
             vi.mocked(gl.isContextLost).mockReturnValue(true);
@@ -228,7 +240,6 @@ describe("VertexBuffer", () => {
             buffer.bind();
             expect(gl.bindVertexArray).not.toHaveBeenCalled();
 
-            // Case B: vao is null
             const cmNull = createMockContextManager(null as unknown as WebGL2RenderingContext);
             vi.mocked(cmNull.getContext).mockReturnValue(null);
             const bufferNull = new VertexBuffer(cmNull, testLayout);
@@ -237,7 +248,7 @@ describe("VertexBuffer", () => {
             expect(gl.bindVertexArray).not.toHaveBeenCalled();
         });
 
-        it("unbind: calls gl.bindVertexArray(null)", () => {
+        it("unbind calls gl.bindVertexArray(null)", () => {
             const cm = createMockContextManager(gl);
             const buffer = new VertexBuffer(cm, testLayout);
 
@@ -248,7 +259,7 @@ describe("VertexBuffer", () => {
             expect(gl.bindVertexArray).toHaveBeenCalledWith(null);
         });
 
-        it("unbind: skips call if context is lost", () => {
+        it("unbind skips call if context is lost", () => {
             const cm = createMockContextManager(gl);
             const buffer = new VertexBuffer(cm, testLayout);
 
@@ -260,76 +271,114 @@ describe("VertexBuffer", () => {
         });
     });
 
-    describe("rebuild", () => {
-        it("destroys old GPU resources (calling gl.deleteBuffer and gl.deleteVertexArray)", () => {
+    describe(".onContextLost()", () => {
+        it("invalidates vbo and vao handles without calling driver delete methods", () => {
             const cm = createMockContextManager(gl);
             const buffer = new VertexBuffer(cm, testLayout);
-            const oldVbo = (buffer as any).vbo;
-            const oldVao = (buffer as any).vao;
+            expect(buffer.isValid).toBe(true);
 
-            buffer.rebuild();
+            buffer.onContextLost();
 
-            expect(gl.deleteBuffer).toHaveBeenCalledWith(oldVbo);
-            expect(gl.deleteVertexArray).toHaveBeenCalledWith(oldVao);
+            expect(buffer.isValid).toBe(false);
+            expect((buffer as any).vbo).toBeNull();
+            expect((buffer as any).vao).toBeNull();
+            expect(gl.deleteBuffer).not.toHaveBeenCalled();
+            expect(gl.deleteVertexArray).not.toHaveBeenCalled();
         });
+    });
 
-        it("re-creates VBO and VAO", () => {
-            const cm = createMockContextManager(gl);
-            const buffer = new VertexBuffer(cm, testLayout);
-            const oldVbo = (buffer as any).vbo;
-            const oldVao = (buffer as any).vao;
-
-            buffer.rebuild();
-
-            const newVbo = (buffer as any).vbo;
-            const newVao = (buffer as any).vao;
-            expect(newVbo).toBeTruthy();
-            expect(newVao).toBeTruthy();
-            expect(newVbo).not.toBe(oldVbo);
-            expect(newVao).not.toBe(oldVao);
-            expect(buffer.isValid()).toBe(true);
-        });
-
-        it("re-uploads cached cpuData if present", () => {
+    describe(".onContextRestored()", () => {
+        it("recreates GPU handles and re-uploads cached cpuData", () => {
             const cm = createMockContextManager(gl);
             const buffer = new VertexBuffer(cm, testLayout);
             const data = new Float32Array([1, 2, 3, 4]);
             buffer.setData(data, gl.DYNAMIC_DRAW);
 
-            vi.mocked(gl.bufferData).mockClear();
-            buffer.rebuild();
+            buffer.onContextLost();
+            expect(buffer.isValid).toBe(false);
 
-            expect(gl.bufferData).toHaveBeenCalledTimes(1);
-            expect(gl.bufferData).toHaveBeenCalledWith(gl.ARRAY_BUFFER, data, gl.DYNAMIC_DRAW);
+            const restoredGl = createMockWebGL2Context();
+            vi.mocked(restoredGl.bufferData).mockClear();
+
+            buffer.onContextRestored(restoredGl);
+
+            expect(buffer.isValid).toBe(true);
+            expect(restoredGl.createBuffer).toHaveBeenCalledTimes(1);
+            expect(restoredGl.createVertexArray).toHaveBeenCalledTimes(1);
+            expect(restoredGl.bufferData).toHaveBeenCalledWith(
+                restoredGl.ARRAY_BUFFER,
+                data,
+                restoredGl.DYNAMIC_DRAW
+            );
         });
 
-        it("re-configures VAO layout", () => {
+        it("does nothing if buffer is already disposed", () => {
             const cm = createMockContextManager(gl);
             const buffer = new VertexBuffer(cm, testLayout);
+            buffer.dispose();
 
-            vi.mocked(gl.enableVertexAttribArray).mockClear();
-            vi.mocked(gl.vertexAttribPointer).mockClear();
+            const restoredGl = createMockWebGL2Context();
+            buffer.onContextRestored(restoredGl);
 
-            buffer.rebuild();
-
-            expect(gl.enableVertexAttribArray).toHaveBeenCalledWith(0);
-            expect(gl.enableVertexAttribArray).toHaveBeenCalledWith(1);
-            expect(gl.vertexAttribPointer).toHaveBeenCalledWith(0, 3, gl.FLOAT, false, 20, 0);
-            expect(gl.vertexAttribPointer).toHaveBeenCalledWith(1, 2, gl.FLOAT, false, 20, 12);
+            expect(buffer.isValid).toBe(false);
+            expect(restoredGl.createBuffer).not.toHaveBeenCalled();
         });
     });
 
-    describe("destroy", () => {
-        it("calls gl.deleteBuffer and gl.deleteVertexArray", () => {
+    describe(".onDispose()", () => {
+        it("registers callback invoked when dispose() is called", () => {
+            const cm = createMockContextManager(gl);
+            const buffer = new VertexBuffer(cm, testLayout);
+            const callback = vi.fn();
+
+            buffer.onDispose(callback);
+            expect(callback).not.toHaveBeenCalled();
+
+            buffer.dispose();
+            expect(callback).toHaveBeenCalledTimes(1);
+        });
+
+        it("returns an unsubscribe function that unregisters the callback", () => {
+            const cm = createMockContextManager(gl);
+            const buffer = new VertexBuffer(cm, testLayout);
+            const callback = vi.fn();
+
+            const unsubscribe = buffer.onDispose(callback);
+            unsubscribe();
+
+            buffer.dispose();
+            expect(callback).not.toHaveBeenCalled();
+        });
+
+        it("invokes callback immediately if already disposed", () => {
+            const cm = createMockContextManager(gl);
+            const buffer = new VertexBuffer(cm, testLayout);
+            buffer.dispose();
+
+            const callback = vi.fn();
+            buffer.onDispose(callback);
+            expect(callback).toHaveBeenCalledTimes(1);
+        });
+    });
+
+    describe(".dispose()", () => {
+        it("frees GPU buffer and VAO handles and unbinds from context", () => {
             const cm = createMockContextManager(gl);
             const buffer = new VertexBuffer(cm, testLayout);
             const vbo = (buffer as any).vbo;
             const vao = (buffer as any).vao;
 
-            buffer.destroy();
+            buffer.dispose();
 
+            expect(gl.bindVertexArray).toHaveBeenCalledWith(null);
+            expect(gl.bindBuffer).toHaveBeenCalledWith(gl.ARRAY_BUFFER, null);
             expect(gl.deleteBuffer).toHaveBeenCalledWith(vbo);
             expect(gl.deleteVertexArray).toHaveBeenCalledWith(vao);
+            expect((buffer as any).vbo).toBeNull();
+            expect((buffer as any).vao).toBeNull();
+            expect((buffer as any).cpuData).toBeNull();
+            expect(buffer.isValid).toBe(false);
+            expect(buffer.isDisposed).toBe(true);
         });
 
         it("does not call delete methods if gl.isContextLost() is true", () => {
@@ -337,52 +386,29 @@ describe("VertexBuffer", () => {
             const buffer = new VertexBuffer(cm, testLayout);
 
             vi.mocked(gl.isContextLost).mockReturnValue(true);
-            buffer.destroy();
+            buffer.dispose();
 
             expect(gl.deleteBuffer).not.toHaveBeenCalled();
             expect(gl.deleteVertexArray).not.toHaveBeenCalled();
+            expect(buffer.isDisposed).toBe(true);
         });
 
-        it("clears cpuData cache to null", () => {
+        it("is idempotent: calling dispose multiple times does not throw or delete twice", () => {
             const cm = createMockContextManager(gl);
             const buffer = new VertexBuffer(cm, testLayout);
-            buffer.setData(new Float32Array([1, 2, 3]));
-            expect((buffer as any).cpuData).not.toBeNull();
+            const callback = vi.fn();
+            buffer.onDispose(callback);
 
-            buffer.destroy();
-            expect((buffer as any).cpuData).toBeNull();
-        });
-
-        it("sets vbo and vao to null", () => {
-            const cm = createMockContextManager(gl);
-            const buffer = new VertexBuffer(cm, testLayout);
-
-            buffer.destroy();
-            expect((buffer as any).vbo).toBeNull();
-            expect((buffer as any).vao).toBeNull();
-        });
-
-        it("isValid() returns false after destroy", () => {
-            const cm = createMockContextManager(gl);
-            const buffer = new VertexBuffer(cm, testLayout);
-            expect(buffer.isValid()).toBe(true);
-
-            buffer.destroy();
-            expect(buffer.isValid()).toBe(false);
-        });
-
-        it("idempotent: calling destroy multiple times does not throw or call delete methods twice", () => {
-            const cm = createMockContextManager(gl);
-            const buffer = new VertexBuffer(cm, testLayout);
-
-            buffer.destroy();
+            buffer.dispose();
             expect(gl.deleteBuffer).toHaveBeenCalledTimes(1);
             expect(gl.deleteVertexArray).toHaveBeenCalledTimes(1);
+            expect(callback).toHaveBeenCalledTimes(1);
 
-            expect(() => buffer.destroy()).not.toThrow();
+            expect(() => buffer.dispose()).not.toThrow();
             expect(gl.deleteBuffer).toHaveBeenCalledTimes(1);
             expect(gl.deleteVertexArray).toHaveBeenCalledTimes(1);
-            expect(buffer.isValid()).toBe(false);
+            expect(callback).toHaveBeenCalledTimes(1);
+            expect(buffer.isValid).toBe(false);
         });
     });
 });

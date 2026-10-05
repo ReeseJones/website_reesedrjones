@@ -47,13 +47,6 @@ export interface IWebGLContextManager {
         key: ShaderKey
     ): ShaderProgram<TUniforms> | null;
 
-    /**
-     * Release Pattern: Decrements a ShaderProgram's reference count and disposes it at 0.
-     */
-    releaseShader<TUniforms extends object = Record<string, unknown>>(
-        keyOrInstance: ShaderKey | ShaderProgram<TUniforms>
-    ): void;
-
     /** Asserts desired WebGL pipeline state; skips redundant driver calls. */
     applyPipelineState(state: PipelineState): void;
 

@@ -87,6 +87,12 @@ export class ShaderManager implements IShaderManager {
                 throw new Error(`[ShaderManager] Cannot compile shader '${key}' before WebGL context is initialized.`);
             }
             shader = new ShaderProgramImpl<never>(this._contextManager, options);
+            shader.onDispose(() => {
+                if (this._currentShader === shader) {
+                    this.unbind();
+                }
+                this._registry.delete(key);
+            });
             this._registry.set(key, shader);
         }
         return shader as unknown as ShaderProgram<TUniforms>;
@@ -107,40 +113,6 @@ export class ShaderManager implements IShaderManager {
      */
     public has(key: ShaderKey): boolean {
         return this._registry.has(key);
-    }
-
-    /**
-     * Deterministic Disposal: Destroys the specified ShaderProgram and frees GPU driver handles.
-     */
-    public dispose<TUniforms extends object = Record<string, unknown>>(
-        keyOrInstance: ShaderKey | ShaderProgram<TUniforms>
-    ): void {
-        let targetKey: ShaderKey | null = null;
-        let targetShader: ShaderProgram<never> | null = null;
-
-        if (typeof keyOrInstance === "string") {
-            targetKey = keyOrInstance;
-            targetShader = this._registry.get(targetKey) ?? null;
-        } else {
-            targetShader = keyOrInstance as unknown as ShaderProgram<never>;
-            for (const [k, s] of this._registry.entries()) {
-                if (s === targetShader) {
-                    targetKey = k;
-                    break;
-                }
-            }
-        }
-
-        if (targetShader) {
-            if (this._currentShader === targetShader) {
-                this.unbind();
-            }
-            targetShader.destroy();
-        }
-
-        if (targetKey) {
-            this._registry.delete(targetKey);
-        }
     }
 
     /**
@@ -202,25 +174,25 @@ export class ShaderManager implements IShaderManager {
     }
 
     /**
-     * WebGL context lost lifecycle hook: marks GPU programs as invalidated without deleting.
+     * WebGL context lost lifecycle hook: forwards context loss to all registered shader programs.
      */
     public onContextLost(): void {
         this._currentProgram = null;
         this._currentShader = null;
         for (const shader of this._registry.values()) {
-            shader.destroy();
+            shader.onContextLost();
         }
     }
 
     /**
      * Automated Phase 1 Context Restoration:
-     * Re-compiles all registered shaders and restores cached uniform locations.
+     * Forwards context restoration to all registered shaders, recompiling programs and restoring cached uniforms.
      */
-    public onContextRestored(_gl: WebGL2RenderingContext): void {
+    public onContextRestored(gl: WebGL2RenderingContext): void {
         this._currentProgram = null;
         this._currentShader = null;
         for (const shader of this._registry.values()) {
-            shader.rebuild();
+            shader.onContextRestored(gl);
         }
     }
 
@@ -228,10 +200,9 @@ export class ShaderManager implements IShaderManager {
      * Disposes all registered shader programs and clears internal caches.
      */
     public destroy(): void {
-        this._currentProgram = null;
-        this._currentShader = null;
-        for (const shader of this._registry.values()) {
-            shader.destroy();
+        this.unbind();
+        for (const shader of Array.from(this._registry.values())) {
+            shader.dispose();
         }
         this._registry.clear();
     }
@@ -248,34 +219,5 @@ export class ShaderManager implements IShaderManager {
                 currentShaderLabel: this._currentShader?.label ?? null,
             },
         };
-    }
-
-    // --- Backwards-Compatible Aliases ---
-
-    public useShader<TUniforms extends object = never>(shader: ShaderProgram<TUniforms> | null): void {
-        this.bind(shader);
-    }
-
-    public useProgram(program: WebGLProgram | null): void {
-        this.bindProgram(program);
-    }
-
-    public getOrCreateShader<TUniforms extends object = Record<string, unknown>>(
-        key: ShaderKey,
-        options: ShaderProgramOptions
-    ): ShaderProgram<TUniforms> {
-        return this.getOrCreate<TUniforms>(key, options);
-    }
-
-    public getShader<TUniforms extends object = Record<string, unknown>>(
-        key: ShaderKey
-    ): ShaderProgram<TUniforms> | null {
-        return this.get<TUniforms>(key);
-    }
-
-    public releaseShader<TUniforms extends object = Record<string, unknown>>(
-        keyOrInstance: ShaderKey | ShaderProgram<TUniforms>
-    ): void {
-        this.dispose(keyOrInstance);
     }
 }

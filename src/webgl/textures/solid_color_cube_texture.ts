@@ -62,10 +62,6 @@ export class SolidColorCubeTexture extends BaseTexture implements ICubeTexture {
         return this._isLoaded;
     }
 
-    public get isDestroyed(): boolean {
-        return this._isDisposed;
-    }
-
     public get faces(): CubeTextureFaces {
         return this._dummyFaces;
     }

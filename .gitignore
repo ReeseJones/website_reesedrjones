@@ -15,3 +15,6 @@ node_modules/
 *.glsl.d.ts
 # Test Coverage
 coverage/
+
+# IDE
+.vscode/

@@ -247,62 +247,17 @@ describe("UnlitMaterial", () => {
             expect(material.getUniforms()["u_extra"]).toBeUndefined();
         });
 
-        it("shares texture reference", () => {
+        it("shares non-owning texture reference and survives texture disposal", () => {
             const tex = createMockTexture("shared-tex");
             const material = new UnlitMaterial({ texture: tex });
             const clone = material.clone();
 
             expect(clone.texture).toBe(tex);
             expect(clone.texture).toBe(material.texture);
-        });
-    });
 
-    describe("IDisposable lifecycle inheritance", () => {
-        it("isDisposed flag transitions from false to true on dispose()", () => {
-            const material = new UnlitMaterial();
-            expect(material.isDisposed).toBe(false);
-
-            material.dispose();
-            expect(material.isDisposed).toBe(true);
-        });
-
-        it("registered onDispose listeners are called once upon dispose()", () => {
-            const material = new UnlitMaterial();
-            const listener = vi.fn();
-            material.onDispose(listener);
-            expect(listener).not.toHaveBeenCalled();
-
-            material.dispose();
-            expect(listener).toHaveBeenCalledTimes(1);
-        });
-
-        it("assigned textures are disposed upon material dispose()", () => {
-            const tex0 = createMockTexture("color");
-            const tex1 = createMockTexture("normal");
-            const material = new UnlitMaterial({
-                texture: tex0,
-                textures: { [TextureUnit.Normal]: tex1 },
-            });
-
-            material.dispose();
-            expect(tex0.dispose).toHaveBeenCalledTimes(1);
-            expect(tex1.dispose).toHaveBeenCalledTimes(1);
-        });
-
-        it("idempotent disposal: subsequent dispose() calls do nothing and do not re-invoke listeners or texture dispose", () => {
-            const tex = createMockTexture("color");
-            const material = new UnlitMaterial({ texture: tex });
-            const listener = vi.fn();
-            material.onDispose(listener);
-
-            material.dispose();
-            expect(listener).toHaveBeenCalledTimes(1);
-            expect(tex.dispose).toHaveBeenCalledTimes(1);
-
-            material.dispose();
-            expect(listener).toHaveBeenCalledTimes(1);
-            expect(tex.dispose).toHaveBeenCalledTimes(1);
-            expect(material.isDisposed).toBe(true);
+            expect(() => tex.dispose()).not.toThrow();
+            expect(clone.texture).toBe(tex);
+            expect(material.texture).toBe(tex);
         });
     });
 });

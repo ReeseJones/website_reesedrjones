@@ -123,17 +123,6 @@ export class WebGLContextManager implements IWebGLContextManager {
     }
 
     /**
-     * Releases or disposes of a ShaderProgram.
-     */
-    public releaseShader<TUniforms extends object = Record<string, unknown>>(
-        keyOrInstance: ShaderKey | ShaderProgram<TUniforms>
-    ): void {
-        this.shaders.dispose(keyOrInstance);
-    }
-
-
-
-    /**
      * Asserts desired WebGL pipeline state; skips redundant driver calls.
      */
     public applyPipelineState(state: PipelineState): void {

@@ -1,4 +1,5 @@
 import type { GLDataType } from "../core/webgl_constants_types";
+import type { IWebGLResource } from "../core/resource_types";
 
 /**
  * Standard WebGL2 attribute location slot indices (layout(location = N)).
@@ -82,5 +83,25 @@ export interface VertexBufferBinding {
      * Can be overridden per attribute via AttributeSpec.divisor.
      */
     divisor?: VertexStepRate;
+}
+
+/**
+ * Universal interface for managed GPU Vertex Buffer Objects (VBO) and Vertex Array Objects (VAO).
+ */
+export interface IVertexBuffer extends IWebGLResource {
+    /** Interleaved vertex attribute layout specification */
+    readonly layout: VertexLayoutSpec;
+
+    /** Initializes GPU resources if a context is available */
+    init(gl?: WebGL2RenderingContext): void;
+
+    /** Caches CPU geometry array data and uploads it to GPU memory */
+    setData(data: Float32Array, usage?: number): void;
+
+    /** Binds the underlying VAO for rendering */
+    bind(): void;
+
+    /** Unbinds the VAO */
+    unbind(): void;
 }
 

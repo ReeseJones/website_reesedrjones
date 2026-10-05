@@ -96,6 +96,7 @@ describe("BaseTexture", () => {
             expect(texture.height).toBe(1);
             expect(texture.isLoaded).toBe(false);
             expect(texture.isDisposed).toBe(false);
+            expect(texture.isValid).toBe(false);
         });
 
         it("allows subclasses to update dimensions and loaded state", () => {
@@ -197,10 +198,10 @@ describe("BaseTexture", () => {
             expect(gl.bindTexture).not.toHaveBeenCalled();
         });
 
-        it("bind: no-op if gl context is missing or destroyed", () => {
+        it("bind: no-op if gl context is missing or disposed", () => {
             const texture = new TestTexture();
             texture.init(gl);
-            texture.destroy();
+            texture.dispose();
 
             texture.bind();
 
@@ -240,39 +241,45 @@ describe("BaseTexture", () => {
         });
     });
 
-    describe("destroy and dispose", () => {
-        it("destroy: deletes WebGLTexture handle and nullifies handle and gl references", () => {
+    describe("dispose and onDispose", () => {
+        it("dispose: deletes WebGLTexture handle and nullifies handle and gl references", () => {
             const texture = new TestTexture();
             texture.init(gl);
             const rawHandle = texture.handle;
             expect(rawHandle).not.toBeNull();
+            expect(texture.isValid).toBe(true);
 
-            texture.destroy();
+            texture.dispose();
 
             expect(gl.deleteTexture).toHaveBeenCalledWith(rawHandle);
             expect(texture.handle).toBeNull();
+            expect(texture.isValid).toBe(false);
+            expect(texture.isDisposed).toBe(true);
         });
 
-        it("destroy: does not call gl.deleteTexture if context is lost", () => {
+        it("dispose: does not call gl.deleteTexture if context is lost", () => {
             const texture = new TestTexture();
             texture.init(gl);
 
             vi.mocked(gl.isContextLost).mockReturnValue(true);
-            texture.destroy();
+            texture.dispose();
 
             expect(gl.deleteTexture).not.toHaveBeenCalled();
             expect(texture.handle).toBeNull();
+            expect(texture.isValid).toBe(false);
+            expect(texture.isDisposed).toBe(true);
         });
 
-        it("destroy: is safe to call when handle and gl are already null", () => {
+        it("dispose: is safe to call when handle and gl are already null", () => {
             const texture = new TestTexture();
 
-            expect(() => texture.destroy()).not.toThrow();
+            expect(() => texture.dispose()).not.toThrow();
             expect(texture.handle).toBeNull();
             expect(gl.deleteTexture).not.toHaveBeenCalled();
+            expect(texture.isDisposed).toBe(true);
         });
 
-        it("dispose: sets isDisposed to true, executes destroy, and notifies onDispose callbacks", () => {
+        it("dispose: sets isDisposed to true and notifies onDispose callbacks", () => {
             const texture = new TestTexture();
             texture.init(gl);
             const rawHandle = texture.handle;
@@ -306,6 +313,18 @@ describe("BaseTexture", () => {
             texture.dispose();
             expect(callback).toHaveBeenCalledTimes(1);
             expect(gl.deleteTexture).toHaveBeenCalledTimes(1);
+        });
+
+        it("onDispose: returns an unsubscribe function that unregisters the callback", () => {
+            const texture = new TestTexture();
+            texture.init(gl);
+
+            const callback = vi.fn();
+            const unsubscribe = texture.onDispose(callback);
+            unsubscribe();
+
+            texture.dispose();
+            expect(callback).not.toHaveBeenCalled();
         });
 
         it("onDispose: invokes callback immediately if the texture is already disposed", () => {

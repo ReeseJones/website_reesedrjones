@@ -299,7 +299,7 @@ describe("SkyboxMaterial", () => {
             expect(cloned.getUniforms()["u_extra"]).toBe("clone_only");
         });
 
-        it("shares cubeTexture reference", () => {
+        it("shares non-owning cubeTexture reference and survives texture disposal", () => {
             const mockCube = createMockCubeTexture("shared-cube");
             const original = new SkyboxMaterial({ cubeTexture: mockCube });
 
@@ -307,70 +307,10 @@ describe("SkyboxMaterial", () => {
 
             expect(cloned.cubeTexture).toBe(mockCube);
             expect(cloned.cubeTexture).toBe(original.cubeTexture);
-        });
-    });
 
-    describe("IDisposable lifecycle inheritance", () => {
-        it("isDisposed starts false, becomes true on dispose()", () => {
-            const material = new SkyboxMaterial();
-            expect(material.isDisposed).toBe(false);
-
-            material.dispose();
-            expect(material.isDisposed).toBe(true);
-        });
-
-        it("registered onDispose listeners called once upon dispose()", () => {
-            const material = new SkyboxMaterial();
-            const listener = vi.fn();
-
-            material.onDispose(listener);
-            expect(listener).not.toHaveBeenCalled();
-
-            material.dispose();
-            expect(listener).toHaveBeenCalledTimes(1);
-        });
-
-        it("returns unsubscribe function from onDispose that prevents listener invocation", () => {
-            const material = new SkyboxMaterial();
-            const listener = vi.fn();
-
-            const unsubscribe = material.onDispose(listener);
-            unsubscribe();
-
-            material.dispose();
-            expect(listener).not.toHaveBeenCalled();
-        });
-
-        it("assigned cube texture is disposed upon material dispose()", () => {
-            const mockCube = createMockCubeTexture("cube-to-dispose");
-            const material = new SkyboxMaterial({ cubeTexture: mockCube });
-
-            expect(mockCube.dispose).not.toHaveBeenCalled();
-
-            material.dispose();
-
-            expect(mockCube.dispose).toHaveBeenCalledTimes(1);
-            expect(material.cubeTexture).toBeNull();
-            expect(material.getCubeTextures().size).toBe(0);
-            expect(Object.keys(material.getUniforms()).length).toBe(0);
-        });
-
-        it("is idempotent: subsequent dispose() calls do not re-invoke listeners or texture dispose", () => {
-            const mockCube = createMockCubeTexture("cube-idempotent");
-            const material = new SkyboxMaterial({ cubeTexture: mockCube });
-            const listener = vi.fn();
-
-            material.onDispose(listener);
-
-            material.dispose();
-            expect(listener).toHaveBeenCalledTimes(1);
-            expect(mockCube.dispose).toHaveBeenCalledTimes(1);
-
-            // Second dispose call
-            material.dispose();
-            expect(listener).toHaveBeenCalledTimes(1);
-            expect(mockCube.dispose).toHaveBeenCalledTimes(1);
-            expect(material.isDisposed).toBe(true);
+            expect(() => mockCube.dispose()).not.toThrow();
+            expect(cloned.cubeTexture).toBe(mockCube);
+            expect(original.cubeTexture).toBe(mockCube);
         });
     });
 });

@@ -1,4 +1,4 @@
-import type { IDisposable } from "../core/subsystem_types";
+import type { IWebGLResource } from "../core/resource_types";
 import type { TextureFilter, TextureTarget, TextureUnit, TextureWrap } from "./texture_types";
 
 /**
@@ -26,7 +26,7 @@ export interface BaseTextureOptions {
 /**
  * Common public interface for managed WebGL texture resources.
  */
-export interface IBaseTexture extends IDisposable {
+export interface IBaseTexture extends IWebGLResource {
     /** Unique debug label */
     readonly label: string;
 
@@ -59,9 +59,6 @@ export interface IBaseTexture extends IDisposable {
 
     /** Re-uploads pixel data from CPU or source */
     updateFromSource(): void;
-
-    /** Releases GPU texture memory */
-    destroy(): void;
 
     /** WebGL context lost lifecycle hook */
     onContextLost(): void;

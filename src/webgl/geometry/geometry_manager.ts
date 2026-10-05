@@ -40,18 +40,9 @@ export class GeometryManager implements IGeometryManager {
      */
     public createVertexBuffer(layout: VertexLayoutSpec): VertexBuffer {
         const buffer = new VertexBuffer(this._contextManager, layout);
+        buffer.onDispose(() => this._standaloneBuffers.delete(buffer));
         this._standaloneBuffers.add(buffer);
         return buffer;
-    }
-
-    /**
-     * Release Pattern: Deletes GPU resources associated with a VertexBuffer.
-     */
-    public releaseVertexBuffer(buffer: VertexBuffer): void {
-        if (this._standaloneBuffers.has(buffer)) {
-            buffer.destroy();
-            this._standaloneBuffers.delete(buffer);
-        }
     }
 
     /**
@@ -107,7 +98,7 @@ export class GeometryManager implements IGeometryManager {
             record.indexBuffer = null;
         }
 
-        record.vertexBuffer.destroy();
+        record.vertexBuffer.dispose();
         this._records.delete(geometry);
     }
 
@@ -159,6 +150,11 @@ export class GeometryManager implements IGeometryManager {
         for (const record of this._records.values()) {
             record.uploadedVersion = -1;
             record.indexBuffer = null;
+            record.vertexBuffer.onContextLost();
+        }
+
+        for (const buffer of this._standaloneBuffers) {
+            buffer.onContextLost();
         }
     }
 
@@ -170,7 +166,7 @@ export class GeometryManager implements IGeometryManager {
         this._activeGeometryId = null;
 
         for (const buffer of this._standaloneBuffers) {
-            buffer.rebuild(gl);
+            buffer.onContextRestored(gl);
         }
     }
 
@@ -187,13 +183,13 @@ export class GeometryManager implements IGeometryManager {
             if (record.indexBuffer && gl && !gl.isContextLost()) {
                 gl.deleteBuffer(record.indexBuffer);
             }
-            record.vertexBuffer.destroy();
+            record.vertexBuffer.dispose();
         }
 
         this._records.clear();
 
         for (const buffer of this._standaloneBuffers) {
-            buffer.destroy();
+            buffer.dispose();
         }
         this._standaloneBuffers.clear();
 
@@ -229,9 +225,12 @@ export class GeometryManager implements IGeometryManager {
     ): GPUGeometryRecord {
         const id = existingRecord?.id ?? ++this._nextId;
         if (existingRecord?.vertexBuffer) {
-            existingRecord.vertexBuffer.destroy();
+            existingRecord.vertexBuffer.dispose();
         }
-        const vertexBuffer = new VertexBuffer(this._contextManager, geometry.bufferData.layout);
+        const vertexBuffer = new VertexBuffer(
+            this._contextManager,
+            geometry.bufferData.layout
+        );
         vertexBuffer.setData(geometry.bufferData.attributes);
         vertexBuffer.bind();
 

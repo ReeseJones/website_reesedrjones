@@ -39,11 +39,6 @@ export interface IGeometryManager extends IContextSubsystem {
     createVertexBuffer(layout: VertexLayoutSpec): VertexBuffer;
 
     /**
-     * Release Pattern: Deletes GPU resources associated with a VertexBuffer.
-     */
-    releaseVertexBuffer(buffer: VertexBuffer): void;
-
-    /**
      * Binds the VAO and buffer state for a mesh geometry, lazily allocating or updating
      * GPU buffers as necessary. Deduplicates redundant driver bind calls.
      */

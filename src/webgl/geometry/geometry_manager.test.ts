@@ -65,52 +65,70 @@ describe("GeometryManager", () => {
         });
     });
 
-    describe("standalone VertexBuffer management", () => {
-        it("allocates and tracks managed VertexBuffer instances", () => {
+    describe(".createVertexBuffer()", () => {
+        it("allocates a managed VertexBuffer instance with layout", () => {
             const buffer = geometryManager.createVertexBuffer(testLayout);
             expect(buffer).toBeInstanceOf(VertexBuffer);
             expect(buffer.layout).toBe(testLayout);
             expect(geometryManager.getDiagnostics().resourceCount).toBe(1);
         });
 
-        it("releases and destroys managed VertexBuffer instances", () => {
+        it("automatically evicts buffer from internal set when buffer.dispose() is called", () => {
             const buffer = geometryManager.createVertexBuffer(testLayout);
-            const destroySpy = vi.spyOn(buffer, "destroy");
+            expect(geometryManager.getDiagnostics().resourceCount).toBe(1);
 
-            geometryManager.releaseVertexBuffer(buffer);
-            expect(destroySpy).toHaveBeenCalled();
+            buffer.dispose();
             expect(geometryManager.getDiagnostics().resourceCount).toBe(0);
         });
+    });
 
-        it("safely handles releasing untracked VertexBuffers", () => {
-            const foreignBuffer = new VertexBuffer(cm, testLayout);
-            const destroySpy = vi.spyOn(foreignBuffer, "destroy");
-
-            geometryManager.releaseVertexBuffer(foreignBuffer);
-            expect(destroySpy).not.toHaveBeenCalled();
-        });
-
-        it("rebuilds standalone VertexBuffers upon context restoration", () => {
+    describe(".onContextLost() and .onContextRestored()", () => {
+        it("forwards onContextLost to all standalone buffers and resets active geometry ID", () => {
             const buffer1 = geometryManager.createVertexBuffer(testLayout);
             const buffer2 = geometryManager.createVertexBuffer(testLayout);
+            const lostSpy1 = vi.spyOn(buffer1, "onContextLost");
+            const lostSpy2 = vi.spyOn(buffer2, "onContextLost");
 
-            const rebuildSpy1 = vi.spyOn(buffer1, "rebuild");
-            const rebuildSpy2 = vi.spyOn(buffer2, "rebuild");
+            const geom = createDummyGeometry();
+            geometryManager.bind(geom);
+            expect(geometryManager.activeGeometryId).not.toBeNull();
+
+            geometryManager.onContextLost();
+
+            expect(geometryManager.activeGeometryId).toBeNull();
+            expect(lostSpy1).toHaveBeenCalledTimes(1);
+            expect(lostSpy2).toHaveBeenCalledTimes(1);
+        });
+
+        it("forwards onContextRestored to all standalone buffers with new gl context", () => {
+            const buffer1 = geometryManager.createVertexBuffer(testLayout);
+            const buffer2 = geometryManager.createVertexBuffer(testLayout);
+            const restoredSpy1 = vi.spyOn(buffer1, "onContextRestored");
+            const restoredSpy2 = vi.spyOn(buffer2, "onContextRestored");
 
             const newGl = createMockWebGL2Context();
             geometryManager.onContextRestored(newGl);
 
-            expect(rebuildSpy1).toHaveBeenCalledWith(newGl);
-            expect(rebuildSpy2).toHaveBeenCalledWith(newGl);
+            expect(restoredSpy1).toHaveBeenCalledWith(newGl);
+            expect(restoredSpy2).toHaveBeenCalledWith(newGl);
         });
+    });
 
-        it("destroys standalone VertexBuffers upon geometryManager.destroy()", () => {
+    describe(".destroy()", () => {
+        it("disposes standalone buffers and mesh records upon geometryManager.destroy()", () => {
             const buffer = geometryManager.createVertexBuffer(testLayout);
-            const destroySpy = vi.spyOn(buffer, "destroy");
+            const bufferDisposeSpy = vi.spyOn(buffer, "dispose");
+
+            const geom = createDummyGeometry();
+            const record = geometryManager.bind(geom);
+            const recordBufferDisposeSpy = vi.spyOn(record.vertexBuffer, "dispose");
 
             geometryManager.destroy();
-            expect(destroySpy).toHaveBeenCalled();
+
+            expect(bufferDisposeSpy).toHaveBeenCalled();
+            expect(recordBufferDisposeSpy).toHaveBeenCalled();
             expect(geometryManager.getDiagnostics().resourceCount).toBe(0);
+            expect(geometryManager.activeGeometryId).toBeNull();
         });
     });
 
@@ -149,27 +167,92 @@ describe("GeometryManager", () => {
         it("disposes mesh GPU resources on geometry.dispose() callback", () => {
             const geom = createDummyGeometry();
             const record = geometryManager.bind(geom);
-            const bufferDestroySpy = vi.spyOn(record.vertexBuffer, "destroy");
+            const bufferDisposeSpy = vi.spyOn(record.vertexBuffer, "dispose");
 
             geom.dispose();
 
-            expect(bufferDestroySpy).toHaveBeenCalled();
+            expect(bufferDisposeSpy).toHaveBeenCalled();
             expect(geometryManager.hasRecord(geom)).toBe(false);
             expect(geometryManager.geometryCount).toBe(0);
         });
 
-        it("destroys old vertex buffer when re-allocating an invalidated record after context loss", () => {
+        it("disposes old vertex buffer when re-allocating an invalidated record after context loss", () => {
             const geom = createDummyGeometry();
             const initialRecord = geometryManager.bind(geom);
             const oldVertexBuffer = initialRecord.vertexBuffer;
-            const oldDestroySpy = vi.spyOn(oldVertexBuffer, "destroy");
+            const oldDisposeSpy = vi.spyOn(oldVertexBuffer, "dispose");
 
             geometryManager.onContextLost();
             expect(initialRecord.uploadedVersion).toBe(-1);
 
             const newRecord = geometryManager.bind(geom);
-            expect(oldDestroySpy).toHaveBeenCalled();
+            expect(oldDisposeSpy).toHaveBeenCalled();
             expect(newRecord.vertexBuffer).not.toBe(oldVertexBuffer);
+        });
+
+        it("syncs buffer data when geometry version increases", () => {
+            const geom = createDummyGeometry();
+            const record = geometryManager.bind(geom);
+
+            const newAttrs = new Float32Array([1, 2, 3, 4, 5, 6, 7, 8]);
+            geom.bufferData.attributes = newAttrs;
+            (geom as any).version = 2;
+
+            const setDataSpy = vi.spyOn(record.vertexBuffer, "setData");
+            geometryManager.bind(geom);
+
+            expect(setDataSpy).toHaveBeenCalledWith(newAttrs);
+            expect(record.uploadedVersion).toBe(2);
+        });
+    });
+
+    describe(".draw()", () => {
+        it("executes gl.drawElements for indexed geometries", () => {
+            const geom = createDummyGeometry(undefined, new Uint16Array([0, 1, 2]));
+            geometryManager.draw(geom);
+
+            expect(gl.drawElements).toHaveBeenCalledWith(
+                geom.primitiveType,
+                3,
+                gl.UNSIGNED_SHORT,
+                0
+            );
+        });
+
+        it("executes gl.drawArrays for non-indexed geometries", () => {
+            const geom = createDummyGeometry(new Float32Array([0, 0, 0, 1, 1, 1]), undefined);
+            (geom.bufferData as any).indices = undefined;
+            (geom as any).indexCount = null;
+
+            geometryManager.draw(geom);
+
+            expect(gl.drawArrays).toHaveBeenCalledWith(
+                geom.primitiveType,
+                0,
+                geom.vertexCount
+            );
+        });
+    });
+
+    describe(".dispose(geometry)", () => {
+        it("immediately deletes index buffer and disposes vertex buffer for the geometry", () => {
+            const geom = createDummyGeometry();
+            const record = geometryManager.bind(geom);
+            const vboDisposeSpy = vi.spyOn(record.vertexBuffer, "dispose");
+            const iboHandle = record.indexBuffer;
+
+            geometryManager.dispose(geom);
+
+            expect(vboDisposeSpy).toHaveBeenCalledTimes(1);
+            if (iboHandle) {
+                expect(gl.deleteBuffer).toHaveBeenCalledWith(iboHandle);
+            }
+            expect(geometryManager.hasRecord(geom)).toBe(false);
+        });
+
+        it("is safe to call if geometry is not tracked", () => {
+            const geom = createDummyGeometry();
+            expect(() => geometryManager.dispose(geom)).not.toThrow();
         });
     });
 

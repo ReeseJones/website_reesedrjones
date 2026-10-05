@@ -66,13 +66,13 @@ describe("ShaderProgram", () => {
             expect(defaultShader.fragSource).toBe(testFragSource);
         });
 
-        it("isValid() returns true and getProgram() returns WebGLProgram handle on successful link", () => {
+        it("isValid returns true and getProgram() returns WebGLProgram handle on successful link", () => {
             const shader = new ShaderProgram(cm, {
                 vertSource: testVertSource,
                 fragSource: testFragSource,
             });
 
-            expect(shader.isValid()).toBe(true);
+            expect(shader.isValid).toBe(true);
             const program = shader.getProgram();
             expect(program).toBeDefined();
             expect(program).not.toBeNull();
@@ -134,11 +134,11 @@ describe("ShaderProgram", () => {
             expect(consoleSpy).toHaveBeenCalledWith("[FailingLinkShader] Program link failed: Mismatched varying types");
             expect(gl.deleteShader).toHaveBeenCalledTimes(2);
             expect(gl.deleteProgram).toHaveBeenCalledTimes(1);
-            expect(shader.isValid()).toBe(false);
+            expect(shader.isValid).toBe(false);
             expect(shader.getProgram()).toBeNull();
         });
 
-        it("shader compilation failure (compileShader returns null): does not create program, isValid() returns false, getProgram() returns null", () => {
+        it("shader compilation failure (compileShader returns null): does not create program, isValid returns false, getProgram() returns null", () => {
             vi.mocked(gl.getShaderParameter).mockReturnValue(false);
             vi.mocked(gl.getShaderInfoLog).mockReturnValue("Syntax error in vertex shader");
             const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
@@ -153,11 +153,11 @@ describe("ShaderProgram", () => {
                 expect.stringContaining("[CompileFailShader] VERTEX shader compile failed")
             );
             expect(gl.createProgram).not.toHaveBeenCalled();
-            expect(shader.isValid()).toBe(false);
+            expect(shader.isValid).toBe(false);
             expect(shader.getProgram()).toBeNull();
         });
 
-        it("context not available (gl is null): isValid() returns false and getProgram() returns null", () => {
+        it("context not available (gl is null): isValid returns false and getProgram() returns null", () => {
             vi.mocked(cm.getContext).mockReturnValue(null);
 
             const shader = new ShaderProgram(cm, {
@@ -165,7 +165,7 @@ describe("ShaderProgram", () => {
                 fragSource: testFragSource,
             });
 
-            expect(shader.isValid()).toBe(false);
+            expect(shader.isValid).toBe(false);
             expect(shader.getProgram()).toBeNull();
         });
     });
@@ -207,7 +207,7 @@ describe("ShaderProgram", () => {
             const missingLoc = shader.getUniformLocation("u_nonExistent");
             expect(missingLoc).toBeNull();
 
-            shader.destroy();
+            shader.dispose();
             const destroyedLoc = shader.getUniformLocation("u_time");
             expect(destroyedLoc).toBeNull();
         });
@@ -385,7 +385,8 @@ describe("ShaderProgram", () => {
 
                 // Mutating original array should not affect cached copy
                 mat[0] = 999;
-                shader.rebuild();
+                shader.onContextLost();
+                shader.onContextRestored(gl);
                 expect(gl.uniformMatrix3fv).toHaveBeenLastCalledWith(
                     expect.objectContaining({ name: "u_normalMatrix" }),
                     false,
@@ -413,7 +414,8 @@ describe("ShaderProgram", () => {
 
                 // Mutating original array should not affect cached copy
                 mat[0] = 555;
-                shader.rebuild();
+                shader.onContextLost();
+                shader.onContextRestored(gl);
                 expect(gl.uniformMatrix4fv).toHaveBeenLastCalledWith(
                     expect.objectContaining({ name: "u_mvp" }),
                     false,
@@ -566,8 +568,27 @@ describe("ShaderProgram", () => {
         });
     });
 
-    describe("rebuild and cached uniform restoration", () => {
-        it("rebuild(): destroys old program, builds new one, and re-uploads all previously cached uniforms to the new program", () => {
+    describe(".onContextLost()", () => {
+        it("invalidates program handle and clears uniform location cache without calling gl.deleteProgram", () => {
+            const shader = new ShaderProgram(cm, {
+                vertSource: testVertSource,
+                fragSource: testFragSource,
+            });
+
+            expect(shader.isValid).toBe(true);
+            const progHandle = shader.getProgram();
+
+            shader.onContextLost();
+
+            expect(shader.isValid).toBe(false);
+            expect(shader.getProgram()).toBeNull();
+            expect(gl.deleteProgram).not.toHaveBeenCalled();
+            expect(shader.getUniformLocation("u_time")).toBeNull();
+        });
+    });
+
+    describe(".onContextRestored()", () => {
+        it("recompiles program and restores all cached uniforms to the new program", () => {
             const shader = new ShaderProgram(cm, {
                 vertSource: testVertSource,
                 fragSource: testFragSource,
@@ -590,156 +611,131 @@ describe("ShaderProgram", () => {
             ]);
             shader.setMat4("u_mvp", mat4);
 
+            shader.onContextLost();
+            expect(shader.isValid).toBe(false);
+
+            const restoredGl = createMockWebGL2Context();
             vi.clearAllMocks();
 
-            const result = shader.rebuild();
+            shader.onContextRestored(restoredGl);
 
-            expect(result).toBe(true);
-            expect(gl.deleteProgram).toHaveBeenCalledWith(initialProgram);
+            expect(shader.isValid).toBe(true);
+            expect(shader.getProgram()).not.toBeNull();
             expect(shader.getProgram()).not.toBe(initialProgram);
-            expect(shader.isValid()).toBe(true);
-        });
 
-        it("re-uploads floats, ints, vec2s, vec3s, vec4s, mat3s, mat4s from uniformCache", () => {
-            const shader = new ShaderProgram(cm, {
-                vertSource: testVertSource,
-                fragSource: testFragSource,
-            });
-
-            shader.setFloat("u_float", 1.25);
-            shader.setInt("u_int", 7);
-            shader.setVec2("u_vec2", 10.0, 20.0);
-            shader.setVec3("u_vec3", 1.0, 2.0, 3.0);
-            shader.setVec4("u_vec4", 4.0, 5.0, 6.0, 7.0);
-            const mat3 = new Float32Array([1, 2, 3, 4, 5, 6, 7, 8, 9]);
-            shader.setMat3("u_mat3", mat3);
-            const mat4 = new Float32Array([
-                1, 0, 0, 0,
-                0, 1, 0, 0,
-                0, 0, 1, 0,
-                0, 0, 0, 1,
-            ]);
-            shader.setMat4("u_mat4", mat4);
-
-            vi.clearAllMocks();
-
-            shader.rebuild();
-
-            expect(gl.uniform1f).toHaveBeenCalledWith(
-                expect.objectContaining({ name: "u_float" }),
-                1.25
+            expect(restoredGl.uniform1f).toHaveBeenCalledWith(
+                expect.objectContaining({ name: "u_intensity" }),
+                0.5
             );
-            expect(gl.uniform1i).toHaveBeenCalledWith(
-                expect.objectContaining({ name: "u_int" }),
-                7
+            expect(restoredGl.uniform1i).toHaveBeenCalledWith(
+                expect.objectContaining({ name: "u_layers" }),
+                4
             );
-            expect(gl.uniform2f).toHaveBeenCalledWith(
-                expect.objectContaining({ name: "u_vec2" }),
-                10.0,
-                20.0
+            expect(restoredGl.uniform2f).toHaveBeenCalledWith(
+                expect.objectContaining({ name: "u_scale" }),
+                2.0,
+                3.0
             );
-            expect(gl.uniform3fv).toHaveBeenCalledWith(
-                expect.objectContaining({ name: "u_vec3" }),
-                [1.0, 2.0, 3.0]
+            expect(restoredGl.uniform3fv).toHaveBeenCalledWith(
+                expect.objectContaining({ name: "u_ambient" }),
+                [0.1, 0.2, 0.3]
             );
-            expect(gl.uniform4f).toHaveBeenCalledWith(
-                expect.objectContaining({ name: "u_vec4" }),
-                4.0,
-                5.0,
-                6.0,
-                7.0
+            expect(restoredGl.uniform4f).toHaveBeenCalledWith(
+                expect.objectContaining({ name: "u_diffuse" }),
+                0.4,
+                0.5,
+                0.6,
+                1.0
             );
-            expect(gl.uniformMatrix3fv).toHaveBeenCalledWith(
-                expect.objectContaining({ name: "u_mat3" }),
+            expect(restoredGl.uniformMatrix3fv).toHaveBeenCalledWith(
+                expect.objectContaining({ name: "u_normalMatrix" }),
                 false,
                 mat3
             );
-            expect(gl.uniformMatrix4fv).toHaveBeenCalledWith(
-                expect.objectContaining({ name: "u_mat4" }),
+            expect(restoredGl.uniformMatrix4fv).toHaveBeenCalledWith(
+                expect.objectContaining({ name: "u_mvp" }),
                 false,
                 mat4
             );
-        });
-
-        it("calls contextManager.useShader(this) during uniform restoration", () => {
-            const shader = new ShaderProgram(cm, {
-                vertSource: testVertSource,
-                fragSource: testFragSource,
-            });
-
-            shader.setFloat("u_intensity", 1.0);
-            vi.clearAllMocks();
-
-            shader.rebuild();
-
             expect(cm.useShader).toHaveBeenCalledWith(shader);
         });
 
-        it("returns true on success, false if build fails", () => {
+        it("does nothing if shader is already disposed", () => {
             const shader = new ShaderProgram(cm, {
                 vertSource: testVertSource,
                 fragSource: testFragSource,
             });
 
-            expect(shader.rebuild()).toBe(true);
+            shader.dispose();
+            expect(shader.isDisposed).toBe(true);
 
-            // Simulate build failure on rebuild
-            vi.mocked(gl.getProgramParameter).mockImplementation((_p, pname) => {
-                if (pname === gl.LINK_STATUS) return false;
-                return true;
-            });
-            vi.spyOn(console, "error").mockImplementation(() => {});
+            const restoredGl = createMockWebGL2Context();
+            shader.onContextRestored(restoredGl);
 
-            expect(shader.rebuild()).toBe(false);
-            expect(shader.isValid()).toBe(false);
+            expect(shader.isValid).toBe(false);
+            expect(restoredGl.createProgram).not.toHaveBeenCalled();
         });
     });
 
-    describe("destroy and resource cleanup", () => {
-        it("calls gl.deleteProgram with current program handle", () => {
+    describe(".onDispose()", () => {
+        it("registers callback invoked when dispose() is called", () => {
+            const shader = new ShaderProgram(cm, {
+                vertSource: testVertSource,
+                fragSource: testFragSource,
+            });
+            const callback = vi.fn();
+
+            shader.onDispose(callback);
+            expect(callback).not.toHaveBeenCalled();
+
+            shader.dispose();
+            expect(callback).toHaveBeenCalledTimes(1);
+        });
+
+        it("returns an unsubscribe function that unregisters the callback", () => {
+            const shader = new ShaderProgram(cm, {
+                vertSource: testVertSource,
+                fragSource: testFragSource,
+            });
+            const callback = vi.fn();
+
+            const unsubscribe = shader.onDispose(callback);
+            unsubscribe();
+
+            shader.dispose();
+            expect(callback).not.toHaveBeenCalled();
+        });
+
+        it("invokes callback immediately if shader is already disposed", () => {
+            const shader = new ShaderProgram(cm, {
+                vertSource: testVertSource,
+                fragSource: testFragSource,
+            });
+            shader.dispose();
+
+            const callback = vi.fn();
+            shader.onDispose(callback);
+            expect(callback).toHaveBeenCalledTimes(1);
+        });
+    });
+
+    describe(".dispose()", () => {
+        it("calls gl.deleteProgram with current program handle and unbinds from contextManager", () => {
             const shader = new ShaderProgram(cm, {
                 vertSource: testVertSource,
                 fragSource: testFragSource,
             });
 
+            vi.mocked(cm.getCurrentShader).mockReturnValue(shader as any);
             const progHandle = shader.getProgram();
-            shader.destroy();
 
+            shader.dispose();
+
+            expect(cm.useProgram).toHaveBeenCalledWith(null);
             expect(gl.deleteProgram).toHaveBeenCalledWith(progHandle);
-        });
-
-        it("sets program to null and clears uniformLocations cache", () => {
-            const shader = new ShaderProgram(cm, {
-                vertSource: testVertSource,
-                fragSource: testFragSource,
-            });
-
-            shader.getUniformLocation("u_time");
-            shader.destroy();
-
             expect(shader.getProgram()).toBeNull();
-            expect(shader.isValid()).toBe(false);
-            expect(shader.getUniformLocation("u_time")).toBeNull();
-        });
-
-        it("retains uniformCache (so rebuild can restore state)", () => {
-            const shader = new ShaderProgram(cm, {
-                vertSource: testVertSource,
-                fragSource: testFragSource,
-            });
-
-            shader.setFloat("u_alpha", 0.42);
-            shader.destroy();
-
-            vi.clearAllMocks();
-            const rebuilt = shader.rebuild();
-
-            expect(rebuilt).toBe(true);
-            expect(shader.isValid()).toBe(true);
-            expect(gl.uniform1f).toHaveBeenCalledWith(
-                expect.objectContaining({ name: "u_alpha" }),
-                0.42
-            );
+            expect(shader.isValid).toBe(false);
+            expect(shader.isDisposed).toBe(true);
         });
 
         it("does not call gl.deleteProgram if context is lost (gl.isContextLost() === true)", () => {
@@ -749,26 +745,33 @@ describe("ShaderProgram", () => {
             });
 
             vi.mocked(gl.isContextLost).mockReturnValue(true);
-            shader.destroy();
+            shader.dispose();
 
             expect(gl.deleteProgram).not.toHaveBeenCalled();
             expect(shader.getProgram()).toBeNull();
-            expect(shader.isValid()).toBe(false);
+            expect(shader.isValid).toBe(false);
+            expect(shader.isDisposed).toBe(true);
         });
 
-        it("idempotent: calling destroy multiple times does not error or call deleteProgram twice", () => {
+        it("is idempotent: calling dispose multiple times does not error or delete twice", () => {
             const shader = new ShaderProgram(cm, {
                 vertSource: testVertSource,
                 fragSource: testFragSource,
             });
+            const callback = vi.fn();
+            shader.onDispose(callback);
+
+            shader.dispose();
+            expect(gl.deleteProgram).toHaveBeenCalledTimes(1);
+            expect(callback).toHaveBeenCalledTimes(1);
 
             expect(() => {
-                shader.destroy();
-                shader.destroy();
-                shader.destroy();
+                shader.dispose();
+                shader.dispose();
             }).not.toThrow();
 
             expect(gl.deleteProgram).toHaveBeenCalledTimes(1);
+            expect(callback).toHaveBeenCalledTimes(1);
         });
     });
 });

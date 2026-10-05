@@ -243,20 +243,6 @@ describe("SolidColorTexture", () => {
             expect(onDisposeListener).toHaveBeenCalledTimes(1);
             expect(gl.deleteTexture).toHaveBeenCalledTimes(1);
         });
-
-        it("destroy deletes handle without invoking onDispose callbacks", () => {
-            const texture = new SolidColorTexture();
-            texture.init(gl);
-            const handle = texture.handle;
-            const onDisposeListener = vi.fn();
-            texture.onDispose(onDisposeListener);
-
-            texture.destroy();
-
-            expect(gl.deleteTexture).toHaveBeenCalledWith(handle);
-            expect(texture.handle).toBeNull();
-            expect(onDisposeListener).not.toHaveBeenCalled();
-        });
     });
 });
 
@@ -299,7 +285,7 @@ describe("SolidColorCubeTexture", () => {
             expect(texture.target).toBe(TextureTarget.CubeMap);
         });
 
-        it("width is 1, height is 1, isLoaded is true, isReady is true, isDestroyed is false", () => {
+        it("width is 1, height is 1, isLoaded is true, isReady is true, isDisposed is false", () => {
             const texture = new SolidColorCubeTexture();
 
             expect(texture.width).toBe(1);
@@ -307,7 +293,6 @@ describe("SolidColorCubeTexture", () => {
             expect(texture.isLoaded).toBe(true);
             expect(texture.isReady).toBe(true);
             expect(texture.isDisposed).toBe(false);
-            expect(texture.isDestroyed).toBe(false);
             expect(texture.handle).toBeNull();
             expect(texture.label).toBe("SolidColorCubeTexture");
         });
@@ -447,7 +432,7 @@ describe("SolidColorCubeTexture", () => {
     });
 
     describe("lifecycle", () => {
-        it("dispose marks isDestroyed = true, deletes handle", () => {
+        it("dispose marks isDisposed = true, deletes handle", () => {
             const texture = new SolidColorCubeTexture();
             texture.init(gl);
             const handle = texture.handle;
@@ -455,12 +440,10 @@ describe("SolidColorCubeTexture", () => {
             const onDisposeListener = vi.fn();
             texture.onDispose(onDisposeListener);
 
-            expect(texture.isDestroyed).toBe(false);
             expect(texture.isDisposed).toBe(false);
 
             texture.dispose();
 
-            expect(texture.isDestroyed).toBe(true);
             expect(texture.isDisposed).toBe(true);
             expect(texture.handle).toBeNull();
             expect(gl.deleteTexture).toHaveBeenCalledWith(handle);

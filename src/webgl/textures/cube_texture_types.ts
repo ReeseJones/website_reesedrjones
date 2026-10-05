@@ -27,18 +27,16 @@ export interface CubeTextureOptions {
     label?: string;
 }
 
-import type { IDisposable } from "../core/subsystem_types";
+import type { IWebGLResource } from "../core/resource_types";
 
 /**
  * Pure WebGL 2 cubemap texture interface.
  */
-export interface ICubeTexture extends IDisposable {
-    /** Native WebGLTexture handle or null if unallocated/destroyed */
+export interface ICubeTexture extends IWebGLResource {
+    /** Native WebGLTexture handle or null if unallocated/disposed */
     readonly handle: WebGLTexture | null;
     /** Whether all 6 face textures have finished loading and decoding */
     readonly isReady: boolean;
-    /** Whether the texture resource has been permanently destroyed */
-    readonly isDestroyed: boolean;
     /** Face definitions configured for this cubemap */
     readonly faces: CubeTextureFaces;
 
@@ -46,10 +44,4 @@ export interface ICubeTexture extends IDisposable {
     load(): Promise<void>;
     /** Allocates the GPU cubemap texture and uploads images or 1x1 fallback */
     init(gl: WebGL2RenderingContext): void;
-    /** Releases the GPU texture handle */
-    destroy(): void;
-    /** Handles context loss by clearing GPU handles */
-    onContextLost(): void;
-    /** Re-allocates and re-uploads cubemap data upon context restoration */
-    onContextRestored(gl: WebGL2RenderingContext): void;
 }

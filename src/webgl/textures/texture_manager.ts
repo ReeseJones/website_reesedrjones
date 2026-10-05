@@ -50,8 +50,12 @@ export class TextureManager implements ITextureManager {
             texture.init(gl);
         }
 
+        const handleToUnbind = texture.handle;
         this._disposalSubscribers.add(texture);
-        texture.onDispose(() => this.dispose(texture));
+        texture.onDispose(() => {
+            this._urlCache.delete(url);
+            this._unbindHandle(handleToUnbind ?? texture.handle);
+        });
         this._urlCache.set(url, texture);
         return texture;
     }
@@ -85,9 +89,18 @@ export class TextureManager implements ITextureManager {
             if (!texture.handle) {
                 texture.init(gl);
             }
+            const handleToUnbind = texture.handle;
             if (typeof texture.onDispose === "function" && !this._disposalSubscribers.has(texture)) {
                 this._disposalSubscribers.add(texture);
-                texture.onDispose(() => this.dispose(texture));
+                texture.onDispose(() => {
+                    for (const [key, val] of this._urlCache.entries()) {
+                        if (val === texture) {
+                            this._urlCache.delete(key);
+                            break;
+                        }
+                    }
+                    this._unbindHandle(handleToUnbind ?? texture.handle);
+                });
             }
         }
 
@@ -126,9 +139,12 @@ export class TextureManager implements ITextureManager {
             if (!texture.handle) {
                 texture.init(gl);
             }
+            const handleToUnbind = texture.handle;
             if (typeof texture.onDispose === "function" && !this._disposalSubscribers.has(texture)) {
                 this._disposalSubscribers.add(texture);
-                texture.onDispose(() => this.dispose(texture));
+                texture.onDispose(() => {
+                    this._unbindHandle(handleToUnbind ?? texture.handle);
+                });
             }
         }
 
@@ -206,44 +222,6 @@ export class TextureManager implements ITextureManager {
     }
 
     /**
-     * Deterministic Disposal: Releases a texture from the cache and deletes its GPU handle.
-     */
-    public dispose(textureOrUrl: ITexture | ICubeTexture | string): void {
-        let targetKey: string | null = null;
-        let targetTex: ITexture | ICubeTexture | null = null;
-
-        if (typeof textureOrUrl === "string") {
-            targetKey = textureOrUrl;
-            targetTex = this._urlCache.get(targetKey) ?? null;
-        } else {
-            targetTex = textureOrUrl;
-            for (const [key, val] of this._urlCache.entries()) {
-                if (val === targetTex) {
-                    targetKey = key;
-                    break;
-                }
-            }
-        }
-
-        if (targetTex) {
-            const handle = targetTex.handle;
-            if (handle) {
-                for (const [u, h] of this._boundTextures.entries()) {
-                    if (h === handle) this._boundTextures.set(u, null);
-                }
-                for (const [u, h] of this._boundCubeTextures.entries()) {
-                    if (h === handle) this._boundCubeTextures.set(u, null);
-                }
-            }
-            targetTex.destroy();
-        }
-
-        if (targetKey) {
-            this._urlCache.delete(targetKey);
-        }
-    }
-
-    /**
      * WebGL context lost lifecycle hook: clears all driver handles without deleting.
      */
     public onContextLost(): void {
@@ -281,8 +259,8 @@ export class TextureManager implements ITextureManager {
         const gl = this._gl ?? this._contextManager.getContext();
         this._fallbacks.destroy(gl);
 
-        for (const tex of this._urlCache.values()) {
-            tex.destroy();
+        for (const tex of Array.from(this._urlCache.values())) {
+            tex.dispose();
         }
 
         this._urlCache.clear();
@@ -303,17 +281,17 @@ export class TextureManager implements ITextureManager {
         };
     }
 
-    // --- Backwards-Compatible Aliases ---
-
-    public getOrCreateTexture(url: string, options?: Omit<TextureOptions, "label">): ITexture {
-        return this.getOrCreate(url, options);
-    }
-
-    public release(textureOrUrl: ITexture | string): void {
-        this.dispose(textureOrUrl);
-    }
-
     // --- Private Helpers ---
+
+    private _unbindHandle(handle: WebGLTexture | null): void {
+        if (!handle) return;
+        for (const [u, h] of this._boundTextures.entries()) {
+            if (h === handle) this._boundTextures.set(u, null);
+        }
+        for (const [u, h] of this._boundCubeTextures.entries()) {
+            if (h === handle) this._boundCubeTextures.set(u, null);
+        }
+    }
 
     private _getGLContext(): WebGL2RenderingContext {
         const gl = this._gl ?? this._contextManager.getContext();

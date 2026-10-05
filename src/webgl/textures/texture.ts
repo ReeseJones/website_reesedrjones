@@ -73,8 +73,8 @@ export class Texture extends BaseTexture {
     /**
      * Releases GPU texture memory and resets loading state.
      */
-    public override destroy(): void {
-        super.destroy();
+    public override dispose(): void {
+        super.dispose();
         this._isLoaded = false;
     }
 

@@ -319,16 +319,16 @@ export class GalaxyRenderer {
         this.detachEventListeners();
 
         if (this.starBuffer) {
-            this.contextManager.geometries.releaseVertexBuffer(this.starBuffer);
+            this.starBuffer.dispose();
             this.starBuffer = null;
         }
 
         if (this.pinprickShader) {
-            this.contextManager.releaseShader("galaxy_pinprick");
+            this.pinprickShader.dispose();
             this.pinprickShader = null;
         }
         if (this.orbShader) {
-            this.contextManager.releaseShader("galaxy_orb");
+            this.orbShader.dispose();
             this.orbShader = null;
         }
         this.activeShader = null;

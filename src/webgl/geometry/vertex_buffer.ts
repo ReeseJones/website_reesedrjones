@@ -1,5 +1,5 @@
 import { configureVAO } from "./vertex_layout";
-import type { VertexLayoutSpec } from "./vertex_layout_types";
+import type { IVertexBuffer, VertexLayoutSpec } from "./vertex_layout_types";
 import type { IWebGLContextManager } from "../core/context_manager_types";
 import { GLBufferUsage } from "../core/webgl_constants_types";
 
@@ -8,7 +8,8 @@ import { GLBufferUsage } from "../core/webgl_constants_types";
  * Retains a CPU geometry data cache and handles GPU memory allocation, VAO binding,
  * and automated context restoration.
  */
-export class VertexBuffer {
+export class VertexBuffer implements IVertexBuffer {
+    public readonly label: string;
     public readonly layout: VertexLayoutSpec;
 
     private readonly contextManager: IWebGLContextManager;
@@ -16,6 +17,8 @@ export class VertexBuffer {
     private vao: WebGLVertexArrayObject | null = null;
     private cpuData: Float32Array | null = null;
     private usage: GLBufferUsage;
+    private _isDisposed: boolean = false;
+    private readonly _onDisposeCallbacks: Set<() => void> = new Set();
 
     private get gl(): WebGL2RenderingContext | null {
         return this.contextManager.getContext();
@@ -23,10 +26,12 @@ export class VertexBuffer {
 
     constructor(
         contextManager: IWebGLContextManager,
-        layout: VertexLayoutSpec
+        layout: VertexLayoutSpec,
+        label: string = "VertexBuffer"
     ) {
         this.contextManager = contextManager;
         this.layout = layout;
+        this.label = label;
         this.usage = GLBufferUsage.StaticDraw;
 
         const currentGl = this.gl;
@@ -35,13 +40,21 @@ export class VertexBuffer {
         }
     }
 
+    public get isValid(): boolean {
+        return this.vao !== null && this.vbo !== null && !this._isDisposed;
+    }
+
+    public get isDisposed(): boolean {
+        return this._isDisposed;
+    }
+
     /**
      * Initializes or updates GPU resources when a context becomes available.
      */
-    public init(_gl?: WebGL2RenderingContext): void {
+    public init(gl?: WebGL2RenderingContext): void {
         this.usage = GLBufferUsage.StaticDraw;
         if (!this.vao || !this.vbo) {
-            this.buildGPUResources();
+            this.buildGPUResources(gl);
         }
     }
 
@@ -56,9 +69,9 @@ export class VertexBuffer {
 
         const currentGl = this.gl;
         if (currentGl && !currentGl.isContextLost() && this.vbo) {
-            currentGl.bindBuffer(currentGl.ARRAY_BUFFER, this.vbo);
-            currentGl.bufferData(currentGl.ARRAY_BUFFER, data, this.usage);
-            currentGl.bindBuffer(currentGl.ARRAY_BUFFER, null);
+            currentGl.bindBuffer(WebGL2RenderingContext.ARRAY_BUFFER, this.vbo);
+            currentGl.bufferData(WebGL2RenderingContext.ARRAY_BUFFER, data, this.usage);
+            currentGl.bindBuffer(WebGL2RenderingContext.ARRAY_BUFFER, null);
         }
     }
 
@@ -83,54 +96,84 @@ export class VertexBuffer {
     }
 
     /**
-     * Returns true if GPU buffer and VAO handles are valid.
+     * WebGL context lost lifecycle hook: wipes hardware handles.
      */
-    public isValid(): boolean {
-        return this.vao !== null && this.vbo !== null;
+    public onContextLost(): void {
+        this.vbo = null;
+        this.vao = null;
     }
 
     /**
-     * Re-allocates GPU VBO and VAO handles on a restored WebGL context,
-     * re-uploads cached CPU array data, and re-configures layout attribute pointers.
+     * WebGL context restored lifecycle hook: rebuilds GPU resources and re-uploads cached cpuData.
      */
-    public rebuild(_gl?: WebGL2RenderingContext): void {
-        this.destroyGPUResources();
-        this.buildGPUResources();
+    public onContextRestored(gl: WebGL2RenderingContext): void {
+        if (this._isDisposed) return;
+        this.vbo = null;
+        this.vao = null;
+        this.buildGPUResources(gl);
     }
 
     /**
-     * Safely releases GPU resources and clears CPU memory cache.
+     * Registers a callback to be invoked when dispose() is called.
+     * Returns an unsubscribe function.
      */
-    public destroy(): void {
-        this.destroyGPUResources();
+    public onDispose(callback: () => void): () => void {
+        if (this._isDisposed) {
+            callback();
+            return () => {};
+        }
+        this._onDisposeCallbacks.add(callback);
+        return () => {
+            this._onDisposeCallbacks.delete(callback);
+        };
+    }
+
+    /**
+     * Deterministic disposal: frees GPU buffer and VAO handles, unbinds from context,
+     * marks isDisposed = true, and fires onDispose subscribers.
+     */
+    public dispose(): void {
+        if (this._isDisposed) return;
+        this._isDisposed = true;
+
+        const currentGl = this.gl;
+        if (currentGl && !currentGl.isContextLost()) {
+            currentGl.bindVertexArray(null);
+            currentGl.bindBuffer(WebGL2RenderingContext.ARRAY_BUFFER, null);
+            if (this.vao) currentGl.deleteVertexArray(this.vao);
+            if (this.vbo) currentGl.deleteBuffer(this.vbo);
+        }
+        this.vbo = null;
+        this.vao = null;
         this.cpuData = null;
+
+        for (const callback of this._onDisposeCallbacks) {
+            try {
+                callback();
+            } catch (err) {
+                console.error(`[${this.label}] Error in onDispose callback:`, err);
+            }
+        }
+        this._onDisposeCallbacks.clear();
     }
 
     // --- Private Helpers ---
 
-    private buildGPUResources(): void {
-        if (!this.gl || this.gl.isContextLost()) return;
+    private buildGPUResources(glContext?: WebGL2RenderingContext): void {
+        const gl = glContext ?? this.gl;
+        if (!gl || gl.isContextLost()) return;
 
-        this.vbo = this.gl.createBuffer();
-        this.vao = this.gl.createVertexArray();
+        this.vbo = gl.createBuffer();
+        this.vao = gl.createVertexArray();
 
         if (this.cpuData && this.vbo) {
-            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vbo);
-            this.gl.bufferData(this.gl.ARRAY_BUFFER, this.cpuData, this.usage);
-            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, null);
+            gl.bindBuffer(WebGL2RenderingContext.ARRAY_BUFFER, this.vbo);
+            gl.bufferData(WebGL2RenderingContext.ARRAY_BUFFER, this.cpuData, this.usage);
+            gl.bindBuffer(WebGL2RenderingContext.ARRAY_BUFFER, null);
         }
 
         if (this.vao && this.vbo) {
-            configureVAO(this.gl, this.vao, this.vbo, this.layout);
+            configureVAO(gl, this.vao, this.vbo, this.layout);
         }
-    }
-
-    private destroyGPUResources(): void {
-        if (this.gl && !this.gl.isContextLost()) {
-            if (this.vbo) this.gl.deleteBuffer(this.vbo);
-            if (this.vao) this.gl.deleteVertexArray(this.vao);
-        }
-        this.vbo = null;
-        this.vao = null;
     }
 }

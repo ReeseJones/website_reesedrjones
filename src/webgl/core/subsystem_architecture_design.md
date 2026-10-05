@@ -10,10 +10,13 @@ In a WebGL 2 rendering engine, GPU resources span multiple distinct hardware and
 
 Historically, resource managers were implemented with slightly different lifecycles, ad-hoc disposal semantics, and manual lifecycle chaining in [`WebGLContextManager`](context_manager.ts).
 
-This document specifies the architectural foundation for unifying all WebGL resource managers under an **`IContextSubsystem`** microkernel architecture. Under this model:
+This document specifies the architectural foundation for unifying all WebGL resource managers under an **`IContextSubsystem`** microkernel architecture. Detailed specifications for individual resource lifecycles (`IWebGLResource`) are documented in [WebGL Resource Lifecycle Design](webgl_resource_lifecycle_design.md).
+
+Under this model:
 - [`WebGLContextManager`](context_manager.ts) acts as a lean **Microkernel Coordinator**.
-- All GPU managers implement a standardized subsystem lifecycle and are registered with priority-based context recovery order.
-- CPU-side resources follow a unified **`IDisposable`** interface with an event-driven listener pattern that decouples CPU memory from GPU memory.
+- All GPU managers implement a standardized subsystem lifecycle (`IContextSubsystem`) and are registered with priority-based context recovery order.
+- GPU resources follow a unified **`IWebGLResource`** interface with a single `dispose()` method.
+- Materials are pure CPU configuration descriptors with zero GPU ownership, collected automatically by the JavaScript garbage collector.
 - Ref-counting is completely eliminated in favor of deterministic disposal.
 
 ---
@@ -27,11 +30,11 @@ This document specifies the architectural foundation for unifying all WebGL reso
 - **Elimination of Ref-Counting:**
   - Shaders are context-scoped singletons cached permanently for the life of the context (eliminating expensive recompilations caused by transient zero-reference states).
   - Geometries and textures are content-scoped and use deterministic disposal.
-- **The Inversion of Control Disposal Pattern:** CPU-side classes (`MeshGeometry`, `Texture`, `CubeTexture`) remain 100% pure CPU data structures without WebGL imports. They implement `IDisposable` with an `onDispose` notification. GPU managers listen to these notifications and immediately free VBOs, VAOs, and texture handles when the user or scene disposes them.
+- **The Inversion of Control Disposal Pattern:** GPU resources (`VertexBuffer`, `ShaderProgram`, `Texture`) own their GPU handles and expose `dispose()`. Subsystem managers listen to `resource.onDispose` notifications and automatically prune their caches. Materials do not own GPU handles and are garbage-collected.
 - **Unified Verb Taxonomy:** Standardize naming across all managers:
   - Acquisition: `getOrCreate(...)`, `get(...)`, `has(...)`
   - Binding: `bind(...)`, `unbind(...)`
-  - Disposal: `dispose(...)`
+  - Lifecycle: `onContextLost()`, `onContextRestored(gl)`, `destroy()` (for tearing down the subsystem entirely)
 
 ---
 
@@ -39,14 +42,14 @@ This document specifies the architectural foundation for unifying all WebGL reso
 
 ```mermaid
 flowchart TD
-    subgraph CPULayer["1. Scene & Content Domain (Pure CPU / IDisposable)"]
-        Scene["Scene.dispose()"]
-        Mesh["MeshGeometry.dispose()"]
-        Tex["Texture.dispose()"]
-        Mat["Material.dispose()"]
+    subgraph CPULayer["1. Scene & Content Domain (CPU Layer)"]
+        Scene["Scene"]
+        Mesh["MeshGeometry (implements IMeshGeometry, IDisposable)"]
+        Tex["Texture (implements IWebGLResource)"]
+        Mat["Material (Pure CPU Descriptor)"]
         Scene --> Mesh
-        Scene --> Tex
         Scene --> Mat
+        Mat -.->"References"| Tex
     end
 
     subgraph Microkernel["2. WebGLContextManager (Microkernel Coordinator)"]

@@ -1,110 +1,115 @@
-# WebGL Context Manager, Ref-Counted Shader Registry & Resource Lifecycle
+# WebGL Shader Program Architecture & Lifecycle Design
 
 ## 1. Overview & Goals
 
 ### Overview
-This document specifies a centralized WebGL GPU resource manager and ref-counted request/release lifecycle architecture. It introduces `WebGLContextManager` as the central factory for managing shared `ShaderProgram` instances and allocating `VertexBuffer` resources (VBOs and VAOs).
+This document specifies the architecture, public interface, and lifecycle contracts for [`ShaderProgram`](shader_program.ts). As part of the unified WebGL resource model documented in [WebGL Resource Lifecycle Design](../core/webgl_resource_lifecycle_design.md), `ShaderProgram` encapsulates GLSL compilation, program linking, uniform location reflection, redundant upload elimination, and automated context restoration.
 
 ### Key Architectural Principles
-- **Logical Need vs. GPU Build State:** The manager tracks the logical demand for a shader via reference counting (`refCount > 0`). This logical demand is independent of transient GPU build state (`WebGLProgram` handles), which is regenerated automatically upon context restoration.
-- **Ref-Counted Shader Lifecycle:** Shader programs are requested via `contextManager.getOrCreateShader(key, options)` (incrementing `refCount`). When renderers unmount or dispose of shaders, they call `contextManager.releaseShader(key)` (decrementing `refCount`). When `refCount === 0`, GPU handles are freed and the shader is unregistered.
-- **Request & Release Resource Factory:** Render passes request managed `VertexBuffer` instances (`contextManager.createVertexBuffer(layout)`) and release them (`contextManager.releaseVertexBuffer(buffer)`) upon disposal, preventing GPU memory leaks.
-- **Automated 2-Phase Context Loss Recovery:** `WebGLContextManager` catches canvas context restoration events (`webglcontextrestored`) and automatically rebuilds GPU handles in exact dependency order:
-  - **Phase 1 (Shaders with `refCount > 0`):** Re-compiles GLSL shaders, re-links WebGLPrograms, and re-queries uniform locations.
-  - **Phase 2 (Buffers & VAOs):** Re-allocates GPU buffers, re-uploads cached CPU geometry data, and configures VAO pointers via `configureVAO()`.
+- **Unified `IWebGLResource` Lifecycle:** `ShaderProgram` implements `IWebGLResource` (extending `IDisposable`). It provides dedicated lifecycle methods: `onContextLost()`, `onContextRestored(gl)`, and `dispose()`.
+- **Single Public Teardown Method (`dispose()`):** Calling `shader.dispose()` deletes the `WebGLProgram` handle (`gl.deleteProgram`), unbinds from context if active, marks `isDisposed = true`, and fires `onDispose` listeners to automatically evict the shader from `ShaderManager`'s registry.
+- **Automated Context Recovery:** On `onContextLost()`, GPU program handles and location caches are marked invalidated without calling driver deletion. On `onContextRestored(gl)`, `ShaderProgram` recompiles GLSL sources, relinks the program, re-queries uniform locations, and re-uploads cached uniform memory.
+- **Smart Redundant Upload Elimination:** Redundant uniform uploads are eliminated through client-side value caching (`uniformCache`). Consecutive frames uploading identical matrix or vector values incur zero driver overhead.
 
 ---
 
-## 2. Directory Structure
+## 2. Types & Interface Specification
 
-All generic WebGL infrastructure and lifecycle code reside in `src/webgl/`:
+### `IShaderProgram` Contract (`src/webgl/shaders/shader_program_types.ts`)
 
-- **Shader & Manager Design Doc:** [`src/webgl/shaders/shader_program_design.md`](shader_program_design.md)
-- **VAO Layout Design Doc:** [`src/webgl/shaders/shader_vao_layout_design.md`](shader_vao_layout_design.md)
-- **Shader Key Index & Registry Types:** [`src/webgl/shaders/shader_types.ts`](shader_types.ts)
-- **Central Context Manager:** [`src/webgl/core/context_manager.ts`](../core/context_manager.ts)
-- **Managed Vertex Buffer:** [`src/webgl/geometry/vertex_buffer.ts`](../geometry/vertex_buffer.ts)
-- **Shader Program Utility:** [`src/webgl/shaders/shader_program.ts`](shader_program.ts)
-- **VAO Layout Utility:** [`src/webgl/geometry/vertex_layout.ts`](../geometry/vertex_layout.ts)
-- **Domain Consumer (Galaxy Renderer):** [`src/galaxy_backdrop/galaxy_renderer.ts`](../../galaxy_backdrop/galaxy_renderer.ts)
-- **Domain Consumer (Cloud Renderer):** [`src/galaxy_backdrop/galactic_cloud_renderer.ts`](../../galaxy_backdrop/galactic_cloud_renderer.ts)
+```typescript
+import type { IWebGLResource } from "../core/resource_types";
+import type { ResourceFactoryToken } from "../core/resource_token";
+
+export interface IShaderProgram<TUniforms extends object = Record<string, unknown>>
+    extends IWebGLResource {
+    readonly label: string;
+    readonly vertSource: string;
+    readonly fragSource: string;
+    readonly isValid: boolean;
+
+    /** Gets the underlying WebGLProgram GPU handle, or null if context lost or disposed */
+    getProgram(): WebGLProgram | null;
+
+    /** Batch uploads a typed dictionary of uniforms with binding validation */
+    setUniforms(uniforms: Partial<TUniforms>): void;
+
+    /** Uniform upload setters with caching */
+    setFloat(name: string, value: number): void;
+    setInt(name: string, value: number): void;
+    setVec2(name: string, x: number, y: number): void;
+    setVec3(name: string, x: number, y: number, z: number): void;
+    setVec4(name: string, x: number, y: number, z: number, w: number): void;
+    setMat3(name: string, data: Float32Array): void;
+    setMat4(name: string, data: Float32Array): void;
+
+    /** Queries cached uniform location */
+    getUniformLocation(name: string): WebGLUniformLocation | null;
+
+    /** WebGL context lost lifecycle hook */
+    onContextLost(): void;
+
+    /** WebGL context restored lifecycle hook */
+    onContextRestored(gl: WebGL2RenderingContext): void;
+
+    /** Deterministic disposal: frees GPU program handle and notifies listeners */
+    dispose(): void;
+}
+```
 
 ---
 
-## 3. Ref-Counted Shader & Buffer Lifecycle Flow
+## 3. Shader Program Lifecycle Flow
 
 ```mermaid
 sequenceDiagram
     autonumber
-    participant Renderer as GalaxyRenderer
-    participant Manager as WebGLContextManager
+    participant Caller as Application / Pass
+    participant Manager as ShaderManager
     participant Shader as ShaderProgram
-    participant Buffer as VertexBuffer
-    participant GPU as WebGL2 Context
+    participant GPU as WebGL2 Driver
 
-    Note over Renderer, GPU: 1. Resource Request & Ref-Count Increment
-    Renderer->>Manager: getOrCreateShader("galaxy_pinprick", options)
-    Manager->>Shader: new ShaderProgram(manager, options)
-    Manager->>Manager: Store entry in shaderRegistry (refCount = 1)
-    Renderer->>Manager: createVertexBuffer(STAR_VERTEX_LAYOUT)
-    Manager->>Buffer: new VertexBuffer(gl, layout)
-    Manager-->>Renderer: Return managed ShaderProgram & VertexBuffer
+    Note over Caller, GPU: 1. Creation & Registration
+    Caller->>Manager: getOrCreate("unlit", options)
+    Manager->>Shader: new ShaderProgram(ctx, options)
+    Shader->>GPU: compileShader() & linkProgram()
+    Manager->>Shader: onDispose(() => registry.delete(key))
+    Manager-->>Caller: Return IShaderProgram instance
 
-    Note over Renderer, GPU: 2. Context Loss & Ref-Counted Restoration
+    Note over Caller, GPU: 2. Context Loss & Restoration
+    GPU-->>Manager: webglcontextlost Event
+    Manager->>Shader: onContextLost()
+    Note over Shader: Nulls program handle, preserves uniformCache
     GPU-->>Manager: webglcontextrestored Event
-    Note over Manager: Phase 1: Rebuild Shaders with refCount > 0
-    Manager->>Shader: shader.rebuild()
-    Shader->>GPU: Re-compile GLSL & restore cached uniforms
-    Note over Manager: Phase 2: Rebuild Active VertexBuffers
-    Manager->>Buffer: buffer.rebuild(newGl)
-    Buffer->>GPU: Re-allocate VBO/VAO & re-upload cached CPU data
+    Manager->>Shader: onContextRestored(gl)
+    Shader->>GPU: Recompile, relink & restoreCachedUniforms()
 
-    Note over Renderer, GPU: 3. Resource Release & Ref-Count Decrement
-    Renderer->>Manager: releaseShader("galaxy_pinprick")
-    Manager->>Manager: Decrement refCount (refCount = 0)
-    Manager->>Shader: shader.destroy()
-    Manager->>Manager: Remove entry from shaderRegistry
-    Renderer->>Manager: releaseVertexBuffer(starBuffer)
-    Manager->>Buffer: buffer.destroy()
+    Note over Caller, GPU: 3. Single Teardown via dispose()
+    Caller->>Shader: shader.dispose()
+    Shader->>GPU: gl.deleteProgram(program)
+    Shader->>Shader: isDisposed = true
+    Shader-->>Manager: onDispose callback fires
+    Manager->>Manager: registry.delete(key)
 ```
 
 ---
 
-## 4. API Specifications
+## 4. Key Procedures
 
-### `WebGLContextManager` ([`src/webgl/context_manager.ts`](src/webgl/context_manager.ts))
+### 1. Program Build & Uniform Reflection
+1. Compiles vertex and fragment shaders using `compileShader()`.
+2. Creates and links the `WebGLProgram`.
+3. Verifies `gl.LINK_STATUS`. Upon success, detaches and deletes individual shader objects to conserve driver memory.
+4. Auto-reflects active uniforms (`gl.getActiveUniform`), populates `uniformLocations` map, and assigns sampler texture unit uniforms.
 
-```typescript
-import type { ShaderKey } from "./shader_types";
+### 2. Context Restoration (`onContextRestored`)
+1. Executes `onContextLost()` to safely wipe stale handles.
+2. Re-executes the build procedure against the new WebGL context.
+3. Iterates over `uniformCache` and re-uploads all cached uniforms to the new GPU program handle via `restoreCachedUniforms()`.
 
-export interface ShaderEntry {
-    shader: ShaderProgram;
-    refCount: number;
-}
-
-export class WebGLContextManager implements IWebGLContextManager {
-    public setContext(gl: WebGL2RenderingContext): void;
-    public getContext(): WebGL2RenderingContext | null;
-
-    /** Retrieves or compiles a shared ShaderProgram (increments refCount) with type-safe key validation */
-    public getOrCreateShader(key: ShaderKey, options: ShaderProgramOptions): ShaderProgram;
-
-    /** Queries active ShaderProgram instance without altering refCount */
-    public getShader(key: ShaderKey): ShaderProgram | null;
-
-    /** Decrements refCount; destroys GPU program and unregisters when refCount === 0 */
-    public releaseShader(keyOrInstance: ShaderKey | ShaderProgram): void;
-
-    /** Factory method: Request a managed VertexBuffer instance */
-    public createVertexBuffer(layout: VertexLayoutSpec): VertexBuffer;
-
-    /** Release a VertexBuffer instance and free GPU handles */
-    public releaseVertexBuffer(buffer: VertexBuffer): void;
-
-    /** Catches webglcontextlost and clears stale GL references */
-    public handleContextLost(): void;
-
-    /** Catches webglcontextrestored and executes Phase 1 -> Phase 2 restoration */
-    public handleContextRestored(newGl: WebGL2RenderingContext): void;
-}
-```
+### 3. Deterministic Teardown (`dispose`)
+1. If `isDisposed` is true, returns immediately.
+2. Marks `isDisposed = true`.
+3. If active context is valid, invokes `gl.deleteProgram(this.program)` and unbinds from context if currently active.
+4. Clears `uniformLocations` map.
+5. Invokes all registered `onDispose` listeners and clears the listener array.

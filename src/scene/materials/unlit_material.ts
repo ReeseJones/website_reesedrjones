@@ -71,7 +71,19 @@ export class UnlitMaterial extends Material {
      * Duplicates this UnlitMaterial preserving parameters and texture bindings.
      */
     public override clone(): UnlitMaterial {
-        const currentUniforms = this.getUniforms();
+        const clonedUniforms: Record<string, unknown> = {};
+        for (const [key, val] of Object.entries(this.getUniforms())) {
+            if (val instanceof Float32Array) {
+                clonedUniforms[key] = new Float32Array(val);
+            } else if (Array.isArray(val)) {
+                clonedUniforms[key] = [...val];
+            } else if (typeof val === "object" && val !== null) {
+                clonedUniforms[key] = { ...val };
+            } else {
+                clonedUniforms[key] = val;
+            }
+        }
+
         const clonedTextures: Record<number, ITexture> = {};
         for (const [unit, tex] of this.getTextures().entries()) {
             clonedTextures[unit] = tex;
@@ -80,7 +92,7 @@ export class UnlitMaterial extends Material {
         return new UnlitMaterial({
             shaderKey: this.shaderKey as UnlitShaderKey,
             pipelineState: { ...this.pipelineState },
-            uniforms: currentUniforms,
+            uniforms: clonedUniforms,
             textures: clonedTextures,
             texture: this.getTexture(TextureUnit.Color),
         });

@@ -100,11 +100,6 @@ export interface ITextureManager extends IContextSubsystem {
     getFallbackHandle(type: TextureFallbackType): WebGLTexture | null;
 
     /**
-     * Deterministic Disposal: Releases a texture from the cache and deletes its GPU handle.
-     */
-    dispose(textureOrUrl: ITexture | ICubeTexture | string): void;
-
-    /**
      * Permanently destroys all managed textures, fallbacks, and caches.
      */
     destroy(): void;
@@ -113,8 +108,4 @@ export interface ITextureManager extends IContextSubsystem {
      * Telemetry query returning active texture count and unit bindings.
      */
     getDiagnostics(): SubsystemDiagnostics;
-
-    // --- Backwards-Compatible Aliases ---
-    getOrCreateTexture?(url: string, options?: Omit<TextureOptions, "label">): ITexture;
-    release?(textureOrUrl: ITexture | string): void;
 }

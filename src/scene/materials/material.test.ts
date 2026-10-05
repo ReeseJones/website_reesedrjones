@@ -81,11 +81,6 @@ describe("Material", () => {
             expect(material.getCubeTexture(TextureUnit.Environment)).toBe(envMap);
             expect(material.getCubeTextures().size).toBe(1);
         });
-
-        it("initializes isDisposed to false", () => {
-            const material = new Material({ shaderKey: "unlit" });
-            expect(material.isDisposed).toBe(false);
-        });
     });
 
     describe("shaderKey getter and setter", () => {
@@ -369,7 +364,47 @@ describe("Material", () => {
             expect(cloned.getUniforms()["u_extra"]).toBeUndefined();
         });
 
-        it("copies texture and cubeTexture references into the clone", () => {
+        it("deep-copies uniforms: Float32Array, array, and nested object uniforms", () => {
+            const originalMat = new Float32Array([1, 2, 3, 4]);
+            const originalArray = [10, 20, 30];
+            const originalNested = { config: { speed: 5 } };
+
+            const material = new Material({
+                shaderKey: "unlit",
+                uniforms: {
+                    u_matrix: originalMat,
+                    u_offsets: originalArray,
+                    u_nested: originalNested,
+                },
+            });
+
+            const cloned = material.clone();
+            const clonedUniforms = cloned.getUniforms();
+
+            // Values are equal
+            expect(clonedUniforms["u_matrix"]).toEqual(originalMat);
+            expect(clonedUniforms["u_offsets"]).toEqual(originalArray);
+            expect(clonedUniforms["u_nested"]).toEqual(originalNested);
+
+            // References are distinct (deep copies)
+            expect(clonedUniforms["u_matrix"]).not.toBe(originalMat);
+            expect(clonedUniforms["u_offsets"]).not.toBe(originalArray);
+            expect(clonedUniforms["u_nested"]).not.toBe(originalNested);
+
+            // Mutating clone Float32Array does not affect original
+            (clonedUniforms["u_matrix"] as Float32Array)[0] = 999;
+            expect((material.getUniforms()["u_matrix"] as Float32Array)[0]).toBe(1);
+
+            // Mutating clone array does not affect original
+            (clonedUniforms["u_offsets"] as number[])[0] = 888;
+            expect((material.getUniforms()["u_offsets"] as number[])[0]).toBe(10);
+
+            // Mutating clone nested object does not affect original
+            (clonedUniforms["u_nested"] as any).config.speed = 99;
+            expect((material.getUniforms()["u_nested"] as any).config.speed).toBe(5);
+        });
+
+        it("copies non-owning texture and cubeTexture references into the clone", () => {
             const tex = createMockTexture("color");
             const cubeTex = createMockCubeTexture("env");
 
@@ -386,146 +421,21 @@ describe("Material", () => {
             expect(cloned.getTextures().size).toBe(1);
             expect(cloned.getCubeTextures().size).toBe(1);
         });
-    });
 
-    describe("IDisposable lifecycle", () => {
-        it("isDisposed starts false and becomes true on dispose()", () => {
-            const material = new Material({ shaderKey: "unlit" });
-            expect(material.isDisposed).toBe(false);
-
-            material.dispose();
-            expect(material.isDisposed).toBe(true);
-        });
-
-        describe("onDispose", () => {
-            it("registers callback invoked upon dispose()", () => {
-                const material = new Material({ shaderKey: "unlit" });
-                const listener = vi.fn();
-
-                material.onDispose(listener);
-                expect(listener).not.toHaveBeenCalled();
-
-                material.dispose();
-                expect(listener).toHaveBeenCalledTimes(1);
+        it("texture disposal independence: disposing assigned texture does not crash or corrupt material", () => {
+            const tex = createMockTexture("color");
+            const material = new Material({
+                shaderKey: "unlit",
+                textures: { [TextureUnit.Color0]: tex },
             });
 
-            it("returns unsubscribe function that prevents invocation", () => {
-                const material = new Material({ shaderKey: "unlit" });
-                const listener = vi.fn();
+            expect(material.getTexture(TextureUnit.Color0)).toBe(tex);
 
-                const unsubscribe = material.onDispose(listener);
-                unsubscribe();
-
-                material.dispose();
-                expect(listener).not.toHaveBeenCalled();
-            });
-
-            it("executes multiple callbacks in registration order", () => {
-                const material = new Material({ shaderKey: "unlit" });
-                const executionOrder: number[] = [];
-
-                material.onDispose(() => executionOrder.push(1));
-                material.onDispose(() => executionOrder.push(2));
-                material.onDispose(() => executionOrder.push(3));
-
-                material.dispose();
-                expect(executionOrder).toEqual([1, 2, 3]);
-            });
-        });
-
-        describe("dispose", () => {
-            it("sets isDisposed to true", () => {
-                const material = new Material({ shaderKey: "unlit" });
-                material.dispose();
-                expect(material.isDisposed).toBe(true);
-            });
-
-            it("invokes onDispose listeners once", () => {
-                const material = new Material({ shaderKey: "unlit" });
-                const listener = vi.fn();
-
-                material.onDispose(listener);
-                material.dispose();
-
-                expect(listener).toHaveBeenCalledTimes(1);
-            });
-
-            it("calls dispose() on each assigned 2D texture", () => {
-                const tex1 = createMockTexture("tex1");
-                const tex2 = createMockTexture("tex2");
-
-                const material = new Material({
-                    shaderKey: "unlit",
-                    textures: {
-                        [TextureUnit.Color0]: tex1,
-                        [TextureUnit.Normal]: tex2,
-                    },
-                });
-
-                material.dispose();
-
-                expect(tex1.dispose).toHaveBeenCalledTimes(1);
-                expect(tex2.dispose).toHaveBeenCalledTimes(1);
-            });
-
-            it("calls dispose() on each assigned cubemap texture", () => {
-                const cubeTex = createMockCubeTexture("cube");
-
-                const material = new Material({
-                    shaderKey: "skybox",
-                    cubeTextures: {
-                        [TextureUnit.Environment]: cubeTex,
-                    },
-                });
-
-                material.dispose();
-
-                expect(cubeTex.dispose).toHaveBeenCalledTimes(1);
-            });
-
-            it("clears textures, cubeTextures, and uniforms maps", () => {
-                const tex = createMockTexture("tex");
-                const cubeTex = createMockCubeTexture("cube");
-
-                const material = new Material({
-                    shaderKey: "unlit",
-                    uniforms: { u_val: 1 },
-                    textures: { [TextureUnit.Color0]: tex },
-                    cubeTextures: { [TextureUnit.Environment]: cubeTex },
-                });
-
-                material.dispose();
-
-                expect(material.getTextures().size).toBe(0);
-                expect(material.getCubeTextures().size).toBe(0);
-                expect(Object.keys(material.getUniforms()).length).toBe(0);
-            });
-
-            it("is idempotent: subsequent dispose() calls do nothing and do not re-invoke listeners or texture dispose", () => {
-                const listener = vi.fn();
-                const tex = createMockTexture("tex");
-                const cubeTex = createMockCubeTexture("cube");
-
-                const material = new Material({
-                    shaderKey: "unlit",
-                    textures: { [TextureUnit.Color0]: tex },
-                    cubeTextures: { [TextureUnit.Environment]: cubeTex },
-                });
-
-                material.onDispose(listener);
-
-                material.dispose();
-                expect(listener).toHaveBeenCalledTimes(1);
-                expect(tex.dispose).toHaveBeenCalledTimes(1);
-                expect(cubeTex.dispose).toHaveBeenCalledTimes(1);
-
-                // Second dispose
-                material.dispose();
-                expect(listener).toHaveBeenCalledTimes(1);
-                expect(tex.dispose).toHaveBeenCalledTimes(1);
-                expect(cubeTex.dispose).toHaveBeenCalledTimes(1);
-                expect(material.isDisposed).toBe(true);
-            });
+            // Disposing the texture frees GPU resources but material retains reference without crashing
+            expect(() => tex.dispose()).not.toThrow();
+            expect(material.getTexture(TextureUnit.Color0)).toBe(tex);
+            expect(material.shaderKey).toBe("unlit");
+            expect(material.getTextures().size).toBe(1);
         });
     });
 });

@@ -1,6 +1,7 @@
 import type {
     ShaderProgramOptions,
     CachedUniform,
+    IShaderProgram,
 } from "./shader_program_types";
 import type { IWebGLContextManager } from "../core/context_manager_types";
 import { compileShader } from "./shader_compiler";
@@ -11,7 +12,8 @@ import { DEFAULT_TEXTURE_UNIT_MAP } from "../textures/texture_types";
  * Manages GLSL shader compilation, link status checking, location caching, redundant upload elimination,
  * client-side uniform memory caching, and automated context restoration.
  */
-export class ShaderProgram<TUniforms extends object = Record<string, unknown>> {
+export class ShaderProgram<TUniforms extends object = Record<string, unknown>>
+    implements IShaderProgram<TUniforms> {
     public readonly label: string;
     public readonly vertSource: string;
     public readonly fragSource: string;
@@ -21,6 +23,8 @@ export class ShaderProgram<TUniforms extends object = Record<string, unknown>> {
     private uniformLocations = new Map<string, WebGLUniformLocation>();
     private uniformCache = new Map<string, CachedUniform>();
     private optionsSamplers?: Record<string, number>;
+    private _isDisposed: boolean = false;
+    private readonly _onDisposeCallbacks: Set<() => void> = new Set();
 
     private get gl(): WebGL2RenderingContext | null {
         return this.contextManager.getContext();
@@ -82,8 +86,8 @@ export class ShaderProgram<TUniforms extends object = Record<string, unknown>> {
     /**
      * Returns true if the GPU WebGLProgram is compiled, linked, and ready.
      */
-    public isValid(): boolean {
-        return this.program !== null;
+    public get isValid(): boolean {
+        return this.program !== null && !this._isDisposed;
     }
 
     /**
@@ -94,18 +98,73 @@ export class ShaderProgram<TUniforms extends object = Record<string, unknown>> {
     }
 
     /**
-     * Re-compiles GLSL sources, re-links the WebGLProgram, re-queries location handles,
-     * and automatically re-uploads all client-side cached uniform values to the new GPU program.
-     *
-     * **Context Binding:** Re-binds program via `restoreCachedUniforms()` which invokes `contextManager.useShader()`.
+     * Returns true if this shader program has been disposed.
      */
-    public rebuild(): boolean {
-        this.destroy();
-        const success = this.build();
+    public get isDisposed(): boolean {
+        return this._isDisposed;
+    }
+
+    /**
+     * WebGL context lost lifecycle hook: wipes program handle and location map without deleting.
+     */
+    public onContextLost(): void {
+        this.program = null;
+        this.uniformLocations.clear();
+    }
+
+    /**
+     * WebGL context restored lifecycle hook: recompiles, relinks, and restores uniform state.
+     */
+    public onContextRestored(gl: WebGL2RenderingContext): void {
+        if (this._isDisposed) return;
+        this.onContextLost();
+        const success = this.build(gl);
         if (success) {
-            this.restoreCachedUniforms();
+            this.restoreCachedUniforms(gl);
         }
-        return success;
+    }
+
+    /**
+     * Registers a callback to be executed when dispose() is called.
+     */
+    public onDispose(callback: () => void): () => void {
+        if (this._isDisposed) {
+            callback();
+            return () => {};
+        }
+        this._onDisposeCallbacks.add(callback);
+        return () => {
+            this._onDisposeCallbacks.delete(callback);
+        };
+    }
+
+    /**
+     * Deterministic disposal: deletes WebGLProgram GPU handle, unbinds from context,
+     * marks isDisposed = true, and fires onDispose subscribers.
+     */
+    public dispose(): void {
+        if (this._isDisposed) return;
+        this._isDisposed = true;
+
+        if (this.contextManager.getCurrentProgram() === this.program || this.contextManager.getCurrentShader() === this) {
+            this.contextManager.useProgram(null);
+        }
+
+        const gl = this.gl;
+        if (gl && !gl.isContextLost() && this.program) {
+            gl.deleteProgram(this.program);
+        }
+        this.program = null;
+        this.uniformLocations.clear();
+
+        for (const callback of this._onDisposeCallbacks) {
+            try {
+                callback();
+            } catch (err) {
+                console.error(`[${this.label}] Error in onDispose callback:`, err);
+            }
+        }
+        this._onDisposeCallbacks.clear();
     }
 
     /**
@@ -289,25 +348,11 @@ export class ShaderProgram<TUniforms extends object = Record<string, unknown>> {
         }
     }
 
-    /**
-     * Deletes GPU program resources and clears location maps. Keeps uniformCache intact for potential restoration.
-     */
-    public destroy(): void {
-        if (this.program) {
-            const gl = this.gl;
-            if (gl && !gl.isContextLost()) {
-                gl.deleteProgram(this.program);
-            }
-            this.program = null;
-        }
-        this.uniformLocations.clear();
-    }
-
     // --- Private Build & Recovery Helpers ---
 
-    private build(): boolean {
-        const gl = this.gl;
-        if (!gl) return false;
+    private build(glContext?: WebGL2RenderingContext): boolean {
+        const gl = glContext ?? this.gl;
+        if (!gl || gl.isContextLost()) return false;
 
         const vs = compileShader(gl, gl.VERTEX_SHADER, this.vertSource, this.label);
         const fs = compileShader(gl, gl.FRAGMENT_SHADER, this.fragSource, this.label);
@@ -372,9 +417,9 @@ export class ShaderProgram<TUniforms extends object = Record<string, unknown>> {
         }
     }
 
-    private restoreCachedUniforms(): void {
+    private restoreCachedUniforms(glContext?: WebGL2RenderingContext): void {
         if (!this.program) return;
-        const gl = this.gl;
+        const gl = glContext ?? this.gl;
         if (!gl) return;
         this.contextManager.useShader(this);
         for (const [name, cached] of this.uniformCache.entries()) {

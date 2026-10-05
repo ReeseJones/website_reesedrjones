@@ -3,6 +3,26 @@ import type { ShaderKey } from "../../webgl/shaders/shader_types";
 import type { ITexture, TextureUnit } from "../../webgl/textures/texture_types";
 import type { ICubeTexture } from "../../webgl/textures/cube_texture_types";
 
+function cloneUniformValue(val: unknown): unknown {
+    if (val === null || val === undefined) {
+        return val;
+    }
+    if (val instanceof Float32Array) {
+        return new Float32Array(val);
+    }
+    if (Array.isArray(val)) {
+        return val.map((item) => cloneUniformValue(item));
+    }
+    if (typeof val === "object") {
+        const result: Record<string, unknown> = {};
+        for (const [k, v] of Object.entries(val as Record<string, unknown>)) {
+            result[k] = cloneUniformValue(v);
+        }
+        return result;
+    }
+    return val;
+}
+
 /**
  * Base material class encapsulating shader selection, uniform parameters,
  * texture bindings, and WebGL rasterization pipeline state.
@@ -13,8 +33,6 @@ export class Material implements IMaterial {
     private readonly _uniforms: Map<string, unknown> = new Map();
     private readonly _textures: Map<TextureUnit | number, ITexture> = new Map();
     private readonly _cubeTextures: Map<TextureUnit | number, ICubeTexture> = new Map();
-    private _isDisposed: boolean = false;
-    private readonly _onDisposeCallbacks: (() => void)[] = [];
 
     constructor(options: MaterialOptions) {
         this._shaderKey = options.shaderKey;
@@ -139,6 +157,7 @@ export class Material implements IMaterial {
 
     /**
      * Duplicates this material preserving pipeline state, uniforms, and texture bindings.
+     * Deep clones Float32Array, array, and object uniforms, while retaining non-owning texture references.
      */
     public clone(): Material {
         const clonedTextures: Record<number, ITexture> = {};
@@ -151,60 +170,17 @@ export class Material implements IMaterial {
             clonedCubeTextures[unit] = cubeTex;
         }
 
+        const clonedUniforms: Record<string, unknown> = {};
+        for (const [key, val] of this._uniforms.entries()) {
+            clonedUniforms[key] = cloneUniformValue(val);
+        }
+
         return new Material({
             shaderKey: this._shaderKey,
             pipelineState: { ...this._pipelineState },
-            uniforms: this.getUniforms(),
+            uniforms: clonedUniforms,
             textures: clonedTextures,
             cubeTextures: clonedCubeTextures,
         });
-    }
-
-    public get isDisposed(): boolean {
-        return this._isDisposed;
-    }
-
-    /**
-     * Registers a callback to be invoked when dispose() is called.
-     * Returns an unsubscribe function.
-     */
-    public onDispose(callback: () => void): () => void {
-        this._onDisposeCallbacks.push(callback);
-        return () => {
-            const index = this._onDisposeCallbacks.indexOf(callback);
-            if (index !== -1) {
-                this._onDisposeCallbacks.splice(index, 1);
-            }
-        };
-    }
-
-    /**
-     * Deterministic disposal: triggers listeners, disposes assigned textures, and clears uniforms.
-     */
-    public dispose(): void {
-        if (this._isDisposed) {
-            return;
-        }
-        this._isDisposed = true;
-
-        for (const cb of this._onDisposeCallbacks) {
-            cb();
-        }
-        this._onDisposeCallbacks.length = 0;
-
-        for (const tex of this._textures.values()) {
-            if (tex && typeof tex.dispose === "function") {
-                tex.dispose();
-            }
-        }
-        this._textures.clear();
-
-        for (const cubeTex of this._cubeTextures.values()) {
-            if (cubeTex && typeof cubeTex.dispose === "function") {
-                cubeTex.dispose();
-            }
-        }
-        this._cubeTextures.clear();
-        this._uniforms.clear();
     }
 }

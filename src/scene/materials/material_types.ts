@@ -1,7 +1,6 @@
 import type { ShaderKey } from "../../webgl/shaders/shader_types";
 import type { ITexture, TextureUnit } from "../../webgl/textures/texture_types";
 import type { ICubeTexture } from "../../webgl/textures/cube_texture_types";
-import type { IDisposable } from "../../webgl/core/subsystem_types";
 
 /**
  * WebGL blending mode presets for scene materials.
@@ -41,15 +40,12 @@ export interface MaterialOptions {
 /**
  * Public contract for material appearance, shader association, and pipeline state.
  */
-export interface IMaterial extends IDisposable {
+export interface IMaterial {
     /** Shader program identifier registered with WebGLContextManager */
     readonly shaderKey: ShaderKey;
 
     /** Active pipeline state settings */
     readonly pipelineState: PipelineState;
-
-    /** True if this material has already been permanently disposed */
-    readonly isDisposed: boolean;
 
     /** Sets or updates an individual uniform value */
     setUniform(name: string, value: unknown): this;
@@ -80,10 +76,4 @@ export interface IMaterial extends IDisposable {
 
     /** Duplicates this material preserving pipeline state, uniforms, and texture bindings */
     clone(): IMaterial;
-
-    /** Registers a callback to be invoked when dispose() is called. Returns an unsubscribe function. */
-    onDispose(callback: () => void): () => void;
-
-    /** Deterministic disposal: disposes assigned textures and clears state */
-    dispose(): void;
 }

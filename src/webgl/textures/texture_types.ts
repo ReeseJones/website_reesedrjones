@@ -153,12 +153,12 @@ export interface TextureOptions {
     label?: string;
 }
 
-import type { IDisposable } from "../core/subsystem_types";
+import type { IWebGLResource } from "../core/resource_types";
 
 /**
  * Public contract for managed WebGL texture resources.
  */
-export interface ITexture extends IDisposable {
+export interface ITexture extends IWebGLResource {
     /** Unique debug label */
     readonly label: string;
 
@@ -185,9 +185,6 @@ export interface ITexture extends IDisposable {
 
     /** Binds texture to a specific hardware texture unit via context manager */
     bind(unit?: TextureUnit | number): void;
-
-    /** Releases GPU texture memory */
-    destroy(): void;
 
     /** WebGL context lost lifecycle hook */
     onContextLost(): void;

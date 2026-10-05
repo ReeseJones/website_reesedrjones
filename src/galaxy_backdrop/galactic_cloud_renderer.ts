@@ -62,7 +62,7 @@ export class GalacticCloudRenderer {
             label: "GalacticCloudShader",
         });
 
-        if (!this.shaderProgram.isValid()) return false;
+        if (!this.shaderProgram.isValid) return false;
         this.contextManager.useShader(this.shaderProgram);
 
         if (!this.quadBuffer) {
@@ -175,12 +175,12 @@ export class GalacticCloudRenderer {
         this.detachEventListeners();
 
         if (this.quadBuffer) {
-            this.contextManager.geometries.releaseVertexBuffer(this.quadBuffer);
+            this.quadBuffer.dispose();
             this.quadBuffer = null;
         }
 
         if (this.shaderProgram) {
-            this.contextManager.releaseShader("galactic_cloud");
+            this.shaderProgram.dispose();
             this.shaderProgram = null;
         }
 
