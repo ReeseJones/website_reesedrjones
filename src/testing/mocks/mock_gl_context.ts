@@ -38,6 +38,7 @@ export function createMockWebGL2Context(): WebGL2RenderingContext {
         bindVertexArray: vi.fn(),
         enableVertexAttribArray: vi.fn(),
         vertexAttribPointer: vi.fn(),
+        vertexAttribDivisor: vi.fn(),
 
         // Shaders & Programs
         createShader: vi.fn(() => ({ __brand: "WebGLShader", id: ++handleId } as unknown as WebGLShader)),
@@ -49,9 +50,15 @@ export function createMockWebGL2Context(): WebGL2RenderingContext {
         createProgram: vi.fn(() => ({ __brand: "WebGLProgram", id: ++handleId } as unknown as WebGLProgram)),
         deleteProgram: vi.fn(),
         attachShader: vi.fn(),
+        detachShader: vi.fn(),
         linkProgram: vi.fn(),
-        getProgramParameter: vi.fn(() => true),
+        getProgramParameter: vi.fn((_p, pname) => {
+            if (pname === WebGL2RenderingContext.LINK_STATUS) return true;
+            if (pname === WebGL2RenderingContext.ACTIVE_UNIFORMS) return 0;
+            return true;
+        }),
         getProgramInfoLog: vi.fn(() => null),
+        getActiveUniform: vi.fn(() => null),
         useProgram: vi.fn(),
         getUniformLocation: vi.fn((_p, name) => ({ __brand: "WebGLUniformLocation", name } as unknown as WebGLUniformLocation)),
         getAttribLocation: vi.fn((_p, _name) => 0),
@@ -59,8 +66,10 @@ export function createMockWebGL2Context(): WebGL2RenderingContext {
         // Uniform Setters
         uniform1i: vi.fn(),
         uniform1f: vi.fn(),
+        uniform2f: vi.fn(),
         uniform2fv: vi.fn(),
         uniform3fv: vi.fn(),
+        uniform4f: vi.fn(),
         uniform4fv: vi.fn(),
         uniformMatrix3fv: vi.fn(),
         uniformMatrix4fv: vi.fn(),
@@ -79,6 +88,16 @@ export function createMockWebGL2Context(): WebGL2RenderingContext {
         drawElements: vi.fn(),
 
         // Constants
+        VERTEX_SHADER: WebGL2RenderingContext.VERTEX_SHADER,
+        FRAGMENT_SHADER: WebGL2RenderingContext.FRAGMENT_SHADER,
+        COMPILE_STATUS: WebGL2RenderingContext.COMPILE_STATUS,
+        LINK_STATUS: WebGL2RenderingContext.LINK_STATUS,
+        ACTIVE_UNIFORMS: WebGL2RenderingContext.ACTIVE_UNIFORMS,
+        SAMPLER_2D: WebGL2RenderingContext.SAMPLER_2D,
+        SAMPLER_CUBE: WebGL2RenderingContext.SAMPLER_CUBE,
+        SAMPLER_2D_SHADOW: WebGL2RenderingContext.SAMPLER_2D_SHADOW,
+        SAMPLER_2D_ARRAY: WebGL2RenderingContext.SAMPLER_2D_ARRAY,
+        SAMPLER_3D: WebGL2RenderingContext.SAMPLER_3D,
         ARRAY_BUFFER: WebGL2RenderingContext.ARRAY_BUFFER,
         ELEMENT_ARRAY_BUFFER: WebGL2RenderingContext.ELEMENT_ARRAY_BUFFER,
         STATIC_DRAW: WebGL2RenderingContext.STATIC_DRAW,
