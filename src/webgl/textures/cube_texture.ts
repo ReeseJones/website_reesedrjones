@@ -1,9 +1,11 @@
+import { BaseTexture } from "./base_texture";
 import type {
     CubeTextureFaces,
     CubeTextureOptions,
     ICubeTexture,
 } from "./cube_texture_types";
 import { GLCubeFace } from "../core/webgl_constants_types";
+import { TextureTarget, type TextureFilter } from "./texture_types";
 
 type FaceKey = keyof CubeTextureFaces;
 
@@ -23,30 +25,39 @@ const FACE_ORDER: FaceKey[] = ["posX", "negX", "posY", "negY", "posZ", "negZ"];
  *
  * Manages 6-face image loading, 1x1 black fallback initialization,
  * GPU texture allocation, mipmap generation, and automatic context recovery.
+ * Extends BaseTexture for unified GPU resource lifecycle and unit binding.
  */
-export class CubeTexture implements ICubeTexture {
+export class CubeTexture extends BaseTexture implements ICubeTexture {
     public readonly faces: CubeTextureFaces;
-    public label: string;
-
-    private _handle: WebGLTexture | null = null;
-    private _isReady: boolean = false;
-    private _isDisposed: boolean = false;
-    private _gl: WebGL2RenderingContext | null = null;
-
-    private readonly _minFilter?: number;
-    private readonly _magFilter?: number;
-    private readonly _generateMipmaps: boolean;
 
     private _decodedImages: Partial<Record<FaceKey, HTMLImageElement | ImageBitmap>> = {};
     private _loadPromise: Promise<void> | null = null;
-    private readonly _onDisposeCallbacks: (() => void)[] = [];
 
     constructor(options: CubeTextureOptions) {
+        const resolveFilter = (
+            filter: TextureFilter | number | undefined,
+            defaultPreset: TextureFilter
+        ): TextureFilter => {
+            if (typeof filter === "string") return filter;
+            return defaultPreset;
+        };
+
+        const defaultMin = options.generateMipmaps ?? true ? "linear_mipmap_linear" : "linear";
+        const minFilter = resolveFilter(options.minFilter, defaultMin);
+        const magFilter = resolveFilter(options.magFilter, "linear");
+
+        super({
+            wrapS: options.wrapS ?? "clamp_to_edge",
+            wrapT: options.wrapT ?? "clamp_to_edge",
+            wrapR: options.wrapR ?? "clamp_to_edge",
+            minFilter,
+            magFilter,
+            generateMipmaps: options.generateMipmaps ?? true,
+            label: options.label ?? "CubeTexture",
+            target: TextureTarget.CubeMap,
+        });
+
         this.faces = options.faces;
-        this._minFilter = options.minFilter;
-        this._magFilter = options.magFilter;
-        this._generateMipmaps = options.generateMipmaps ?? true;
-        this.label = options.label ?? "CubeTexture";
 
         // Automatically trigger parallel asynchronous image load
         this.load().catch((err) => {
@@ -54,20 +65,8 @@ export class CubeTexture implements ICubeTexture {
         });
     }
 
-    public get handle(): WebGLTexture | null {
-        return this._handle;
-    }
-
     public get isReady(): boolean {
-        return this._isReady;
-    }
-
-    public get isValid(): boolean {
-        return !!this._handle && !this._isDisposed && (!this._gl || !this._gl.isContextLost());
-    }
-
-    public get isDisposed(): boolean {
-        return this._isDisposed;
+        return this._isLoaded;
     }
 
     /**
@@ -82,6 +81,9 @@ export class CubeTexture implements ICubeTexture {
             const loadFace = async (key: FaceKey): Promise<HTMLImageElement | ImageBitmap> => {
                 const source = this.faces[key];
                 if (typeof source === "string") {
+                    if (typeof Image === "undefined") {
+                        return {} as unknown as HTMLImageElement;
+                    }
                     const img = new Image();
                     img.crossOrigin = "anonymous";
                     img.src = source;
@@ -103,11 +105,13 @@ export class CubeTexture implements ICubeTexture {
                 this._decodedImages[key] = results[index];
             });
 
-            this._isReady = true;
+            this._isLoaded = true;
 
-            // If WebGL context is already attached, upload decoded textures now
+            // If WebGL context is already attached and texture is initialized, upload decoded textures
             if (this._gl && this._handle && !this._gl.isContextLost()) {
+                this._gl.bindTexture(this.target, this._handle);
                 this._uploadImages(this._gl);
+                this._gl.bindTexture(this.target, null);
             }
         })();
 
@@ -115,42 +119,33 @@ export class CubeTexture implements ICubeTexture {
     }
 
     /**
-     * Allocates the GPU cubemap texture. If decoded face images are not yet ready,
-     * seeds each face with a 1x1 black fallback pixel so draw calls never sample an incomplete cubemap.
+     * Re-uploads pixel data from current decoded face images if loaded.
      */
-    public init(gl: WebGL2RenderingContext): void {
-        if (this._isDisposed) {
-            return;
+    public override updateFromSource(): void {
+        if (this._gl && this._handle && !this._gl.isContextLost() && this._isLoaded) {
+            this._gl.bindTexture(this.target, this._handle);
+            this._uploadImages(this._gl);
+            this._gl.bindTexture(this.target, null);
         }
+    }
 
-        this._gl = gl;
+    /**
+     * Releases GPU memory and cleans up decoded image references.
+     */
+    public override dispose(): void {
+        super.dispose();
+        this._decodedImages = {};
+    }
 
-        if (this._handle) {
-            gl.deleteTexture(this._handle);
-            this._handle = null;
-        }
-
-        const texture = gl.createTexture();
-        if (!texture) {
-            console.error("[CubeTexture] WebGL failed to create texture object.");
-            return;
-        }
-
-        this._handle = texture;
-        gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture);
-
-        // Configure edge wrapping (clamp to edge is mandatory to avoid cubemap face seam artifacts)
-        gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-        gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-        gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_R, gl.CLAMP_TO_EDGE);
-
-        if (this._isReady) {
+    /**
+     * Dispatches cubemap pixel upload to the active GPU binding.
+     */
+    protected uploadToGPU(gl: WebGL2RenderingContext): void {
+        if (this._isLoaded) {
             this._uploadImages(gl);
         } else {
             this._uploadFallback(gl);
         }
-
-        gl.bindTexture(gl.TEXTURE_CUBE_MAP, null);
     }
 
     private _uploadFallback(gl: WebGL2RenderingContext): void {
@@ -159,13 +154,9 @@ export class CubeTexture implements ICubeTexture {
             const target = FACE_TARGETS[key];
             gl.texImage2D(target, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, blackPixel);
         }
-        gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-        gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
     }
 
     private _uploadImages(gl: WebGL2RenderingContext): void {
-        gl.bindTexture(gl.TEXTURE_CUBE_MAP, this._handle);
-
         for (const key of FACE_ORDER) {
             const img = this._decodedImages[key];
             if (img) {
@@ -174,57 +165,10 @@ export class CubeTexture implements ICubeTexture {
             }
         }
 
-        const minFilter = this._minFilter ?? (this._generateMipmaps ? gl.LINEAR_MIPMAP_LINEAR : gl.LINEAR);
-        const magFilter = this._magFilter ?? gl.LINEAR;
+        this.applySamplerParameters(gl);
 
-        gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, minFilter);
-        gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MAG_FILTER, magFilter);
-
-        if (this._generateMipmaps) {
-            gl.generateMipmap(gl.TEXTURE_CUBE_MAP);
+        if (this.options.generateMipmaps) {
+            gl.generateMipmap(this.target);
         }
-
-        gl.bindTexture(gl.TEXTURE_CUBE_MAP, null);
-    }
-
-    public onDispose(callback: () => void): () => void {
-        if (this._isDisposed) {
-            callback();
-            return () => {};
-        }
-        this._onDisposeCallbacks.push(callback);
-        return () => {
-            const idx = this._onDisposeCallbacks.indexOf(callback);
-            if (idx !== -1) {
-                this._onDisposeCallbacks.splice(idx, 1);
-            }
-        };
-    }
-
-    public dispose(): void {
-        if (this._isDisposed) {
-            return;
-        }
-        this._isDisposed = true;
-        if (this._handle && this._gl && !this._gl.isContextLost()) {
-            this._gl.deleteTexture(this._handle);
-        }
-        this._handle = null;
-        this._gl = null;
-        this._decodedImages = {};
-
-        for (const cb of this._onDisposeCallbacks) {
-            cb();
-        }
-        this._onDisposeCallbacks.length = 0;
-    }
-
-    public onContextLost(): void {
-        this._handle = null;
-        this._gl = null;
-    }
-
-    public onContextRestored(gl: WebGL2RenderingContext): void {
-        this.init(gl);
     }
 }
