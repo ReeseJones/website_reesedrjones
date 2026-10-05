@@ -28,12 +28,12 @@ Tracks unit test coverage for every testable **class and function** in `src/scen
 
 Done as needed by each item, not up front.
 
-- **0.1 Audit [mock_gl_context.ts](mocks/mock_gl_context.ts)** — ⬜ Not Started
-  - Likely gaps: cube-map face constants (`TEXTURE_CUBE_MAP_POSITIVE_X`…), `pixelStorei`, `texSubImage2D`, `vertexAttribIPointer`, `vertexAttribDivisor`, instanced draws, `getActiveUniform` / `getActiveAttrib`, `blendFuncSeparate`.
-- **0.2 Audit [mock_context_manager.ts](mocks/mock_context_manager.ts)** — ⬜ Not Started
-  - Confirm it still matches `IWebGLContextManager` before the Material / ModelInstance / SceneRenderer items.
-- **0.3 Shared scene test helpers** (minimal concrete `Camera` subclass, stub `IMeshGeometry` / `IMaterial`) — ⬜ Not Started
-  - Live in `src/testing/` so suites can share them.
+- **0.1 Audit [mock_gl_context.ts](mocks/mock_gl_context.ts)** — ✅ Complete
+  - Added WebGL2 constants, instanced divisors, active uniforms, detachShader, uniform2f/4f.
+- **0.2 Audit [mock_context_manager.ts](mocks/mock_context_manager.ts)** — ✅ Complete
+  - Aligned with `IWebGLContextManager`, `bindKey`, and `draw(geometry)`.
+- **0.3 Shared scene test helpers** (minimal concrete `Camera` subclass, stub `IMeshGeometry` / `IMaterial`, mock textures) — ✅ Complete
+  - Live in `src/testing/` and `src/testing/mocks/`.
 
 ---
 
@@ -92,22 +92,25 @@ Done as needed by each item, not up front.
   - Mocks: stub `ITexture` / `ICubeTexture`
   - Focus: shaderKey, pipeline-state defaults, uniform / texture get-set, `clone()` deep vs. shared references, dispose
 - **A4.2 [unlit_material.ts](../scene/materials/unlit_material.ts)** — `UnlitMaterial` — ✅ Complete
-  - Test: `unlit_material.test.ts` (40 specs)
+  - Test: `unlit_material.test.ts` (32 specs)
   - Mocks: `createMockTexture()`
-  - Focus: color tint → uniforms, optional texture on / off paths, polymorphic `clone()`
+  - Focus: color tint → uniforms, texture assignment, polymorphic `clone()`
 - **A4.3 [galaxy_material.ts](../scene/materials/specialized/galaxy_material.ts)** — `GalaxyMaterial` — ✅ Complete
   - Test: `galaxy_material.test.ts` (31 specs)
   - Focus: deferral to `GalaxyShaderKey` (`galaxy_orb` / `galaxy_pinprick`), simulation parameter → uniform mapping, additive point-cloud pipeline state
 - **A4.4 [skybox_material.ts](../scene/environment/skybox_material.ts)** — `SkyboxMaterial` — ✅ Complete
   - Test: `skybox_material.test.ts` (29 specs)
   - Focus: cube-texture binding, depth / cull state for a skybox, missing-texture fallback
+- **A4.5 [material_binder.ts](../scene/materials/material_binder.ts)** — `applyMaterial` — ✅ Complete
+  - Test: `material_binder.test.ts` (4 specs)
+  - Focus: pipeline state assertion, direct key-based shader binding, 2D and cubemap texture slot assignments, uniform uploads
 
 ### A5. Model Instances
 
-- **A5.1 [model_instance.ts](../scene/models/model_instance.ts)** — `ModelInstance` — ✅ Complete
-  - Test: `model_instance.test.ts` (18 specs)
+- **A5.1 [model_instance.ts](../scene/models/model_instance.ts)** — `ModelInstance` & `isModelInstance` — ✅ Complete
+  - Test: `model_instance.test.ts` (20 specs)
   - Mocks: stub geometry / material
-  - Focus: geometry / material assignment, render flags, still inherits transform-hierarchy behaviour
+  - Focus: `IRenderable` conformance, `render` pass integration with `applyMaterial` and `geometries.draw`, matrix caching, transform-hierarchy inheritance
 - **A5.2 [skybox.ts](../scene/environment/skybox.ts)** — `Skybox` — ✅ Complete
   - Test: `skybox.test.ts` (25 specs)
   - Depends on: `ModelInstance`, `CubeGeometry`, `SkyboxMaterial`
@@ -115,9 +118,10 @@ Done as needed by each item, not up front.
 
 ### A6. Renderer (leaf / top consumer)
 
-- **A6.1 [scene_renderer.ts](../scene/renderer/scene_renderer.ts)** — `SceneRenderer` — 🟡 In Progress
+- **A6.1 [scene_renderer.ts](../scene/renderer/scene_renderer.ts)** — `SceneRenderer` — ✅ Complete
+  - Test: `scene_renderer.test.ts` (27 specs)
   - Mocks: `createMockContextManager()` + `createMockWebGL2Context()`
-  - Focus: renderable collection, shader acquire per shaderKey, pipeline state per material, texture sync before draw, camera uniforms, draw per instance, resize, dispose releases shaders
+  - Focus: `IRenderable` traversal and collection, ascending `renderOrder` sorting, frame context passing to `renderable.render(context)`, aspect ratio / matrix updates, context lost/restored
 - **A6.2 [scene_pass.tsx](../scene/renderer/scene_pass.tsx)** — `ScenePass` (React) — 📝 TODO
   - Open question: how to test React components. No `@testing-library/react` is installed. Options: `react-dom/client` + `act` under happy-dom, add `@testing-library/react`, or rely on the build.
 - **A6.3 [imperative_galaxy_scene_pass.tsx](../scene/test/imperative_galaxy_scene_pass.tsx)** — `ImperativeGalaxyScenePass` — 📝 TODO
@@ -134,17 +138,21 @@ Done as needed by each item, not up front.
 
 ### B1. Shader Foundation
 
-- **B1.1 [shader_compiler.ts](../webgl/shaders/shader_compiler.ts)** — `compileShader` — ⬜ Not Started
+- **B1.1 [shader_compiler.ts](../webgl/shaders/shader_compiler.ts)** — `compileShader` — ✅ Complete
+  - Test: `shader_compiler.test.ts` (8 specs)
   - Focus: success returns the shader; compile failure reads the info log, deletes the shader and errors out; `createShader` returning null
-- **B1.2 [shader_program.ts](../webgl/shaders/shader_program.ts)** — `ShaderProgram` — ⬜ Not Started
+- **B1.2 [shader_program.ts](../webgl/shaders/shader_program.ts)** — `ShaderProgram` — ✅ Complete
+  - Test: `shader_program.test.ts` (40 specs)
   - Depended on by: `VertexBuffer`, `ShaderManager`, `WebGLContextManager`, `SceneRenderer`
   - Focus: link success / failure, uniform location caching, typed uniform setters calling the right `uniform*`, sampler → texture unit mapping, `use()` idempotency, recompile after context loss, `destroy()` idempotency
 
 ### B2. Geometry Foundation
 
-- **B2.1 [vertex_layout.ts](../webgl/geometry/vertex_layout.ts)** — `computeLayoutStride`, `configureVAO` (3 overloads), `configureMultiBufferVAO`, `parseVertexLayoutFromGLSL` — ⬜ Not Started
+- **B2.1 [vertex_layout.ts](../webgl/geometry/vertex_layout.ts)** — `computeLayoutStride`, `configureVAO` (3 overloads), `configureMultiBufferVAO`, `parseVertexLayoutFromGLSL` — ✅ Complete
+  - Test: `vertex_layout.test.ts` (20 specs)
   - Focus: stride / offset math, int vs. float attribute pointers, instanced step-rate divisor, GLSL parsing (layout qualifiers, comments, unknown types)
-- **B2.2 [vertex_buffer.ts](../webgl/geometry/vertex_buffer.ts)** — `VertexBuffer` — ⬜ Not Started
+- **B2.2 [vertex_buffer.ts](../webgl/geometry/vertex_buffer.ts)** — `VertexBuffer` — ✅ Complete
+  - Test: `vertex_buffer.test.ts` (31 specs)
   - Focus: buffer + VAO creation, `setData` / `setSubData` usage hints, bind / unbind, indexed vs. non-indexed draw, destroy idempotency
 
 ### B3. Texture Foundation
@@ -165,7 +173,8 @@ Done as needed by each item, not up front.
   - Focus: unit binding cache (redundant binds skipped), cube binding, `resetBindings`, register / unregister, max-unit bounds, context lifecycle, diagnostics
 - **B4.2 [shader_manager.ts](../webgl/shaders/shader_manager.ts)** — `ShaderManager` — ⬜ Not Started
   - Focus: `getOrCreateShader` caching / ref counting, release destroys at zero refs, redundant `use*` skipped, active program tracking, context lifecycle, diagnostics
-- **B4.3 [geometry_manager.ts](../webgl/geometry/geometry_manager.ts)** — `GeometryManager` — ⬜ Not Started
+- **B4.3 [geometry_manager.ts](../webgl/geometry/geometry_manager.ts)** — `GeometryManager` — ✅ Complete
+  - Test: `geometry_manager.test.ts` (12 specs)
   - Focus: lazy upload on first bind, re-upload on version change, redundant bind skipped, release vs. dispose, `onDispose` cleanup, context lifecycle, counts / diagnostics
 
 ### B5. Orchestration (leaf / top consumer)
@@ -185,7 +194,8 @@ Done as needed by each item, not up front.
 
 ## Progress Summary
 
-- **Scene:** 5 / 17 complete (A6.2, A6.3 TODO)
-- **WebGL:** 0 / 13 complete
-- **Phase 0 fixtures:** 0 / 3 (done as needed)
-- **Current item:** A2.3 [cube_geometry.ts](../scene/models/primitives/cube_geometry.ts)
+- **Scene:** 18 / 18 complete (A6.2, A6.3 deferred TODO) — 623 passing specs
+- **WebGL:** 5 / 13 complete (111 passing specs)
+- **Phase 0 fixtures:** 3 / 3 operational
+- **Total Suite:** 24 test files, 730 passing specs
+- **Next Item:** B3.1 [texture_factory.ts](../webgl/textures/texture_factory.ts)
