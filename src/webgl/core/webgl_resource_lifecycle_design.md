@@ -3,7 +3,7 @@
 ## 1. Overview & Architectural Goals
 
 ### Purpose
-In WebGL 2 rendering pipelines, managing GPU memory lifecycle, context recovery, and cache consistency is critical. Historically, resource wrappers (`VertexBuffer`, `ShaderProgram`, `BaseTexture`) exhibited diverging lifecycles:
+In WebGL 2 rendering pipelines, managing GPU memory lifecycle, context recovery, and cache consistency is critical. Historically, resource wrappers (`VertexBuffer`, `ShaderProgram`, `Texture`) exhibited diverging lifecycles:
 - Some wrappers exposed dual `destroy()` and `dispose()` methods with ambiguous teardown responsibilities.
 - Some classes required direct `IWebGLContextManager` dependencies, while others required explicit `WebGL2RenderingContext` injection.
 - Materials owned and disposed textures during material teardown, causing catastrophic double-deletion bugs when materials were cloned or shared textures across meshes.
@@ -33,7 +33,7 @@ flowchart TD
     end
 
     subgraph ResourceLayer["2. WebGL Resource Wrapper (IWebGLResource)"]
-        Resource["Resource Instance\n(VertexBuffer / ShaderProgram / BaseTexture)"]
+        Resource["Resource Instance\n(VertexBuffer / ShaderProgram / Texture)"]
         State["Resource State:\n- label: string\n- isValid: boolean\n- isDisposed: boolean"]
         Resource --> State
     end

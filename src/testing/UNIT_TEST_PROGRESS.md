@@ -157,18 +157,19 @@ Done as needed by each item, not up front.
 
 ### B3. Texture Foundation
 
-- **B3.0 [base_texture.ts](../webgl/textures/base_texture.ts)** — `BaseTexture` — 🔍 Awaiting Review
-  - Test: `base_texture.test.ts` (34 specs)
+- **B3.0 [texture.ts](../webgl/textures/texture.ts)** — `Texture` — 🔍 Awaiting Review
+  - Test: `texture.test.ts` (39 specs)
   - Focus: GPU handle lifecycle, parameter configuration, binding, unbinding, context loss recovery, deterministic disposal
 - **B3.1 [solid_color_texture.ts](../webgl/textures/solid_color_texture.ts)** & **[texture_factory.ts](../webgl/textures/texture_factory.ts)** — `SolidColorTexture`, `SolidColorCubeTexture`, `createSolid2DTexture`, `createSolidCubeTexture` — 🔍 Awaiting Review
-  - Tests: `solid_color_texture.test.ts` (32 specs), `texture_factory.test.ts` (13 specs)
+  - Tests: `solid_color_texture.test.ts` (31 specs), `texture_factory.test.ts` (13 specs)
   - Focus: 1×1 solid-color 2D and cubemap texture classes implementing `ITexture` and `ICubeTexture`, factory helper initialization, `setColor` re-upload, disposal
 - **B3.2 [texture_fallback.ts](../webgl/textures/texture_fallback.ts)** — `FallbackTextureRegistry` — ⬜ Not Started
   - Focus: lazy creation and caching of the fallback textures, reset on context loss, destroy
-- **B3.3 [texture.ts](../webgl/textures/texture.ts)** — `Texture` — ⬜ Not Started
-  - Mocks: GL context + stubbed image decode
+- **B3.3 [image_texture.ts](../webgl/textures/image_texture.ts)** — `ImageTexture` — 🔍 Awaiting Review
+  - Test: `image_texture.test.ts` (13 specs)
   - Focus: 1×1 fallback before load, async load → upload + mipmap, load error path, context recovery, dispose
-- **B3.4 [cube_texture.ts](../webgl/textures/cube_texture.ts)** — `CubeTexture` — ⬜ Not Started
+- **B3.4 [cube_texture.ts](../webgl/textures/cube_texture.ts)** — `CubeTexture` — 🔍 Awaiting Review
+  - Test: `cube_texture.test.ts` (7 specs)
   - Focus: 6-face load ordering, partial failure, fallback, context recovery, dispose
 
 ### B4. Subsystem Managers
