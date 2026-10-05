@@ -24,10 +24,12 @@ export type TextureFormat = "rgba" | "rgb" | "alpha" | "luminance";
  */
 export type TextureSource = HTMLImageElement | HTMLCanvasElement | ImageBitmap | ImageData;
 
+import { GLTextureTarget as TextureTarget, GLTextureTarget } from "../core/webgl_constants_types";
+
 /**
  * Re-exported WebGL texture binding target enum.
  */
-export { GLTextureTarget as TextureTarget, GLTextureTarget } from "../core/webgl_constants_types";
+export { TextureTarget, GLTextureTarget };
 
 /**
  * Conventional hardware texture unit semantic slots.
@@ -132,25 +134,27 @@ export const DEFAULT_TEXTURE_UNIT_MAP: Readonly<Record<string, TextureUnit>> = {
 };
 
 /**
- * Configuration options for constructing or updating a Texture.
+ * Configuration options for managed WebGL texture resources.
  */
 export interface TextureOptions {
-    /** Image source element, bitmap, canvas, or URL string */
-    source?: TextureSource | string;
     /** Horizontal wrap mode (defaults to "clamp_to_edge") */
     wrapS?: TextureWrap;
     /** Vertical wrap mode (defaults to "clamp_to_edge") */
     wrapT?: TextureWrap;
-    /** Minification filter (defaults to "linear_mipmap_linear") */
+    /** Depth / R wrap mode for 3D and Cubemap textures (defaults to "clamp_to_edge") */
+    wrapR?: TextureWrap;
+    /** Minification filter (defaults to "linear_mipmap_linear" or "nearest") */
     minFilter?: TextureFilter;
-    /** Magnification filter (defaults to "linear") */
+    /** Magnification filter (defaults to "linear" or "nearest") */
     magFilter?: TextureFilter;
     /** Whether to flip the Y axis to match WebGL UV coordinates (defaults to true) */
     flipY?: boolean;
-    /** Whether to generate mipmaps when dimensions allow (defaults to true) */
+    /** Whether to generate mipmaps when dimensions allow (defaults to false or true based on subclass) */
     generateMipmaps?: boolean;
-    /** Human-readable label for debugging and context logging */
+    /** Human-readable label for debugging and diagnostics */
     label?: string;
+    /** Target WebGL texture binding target (e.g. TextureTarget.Texture2D, TextureTarget.CubeMap) */
+    target?: TextureTarget;
 }
 
 import type { IWebGLResource } from "../core/resource_types";
@@ -162,29 +166,38 @@ export interface ITexture extends IWebGLResource {
     /** Unique debug label */
     readonly label: string;
 
-    /** Underlying WebGLTexture GPU handle (null if context lost or unallocated) */
+    /** WebGL texture binding target (e.g. TextureTarget.Texture2D or TextureTarget.CubeMap) */
+    readonly target: TextureTarget;
+
+    /** Underlying WebGLTexture GPU handle (null if unallocated or context lost) */
     readonly handle: WebGLTexture | null;
 
-    /** Width in pixels (1 before image decode completes) */
+    /** Width in pixels */
     readonly width: number;
 
-    /** Height in pixels (1 before image decode completes) */
+    /** Height in pixels */
     readonly height: number;
 
-    /** Whether the full source asset has finished loading and uploading */
+    /** Whether the texture content is ready for sampling */
     readonly isLoaded: boolean;
 
     /** Active configuration options */
     readonly options: Readonly<TextureOptions>;
 
-    /** Allocates the GPU texture handle with initial fallback and uploads source */
+    /** Allocates GPU resources and uploads texture data */
     init(gl: WebGL2RenderingContext): void;
 
-    /** Re-uploads pixel data from the stored image or canvas source */
-    updateFromSource(): void;
+    /** Applies wrap and filter sampling parameters to the bound texture */
+    applySamplerParameters(gl?: WebGL2RenderingContext): void;
 
-    /** Binds texture to a specific hardware texture unit via context manager */
+    /** Binds texture to a hardware texture unit */
     bind(unit?: TextureUnit | number): void;
+
+    /** Unbinds texture from a hardware texture unit */
+    unbind(unit?: TextureUnit | number): void;
+
+    /** Re-uploads pixel data from CPU or source */
+    updateFromSource(): void;
 
     /** WebGL context lost lifecycle hook */
     onContextLost(): void;

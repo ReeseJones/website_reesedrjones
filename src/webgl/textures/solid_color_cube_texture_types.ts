@@ -1,9 +1,9 @@
-import type { BaseTextureOptions } from "./base_texture_types";
+import type { TextureOptions } from "./texture_types";
 
 /**
  * Options for configuring a SolidColorCubeTexture.
  */
-export interface SolidColorCubeTextureOptions extends BaseTextureOptions {
+export interface SolidColorCubeTextureOptions extends TextureOptions {
     /** Red channel (0 - 255) */
     r?: number;
     /** Green channel (0 - 255) */
