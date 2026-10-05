@@ -1,5 +1,6 @@
 import type { VertexLayoutSpec } from "../../webgl/geometry/vertex_layout_types";
 import type { IDisposable } from "../../webgl/core/subsystem_types";
+import type { GLPrimitive } from "../../webgl/core/webgl_constants_types";
 
 /**
  * CPU-side geometry buffer descriptor declaring interleaved vertex attributes,
@@ -38,8 +39,8 @@ export interface IMeshGeometry extends IDisposable {
     /** Total vertex count for draw calls */
     readonly vertexCount: number;
 
-    /** WebGL primitive type (e.g. WebGL2RenderingContext.TRIANGLES, WebGL2RenderingContext.POINTS) */
-    readonly primitiveType: number;
+    /** WebGL primitive type (e.g. GLPrimitive.Triangles, GLPrimitive.Points) */
+    readonly primitiveType: GLPrimitive | number;
 
     /** Optional index count (null if non-indexed) */
     readonly indexCount: number | null;

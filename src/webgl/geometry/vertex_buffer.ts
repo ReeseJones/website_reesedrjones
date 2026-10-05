@@ -1,6 +1,7 @@
 import { configureVAO } from "./vertex_layout";
 import type { VertexLayoutSpec } from "./vertex_layout_types";
 import type { IWebGLContextManager } from "../core/context_manager_types";
+import { GLBufferUsage } from "../core/webgl_constants_types";
 
 /**
  * Managed GPU Vertex Buffer Object (VBO) and Vertex Array Object (VAO) wrapper.
@@ -14,7 +15,7 @@ export class VertexBuffer {
     private vbo: WebGLBuffer | null = null;
     private vao: WebGLVertexArrayObject | null = null;
     private cpuData: Float32Array | null = null;
-    private usage: number;
+    private usage: GLBufferUsage;
 
     private get gl(): WebGL2RenderingContext | null {
         return this.contextManager.getContext();
@@ -26,9 +27,9 @@ export class VertexBuffer {
     ) {
         this.contextManager = contextManager;
         this.layout = layout;
-        const currentGl = this.gl;
-        this.usage = currentGl ? currentGl.STATIC_DRAW : WebGL2RenderingContext.STATIC_DRAW;
+        this.usage = GLBufferUsage.StaticDraw;
 
+        const currentGl = this.gl;
         if (currentGl && !currentGl.isContextLost()) {
             this.buildGPUResources();
         }
@@ -38,10 +39,7 @@ export class VertexBuffer {
      * Initializes or updates GPU resources when a context becomes available.
      */
     public init(_gl?: WebGL2RenderingContext): void {
-        const currentGl = this.gl;
-        if (currentGl) {
-            this.usage = currentGl.STATIC_DRAW;
-        }
+        this.usage = GLBufferUsage.StaticDraw;
         if (!this.vao || !this.vbo) {
             this.buildGPUResources();
         }

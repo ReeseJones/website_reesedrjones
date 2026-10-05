@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { MeshGeometry } from "./mesh_geometry";
 import type { GeometryBufferData, IMeshGeometry } from "./mesh_geometry_types";
 import type { VertexLayoutSpec } from "../../webgl/geometry/vertex_layout_types";
+import { GLDataType, GLPrimitive } from "../../webgl/core/webgl_constants_types";
 
 /**
  * Creates a standard test vertex layout with 2 interleaved attributes:
@@ -110,10 +111,11 @@ describe("MeshGeometry", () => {
             expect(indexedGeom.bufferData.indices).toBeInstanceOf(Uint16Array);
         });
 
-        it("should default primitiveType to TRIANGLES (4 / WebGL2RenderingContext.TRIANGLES)", () => {
+        it("should default primitiveType to TRIANGLES (4 / GLPrimitive.Triangles)", () => {
             const bufferData = createTestBufferData();
             const geometry = new MeshGeometry(bufferData);
 
+            expect(geometry.primitiveType).toBe(GLPrimitive.Triangles);
             expect(geometry.primitiveType).toBe(WebGL2RenderingContext.TRIANGLES);
             expect(geometry.primitiveType).toBe(4);
         });
@@ -122,16 +124,16 @@ describe("MeshGeometry", () => {
             const bufferData = createTestBufferData();
             const linesGeometry = new MeshGeometry(
                 bufferData,
-                WebGL2RenderingContext.LINES
+                GLPrimitive.Lines
             );
-            expect(linesGeometry.primitiveType).toBe(WebGL2RenderingContext.LINES);
+            expect(linesGeometry.primitiveType).toBe(GLPrimitive.Lines);
             expect(linesGeometry.primitiveType).toBe(1);
 
             const pointsGeometry = new MeshGeometry(
                 bufferData,
-                WebGL2RenderingContext.POINTS
+                GLPrimitive.Points
             );
-            expect(pointsGeometry.primitiveType).toBe(WebGL2RenderingContext.POINTS);
+            expect(pointsGeometry.primitiveType).toBe(GLPrimitive.Points);
             expect(pointsGeometry.primitiveType).toBe(0);
         });
 

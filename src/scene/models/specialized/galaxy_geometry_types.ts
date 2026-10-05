@@ -1,5 +1,6 @@
 import type { VertexLayoutSpec } from "../../../webgl/geometry/vertex_layout_types";
 import type { GalaxyParameters } from "../../../galaxy_backdrop/parameters/types";
+import { GLDataType } from "../../../webgl/core/webgl_constants_types";
 
 /**
  * Standard attribute location slot indices for procedural galaxy starfields.
@@ -32,37 +33,37 @@ export const GALAXY_VERTEX_LAYOUT: VertexLayoutSpec = {
             nameOrLocation: GalaxyAttributeLocation.Radius,
             description: "a_radius (float)",
             size: 1,
-            type: WebGL2RenderingContext.FLOAT,
+            type: GLDataType.Float,
         },
         {
             nameOrLocation: GalaxyAttributeLocation.BaseAngle,
             description: "a_baseAngle (float)",
             size: 1,
-            type: WebGL2RenderingContext.FLOAT,
+            type: GLDataType.Float,
         },
         {
             nameOrLocation: GalaxyAttributeLocation.ZOffset,
             description: "a_zOffset (float)",
             size: 1,
-            type: WebGL2RenderingContext.FLOAT,
+            type: GLDataType.Float,
         },
         {
             nameOrLocation: GalaxyAttributeLocation.Size,
             description: "a_size (float)",
             size: 1,
-            type: WebGL2RenderingContext.FLOAT,
+            type: GLDataType.Float,
         },
         {
             nameOrLocation: GalaxyAttributeLocation.SpectralType,
             description: "a_spectralType (float)",
             size: 1,
-            type: WebGL2RenderingContext.FLOAT,
+            type: GLDataType.Float,
         },
         {
             nameOrLocation: GalaxyAttributeLocation.DriftPhase,
             description: "a_driftPhase (float)",
             size: 1,
-            type: WebGL2RenderingContext.FLOAT,
+            type: GLDataType.Float,
         },
     ],
     stride: 6 * Float32Array.BYTES_PER_ELEMENT,

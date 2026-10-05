@@ -4,6 +4,7 @@ import type {
     GeometryDisposeListener,
     IMeshGeometry,
 } from "./mesh_geometry_types";
+import { GLPrimitive } from "../../webgl/core/webgl_constants_types";
 
 let nextGeometryId = 0;
 function generateGeometryId(prefix: string = "MeshGeometry"): string {
@@ -18,19 +19,19 @@ export class MeshGeometry implements IMeshGeometry {
     public readonly id: string;
 
     private _bufferData: GeometryBufferData;
-    private readonly _primitiveType: number;
+    private readonly _primitiveType: GLPrimitive | number;
     private _version: number = 0;
     private readonly _disposeListeners: Set<GeometryDisposeListener> = new Set();
     private _isDisposed: boolean = false;
 
     /**
      * @param bufferData Interleaved vertex data, layout specification, and optional indices.
-     * @param primitiveType WebGL primitive type (defaults to WebGL2RenderingContext.TRIANGLES).
+     * @param primitiveType WebGL primitive type (defaults to GLPrimitive.Triangles).
      * @param id Optional explicit debugging identifier.
      */
     constructor(
         bufferData: GeometryBufferData,
-        primitiveType: number = WebGL2RenderingContext.TRIANGLES,
+        primitiveType: GLPrimitive | number = GLPrimitive.Triangles,
         id?: string
     ) {
         this._bufferData = bufferData;
@@ -46,7 +47,7 @@ export class MeshGeometry implements IMeshGeometry {
         return this._bufferData.vertexCount;
     }
 
-    public get primitiveType(): number {
+    public get primitiveType(): GLPrimitive | number {
         return this._primitiveType;
     }
 

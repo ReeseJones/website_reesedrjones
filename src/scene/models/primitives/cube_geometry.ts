@@ -2,6 +2,7 @@ import { MeshGeometry } from "../mesh_geometry";
 import type { GeometryBufferData } from "../mesh_geometry_types";
 import { STANDARD_VERTEX_LAYOUT } from "./standard_layout";
 import type { CubeGeometryOptions } from "./primitive_types";
+import { GLPrimitive } from "../../../webgl/core/webgl_constants_types";
 
 interface FaceSpec {
     normal: [number, number, number];
@@ -159,7 +160,7 @@ export class CubeGeometry extends MeshGeometry {
 
         super(
             buildCubeBufferData(width, height, depth),
-            WebGL2RenderingContext.TRIANGLES,
+            GLPrimitive.Triangles,
             id
         );
 

@@ -1,3 +1,5 @@
+import type { GLDataType } from "../core/webgl_constants_types";
+
 /**
  * Standard WebGL2 attribute location slot indices (layout(location = N)).
  */
@@ -37,8 +39,8 @@ export interface AttributeSpec {
     /** Number of components per vertex attribute (1, 2, 3, or 4) */
     size: number;
 
-    /** WebGL data type enum (e.g. gl.FLOAT, gl.UNSIGNED_BYTE). Defaults to gl.FLOAT */
-    type?: number;
+    /** WebGL data type enum (e.g. GLDataType.Float, GLDataType.UnsignedByte). Defaults to GLDataType.Float */
+    type?: GLDataType | number;
 
     /** Byte size per component (e.g. 4 for Float32Array). Defaults to Float32Array.BYTES_PER_ELEMENT */
     componentBytes?: number;

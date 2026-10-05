@@ -25,6 +25,11 @@ export type TextureFormat = "rgba" | "rgb" | "alpha" | "luminance";
 export type TextureSource = HTMLImageElement | HTMLCanvasElement | ImageBitmap | ImageData;
 
 /**
+ * Re-exported WebGL texture binding target enum.
+ */
+export { GLTextureTarget as TextureTarget, GLTextureTarget } from "../core/webgl_constants_types";
+
+/**
  * Conventional hardware texture unit semantic slots.
  * Maps standard material texture roles to fixed WebGL texture unit indices (0 to 15).
  * While WebGL shaders and materials can bind any arbitrary texture to any unit,

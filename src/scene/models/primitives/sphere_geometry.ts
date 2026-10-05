@@ -2,6 +2,7 @@ import { MeshGeometry } from "../mesh_geometry";
 import type { GeometryBufferData } from "../mesh_geometry_types";
 import { STANDARD_VERTEX_LAYOUT } from "./standard_layout";
 import type { SphereGeometryOptions } from "./primitive_types";
+import { GLPrimitive } from "../../../webgl/core/webgl_constants_types";
 
 /**
  * Pure generator constructing interleaved vertex attributes and indices
@@ -97,7 +98,7 @@ export class SphereGeometry extends MeshGeometry {
 
         super(
             buildSphereBufferData(radius, widthSegments, heightSegments),
-            WebGL2RenderingContext.TRIANGLES,
+            GLPrimitive.Triangles,
             id
         );
 

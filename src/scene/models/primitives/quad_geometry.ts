@@ -2,6 +2,7 @@ import { MeshGeometry } from "../mesh_geometry";
 import type { GeometryBufferData } from "../mesh_geometry_types";
 import { STANDARD_VERTEX_LAYOUT } from "./standard_layout";
 import type { QuadGeometryOptions } from "./primitive_types";
+import { GLPrimitive } from "../../../webgl/core/webgl_constants_types";
 
 /**
  * Pure generator constructing interleaved vertex attributes and indices
@@ -50,7 +51,7 @@ export class QuadGeometry extends MeshGeometry {
 
         super(
             buildQuadBufferData(width, height),
-            WebGL2RenderingContext.TRIANGLES,
+            GLPrimitive.Triangles,
             id
         );
 

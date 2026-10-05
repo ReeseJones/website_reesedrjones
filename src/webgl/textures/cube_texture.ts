@@ -3,16 +3,17 @@ import type {
     CubeTextureOptions,
     ICubeTexture,
 } from "./cube_texture_types";
+import { GLCubeFace } from "../core/webgl_constants_types";
 
 type FaceKey = keyof CubeTextureFaces;
 
-const FACE_TARGETS: Record<FaceKey, number> = {
-    posX: WebGL2RenderingContext.TEXTURE_CUBE_MAP_POSITIVE_X,
-    negX: WebGL2RenderingContext.TEXTURE_CUBE_MAP_NEGATIVE_X,
-    posY: WebGL2RenderingContext.TEXTURE_CUBE_MAP_POSITIVE_Y,
-    negY: WebGL2RenderingContext.TEXTURE_CUBE_MAP_NEGATIVE_Y,
-    posZ: WebGL2RenderingContext.TEXTURE_CUBE_MAP_POSITIVE_Z,
-    negZ: WebGL2RenderingContext.TEXTURE_CUBE_MAP_NEGATIVE_Z,
+const FACE_TARGETS: Record<FaceKey, GLCubeFace> = {
+    posX: GLCubeFace.PositiveX,
+    negX: GLCubeFace.NegativeX,
+    posY: GLCubeFace.PositiveY,
+    negY: GLCubeFace.NegativeY,
+    posZ: GLCubeFace.PositiveZ,
+    negZ: GLCubeFace.NegativeZ,
 };
 
 const FACE_ORDER: FaceKey[] = ["posX", "negX", "posY", "negY", "posZ", "negZ"];

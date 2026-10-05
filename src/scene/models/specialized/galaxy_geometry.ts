@@ -4,6 +4,7 @@ import { DEFAULT_PINPRICK_PARAMETERS } from "../../../galaxy_backdrop/parameters
 import type { GalaxyParameters } from "../../../galaxy_backdrop/parameters/types";
 import { GALAXY_VERTEX_LAYOUT } from "./galaxy_geometry_types";
 import type { GalaxyGeometryOptions } from "./galaxy_geometry_types";
+import { GLPrimitive } from "../../../webgl/core/webgl_constants_types";
 
 /**
  * Specialized procedural geometry for the interactive spiral galaxy backdrop.
@@ -39,7 +40,7 @@ export class GalaxyGeometry extends MeshGeometry {
                 layout: GALAXY_VERTEX_LAYOUT,
                 vertexCount: resolvedParams.starCount,
             },
-            WebGL2RenderingContext.POINTS,
+            GLPrimitive.Points,
             id
         );
 
