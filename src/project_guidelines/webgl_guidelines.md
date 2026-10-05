@@ -39,3 +39,16 @@ All core WebGL infrastructure and generic resource utilities reside in [`src/web
 - **Setup vs. Render Loop Unbinding:**
   - **Unbind After Setup (Initialization):** Always unbind VAOs (`gl.bindVertexArray(null)`) and VBOs (`gl.bindBuffer(gl.ARRAY_BUFFER, null)`) at the end of resource setup/creation routines to isolate setup state and prevent accidental mutation.
   - **Skip Unbinding in Render Loops:** Do not unbind resources to `null` between draw calls during per-frame `renderFrame()` execution. Transition directly to the next required bound resource to eliminate redundant WebGL driver call overhead.
+
+---
+
+## 7. Math Types & Matrix Buffers (`Float32Array` Standard)
+- **Standardized on `Float32Array`:** All matrices (`mat4`, `mat3`), vectors (`vec3`, `vec4`), and quaternions (`quat`) produced, cached, and consumed across the WebGL pipeline are typed and backed by `Float32Array`.
+- **Why Not Standard JS `Array`:**
+  - Standard JavaScript arrays (`number[]`) require WebIDL sequence marshaling (`sequence<GLfloat>`) on every uniform upload (`gl.uniformMatrix4fv`, `gl.uniform*`), allocating temporary native memory and converting values on every draw call.
+  - Standard JS arrays cannot be passed to `gl.bufferData` (which strictly requires `ArrayBufferView` / `BufferSource`).
+  - `Float32Array` provides direct raw memory pointer access to the GPU driver without per-frame allocations or garbage collection.
+- **Ambient `gl-matrix` Augmentation ([`src/types/gl_matrix.d.ts`](../types/gl_matrix.d.ts)):**
+  - By default, `gl-matrix` 3.x types matrices and vectors as `IndexedCollection` to support optional array switching via `setMatrixArrayType`. Because TypeScript treats `IndexedCollection` as looser than `Float32Array`, passing `gl-matrix` return values to typed properties (e.g. `ICamera.viewMatrix: Float32Array`, `ShaderProgram.setMat4`) previously required continuous `as Float32Array` casting.
+  - We augment `declare module "gl-matrix"` in [`src/types/gl_matrix.d.ts`](../types/gl_matrix.d.ts) (`interface IndexedCollection extends Float32Array`), ensuring `mat4.create()`, `mat4.multiply()`, etc. are typed as `Float32Array` project-wide with zero cast boilerplate.
+

@@ -26,7 +26,6 @@
     "@parcel/resolver-glob": "^2.16.4",
     "@parcel/transformer-glsl": "^2.16.4",
     "@parcel/transformer-sass": "^2.16.4",
-    "@types/gl-matrix": "^2.4.5",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@vitest/coverage-v8": "^5.0.3",
