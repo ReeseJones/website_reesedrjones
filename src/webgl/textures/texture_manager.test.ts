@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { TextureManager } from "./texture_manager";
-import { Texture } from "./texture";
+import { ImageTexture } from "./image_texture";
 import { SubsystemRestorationPriority } from "../core/subsystem_types";
 import { TextureUnit } from "./texture_types";
 import { createMockWebGL2Context } from "../../testing/mocks/mock_gl_context";
@@ -32,10 +32,10 @@ describe("TextureManager", () => {
     });
 
     describe(".getOrCreate()", () => {
-        it("creates, initializes, caches, and returns a new Texture instance for URL", () => {
+        it("creates, initializes, caches, and returns a new ImageTexture instance for URL", () => {
             const texture = textureManager.getOrCreate("assets/albedo.png");
 
-            expect(texture).toBeInstanceOf(Texture);
+            expect(texture).toBeInstanceOf(ImageTexture);
             expect(texture.isValid).toBe(true);
             expect(textureManager.textureCount).toBe(1);
             expect(textureManager.has("assets/albedo.png")).toBe(true);

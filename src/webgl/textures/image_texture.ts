@@ -1,5 +1,4 @@
 import { BaseTexture } from "./base_texture";
-import { SolidColorTexture } from "./solid_color_texture";
 import {
     TextureTarget,
     type TextureOptions,
@@ -11,7 +10,7 @@ import {
  * asynchronous image decoding, filtering, mipmapping, and automatic context recovery.
  * Extends BaseTexture for unified GPU texture handle and binding lifecycle.
  */
-export class Texture extends BaseTexture {
+export class ImageTexture extends BaseTexture {
     private _source: TextureSource | string | null = null;
     private _cachedImage: HTMLImageElement | null = null;
 
@@ -38,7 +37,7 @@ export class Texture extends BaseTexture {
             magFilter: resolvedOptions.magFilter ?? "linear",
             flipY: resolvedOptions.flipY ?? true,
             generateMipmaps: resolvedOptions.generateMipmaps ?? true,
-            label: resolvedOptions.label ?? "Texture",
+            label: resolvedOptions.label ?? "ImageTexture",
             target: TextureTarget.Texture2D,
         });
 
@@ -62,7 +61,7 @@ export class Texture extends BaseTexture {
      * Re-uploads pixel data from the stored image or canvas source.
      */
     public override updateFromSource(): void {
-        if (!this._gl || !this._handle) return;
+        if (!this._gl || !this._handle || this._gl.isContextLost()) return;
 
         const source = this._cachedImage ?? (typeof this._source !== "string" ? this._source : null);
         if (source) {
@@ -80,7 +79,7 @@ export class Texture extends BaseTexture {
 
     // --- Protected / Private Helpers ---
 
-    protected uploadGPU(gl: WebGL2RenderingContext): void {
+    protected uploadToGPU(gl: WebGL2RenderingContext): void {
         const source = this._cachedImage ?? (typeof this._source !== "string" ? this._source : null);
         if (this._isLoaded && source) {
             this.uploadSource(gl, source);
@@ -105,14 +104,11 @@ export class Texture extends BaseTexture {
                 }
             })
             .catch((err) => {
-                console.error(`[Texture] Failed to decode image from '${url}':`, err);
+                console.error(`[ImageTexture] Failed to decode image from '${url}':`, err);
             });
     }
 
     private initFallback(gl: WebGL2RenderingContext): void {
-        if (!this._handle) return;
-
-        gl.bindTexture(this.target, this._handle);
         const fallbackPixel = new Uint8Array([255, 255, 255, 255]);
         gl.texImage2D(
             this.target,
@@ -130,7 +126,6 @@ export class Texture extends BaseTexture {
         gl.texParameteri(this.target, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
         gl.texParameteri(this.target, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
         gl.texParameteri(this.target, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-        gl.bindTexture(this.target, null);
     }
 
     private uploadSource(gl: WebGL2RenderingContext, source: TextureSource): void {
@@ -158,34 +153,21 @@ export class Texture extends BaseTexture {
     /**
      * Loads a texture asynchronously from a URL string.
      */
-    public static fromUrl(url: string, options?: TextureOptions): Texture {
-        return new Texture(url, options);
+    public static fromUrl(url: string, options?: TextureOptions): ImageTexture {
+        return new ImageTexture(url, options);
     }
 
     /**
      * Instantiates a texture from an already-decoded HTMLImageElement.
      */
-    public static fromImage(image: HTMLImageElement, options?: TextureOptions): Texture {
-        return new Texture(image, options);
+    public static fromImage(image: HTMLImageElement, options?: TextureOptions): ImageTexture {
+        return new ImageTexture(image, options);
     }
 
     /**
      * Instantiates a texture from an HTMLCanvasElement.
      */
-    public static fromCanvas(canvas: HTMLCanvasElement, options?: TextureOptions): Texture {
-        return new Texture(canvas, options);
-    }
-
-    /**
-     * Creates a 1x1 solid color texture implementing ITexture.
-     */
-    public static createSolidColor(
-        r: number,
-        g: number,
-        b: number,
-        a: number = 255,
-        options?: TextureOptions
-    ): SolidColorTexture {
-        return new SolidColorTexture(r, g, b, a, options);
+    public static fromCanvas(canvas: HTMLCanvasElement, options?: TextureOptions): ImageTexture {
+        return new ImageTexture(canvas, options);
     }
 }

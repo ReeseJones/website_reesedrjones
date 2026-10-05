@@ -3,7 +3,7 @@ import type { ITexture, TextureOptions, TextureUnit } from "./texture_types";
 import type { ICubeTexture } from "./cube_texture_types";
 import type { ITextureManager, TextureFallbackType } from "./texture_manager_types";
 import { SubsystemRestorationPriority, type SubsystemDiagnostics } from "../core/subsystem_types";
-import { Texture } from "./texture";
+import { ImageTexture } from "./image_texture";
 import { FallbackTextureRegistry } from "./texture_fallback";
 
 /**
@@ -44,7 +44,7 @@ export class TextureManager implements ITextureManager {
             return cached;
         }
 
-        const texture = new Texture(url, options);
+        const texture = new ImageTexture(url, options);
         const gl = this._gl ?? this._contextManager.getContext();
         if (gl) {
             texture.init(gl);
