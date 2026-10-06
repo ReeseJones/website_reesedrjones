@@ -6,7 +6,8 @@ import {
     WebGLSubscriber,
 } from "./types";
 
-import { WebGLContextManager } from "../../webgl/core/context_manager";
+import type { WebGLContextManager } from "../../webgl/core/context_manager";
+import { createDefaultContextManager } from "../../webgl/core/context_manager_factory";
 
 declare global {
     interface Window {
@@ -60,7 +61,7 @@ export function useWebGLCanvas(config?: UseWebGLCanvasOptions) {
     });
 
     const glRef = useRef<WebGL2RenderingContext | null>(null);
-    const contextManagerRef = useRef<WebGLContextManager>(new WebGLContextManager());
+    const contextManagerRef = useRef<WebGLContextManager>(createDefaultContextManager());
     const dimensionsRef = useRef<CanvasDimensions>(dimensions);
     dimensionsRef.current = dimensions;
 

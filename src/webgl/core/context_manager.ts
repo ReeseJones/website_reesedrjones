@@ -1,12 +1,12 @@
 import type { ShaderProgram } from "../shaders/shader_program";
 import type { ShaderProgramOptions } from "../shaders/shader_program_types";
-import type { IWebGLContextManager } from "./context_manager_types";
+import type { IWebGLContextManager, WebGLContextManagerSubsystems } from "./context_manager_types";
 import type { PipelineState } from "../../scene/materials/material_types";
 import type { ShaderKey } from "../shaders/shader_types";
 import type { IContextSubsystem, SubsystemDiagnostics } from "./subsystem_types";
-import { GeometryManager } from "../geometry/geometry_manager";
-import { TextureManager } from "../textures/texture_manager";
-import { ShaderManager } from "../shaders/shader_manager";
+import type { IGeometryManager } from "../geometry/geometry_manager_types";
+import type { ITextureManager } from "../textures/texture_manager_types";
+import type { IShaderManager } from "../shaders/shader_manager_types";
 
 /**
  * Central WebGL GPU resource manager and microkernel coordinator.
@@ -14,28 +14,25 @@ import { ShaderManager } from "../shaders/shader_manager";
  * and caches pipeline state.
  */
 export class WebGLContextManager implements IWebGLContextManager {
-    public readonly shaders: ShaderManager;
-    public readonly textures: TextureManager;
-    public readonly geometries: GeometryManager;
+    public readonly shaders: IShaderManager;
+    public readonly textures: ITextureManager;
+    public readonly geometries: IGeometryManager;
 
     private readonly _subsystems: IContextSubsystem[] = [];
     private gl: WebGL2RenderingContext | null = null;
     private currentPipelineState: PipelineState | null = null;
     private _maxTextureUnits: number = 16;
 
-    constructor(gl?: WebGL2RenderingContext) {
-        this.shaders = this.registerSubsystem(new ShaderManager(this));
-        this.textures = this.registerSubsystem(new TextureManager(this));
-        this.geometries = this.registerSubsystem(new GeometryManager(this));
-
-        if (gl) {
-            this.setContext(gl);
-        }
+    constructor(subsystems: WebGLContextManagerSubsystems) {
+        this.shaders = this.registerSubsystem(subsystems.shaders);
+        this.textures = this.registerSubsystem(subsystems.textures);
+        this.geometries = this.registerSubsystem(subsystems.geometries);
     }
 
     // --- Microkernel Subsystem Management ---
 
     public registerSubsystem<T extends IContextSubsystem>(subsystem: T): T {
+        subsystem.attach(this);
         this._subsystems.push(subsystem);
         return subsystem;
     }
