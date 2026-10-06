@@ -6,6 +6,7 @@ import { ShaderProgram } from "../webgl/shaders/shader_program";
 import { VertexBuffer } from "../webgl/geometry/vertex_buffer";
 import { parseVertexLayoutFromGLSL } from "../webgl/geometry/vertex_layout";
 import type { IWebGLContextManager } from "../webgl/core/context_manager_types";
+import { BlendMode } from "../scene/materials/material_types";
 import { OrientationInputController } from "./orientation_input";
 
 /**
@@ -144,7 +145,7 @@ export class GalacticCloudRenderer {
         this.contextManager.applyPipelineState({
             depthTest: false,
             depthWrite: false,
-            blendMode: "alpha",
+            blendMode: BlendMode.Alpha,
             cullFace: false,
         });
 

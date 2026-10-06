@@ -6,6 +6,7 @@ import { Scene } from "../core/scene";
 import { PerspectiveCamera } from "../camera/perspective_camera";
 import { GalaxyGeometry } from "../models/specialized/galaxy_geometry";
 import { GalaxyMaterial } from "../materials/specialized/galaxy_material";
+import { BlendMode } from "../materials/material_types";
 import { ModelInstance } from "../models/model_instance";
 import { SceneRenderer } from "../renderer/scene_renderer";
 import { OrientationInputController } from "../../galaxy_backdrop/orientation_input";
@@ -75,7 +76,7 @@ export function ImperativeGalaxyScenePass({
             const material = new GalaxyMaterial({
                 params: currentParams,
                 pipelineState: {
-                    blendMode: "additive",
+                    blendMode: BlendMode.Additive,
                     depthTest: false,
                     depthWrite: false,
                     cullFace: false,

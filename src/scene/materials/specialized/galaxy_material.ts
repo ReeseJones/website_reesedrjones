@@ -1,4 +1,5 @@
 import { Material } from "../material";
+import { BlendMode } from "../material_types";
 import {
     DEFAULT_ORB_PARAMETERS,
     DEFAULT_PINPRICK_PARAMETERS,
@@ -44,7 +45,7 @@ export class GalaxyMaterial extends Material {
         super({
             shaderKey: resolvedShaderKey,
             pipelineState: {
-                blendMode: options?.pipelineState?.blendMode ?? "additive",
+                blendMode: options?.pipelineState?.blendMode ?? BlendMode.Additive,
                 depthTest: options?.pipelineState?.depthTest ?? false,
                 depthWrite: options?.pipelineState?.depthWrite ?? false,
                 cullFace: options?.pipelineState?.cullFace ?? false,

@@ -1,4 +1,4 @@
-import type { IMaterial, MaterialOptions, PipelineState } from "./material_types";
+import { BlendMode, type IMaterial, type MaterialOptions, type PipelineState } from "./material_types";
 import type { ShaderKey } from "../../webgl/shaders/shader_types";
 import type { ITexture, TextureUnit } from "../../webgl/textures/texture_types";
 import type { ICubeTexture } from "../../webgl/textures/cube_texture_types";
@@ -37,7 +37,7 @@ export class Material implements IMaterial {
     constructor(options: MaterialOptions) {
         this._shaderKey = options.shaderKey;
         this._pipelineState = {
-            blendMode: options.pipelineState?.blendMode ?? "opaque",
+            blendMode: options.pipelineState?.blendMode ?? BlendMode.Opaque,
             depthTest: options.pipelineState?.depthTest ?? true,
             depthWrite: options.pipelineState?.depthWrite ?? true,
             cullFace: options.pipelineState?.cullFace ?? true,

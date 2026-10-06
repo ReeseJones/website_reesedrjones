@@ -1,4 +1,5 @@
 import { Material } from "../materials/material";
+import { BlendMode } from "../materials/material_types";
 import { TextureUnit } from "../../webgl/textures/texture_types";
 import type { ICubeTexture } from "../../webgl/textures/cube_texture_types";
 import type { SkyboxShaderKey } from "../../webgl/shaders/shader_types";
@@ -15,7 +16,7 @@ export class SkyboxMaterial extends Material {
         super({
             shaderKey: options.shaderKey ?? "skybox",
             pipelineState: {
-                blendMode: options.pipelineState?.blendMode ?? "opaque",
+                blendMode: options.pipelineState?.blendMode ?? BlendMode.Opaque,
                 depthTest: options.pipelineState?.depthTest ?? true,
                 depthWrite: options.pipelineState?.depthWrite ?? false,
                 cullFace: options.pipelineState?.cullFace ?? false,

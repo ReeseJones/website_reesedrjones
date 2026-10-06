@@ -1,4 +1,5 @@
 import { Material } from "./material";
+import { BlendMode } from "./material_types";
 import type { UnlitMaterialOptions } from "./unlit_material_types";
 import { TextureUnit, type ITexture } from "../../webgl/textures/texture_types";
 import type { UnlitShaderKey } from "../../webgl/shaders/shader_types";
@@ -28,7 +29,7 @@ export class UnlitMaterial extends Material {
         super({
             shaderKey: options?.shaderKey ?? "unlit",
             pipelineState: {
-                blendMode: options?.pipelineState?.blendMode ?? "opaque",
+                blendMode: options?.pipelineState?.blendMode ?? BlendMode.Opaque,
                 depthTest: options?.pipelineState?.depthTest ?? true,
                 depthWrite: options?.pipelineState?.depthWrite ?? true,
                 cullFace: options?.pipelineState?.cullFace ?? true,
