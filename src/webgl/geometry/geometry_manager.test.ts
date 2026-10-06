@@ -49,7 +49,8 @@ describe("GeometryManager", () => {
     beforeEach(() => {
         gl = createMockWebGL2Context();
         cm = createMockContextManager(gl);
-        geometryManager = new GeometryManager(cm);
+        geometryManager = new GeometryManager();
+        geometryManager.attach(cm);
     });
 
     afterEach(() => {
@@ -62,6 +63,20 @@ describe("GeometryManager", () => {
             expect(geometryManager.restorationPriority).toBe(SubsystemRestorationPriority.Geometry);
             expect(geometryManager.geometryCount).toBe(0);
             expect(geometryManager.activeGeometryId).toBeNull();
+        });
+
+        it("supports attach and detach lifecycle methods", () => {
+            const fresh = new GeometryManager();
+            expect(() => fresh.createVertexBuffer(testLayout)).toThrow(
+                /before subsystem is attached/
+            );
+            fresh.attach(cm);
+            const buffer = fresh.createVertexBuffer(testLayout);
+            expect(buffer).toBeInstanceOf(VertexBuffer);
+            fresh.detach();
+            expect(() => fresh.createVertexBuffer(testLayout)).toThrow(
+                /before subsystem is attached/
+            );
         });
     });
 

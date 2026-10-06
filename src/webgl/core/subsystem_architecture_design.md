@@ -127,6 +127,12 @@ export interface IContextSubsystem {
      */
     readonly restorationPriority: number;
 
+    /** Hook invoked when attached to an IWebGLContextManager coordinator */
+    attach(contextManager: IWebGLContextManager): void;
+
+    /** Optional hook invoked when detached or replaced */
+    detach?(): void;
+
     /** Hook invoked upon webglcontextlost */
     onContextLost(): void;
 
@@ -160,11 +166,11 @@ export interface IDisposable {
 ## 4. Key Subsystem Procedures
 
 ### 1. Subsystem Registration (`WebGLContextManager`)
-- Subsystems are registered during `WebGLContextManager` construction:
-  - `this.registerSubsystem(this.shaderManager);`
-  - `this.registerSubsystem(this.textureManager);`
-  - `this.registerSubsystem(this.geometryManager);`
+- Subsystems are constructed outside the coordinator and passed in as constructor dependencies:
+  - `new WebGLContextManager({ shaders, textures, geometries })`
+- `registerSubsystem()` invokes `subsystem.attach(this)` to bind the coordinator reference.
 - Subsystems are stored internally in `_subsystems: IContextSubsystem[]`.
+- Context attachment is strictly decoupled from instantiation: the context is assigned later via `setContext(gl)`.
 
 ### 2. Context Loss Dispatch
 - When `webglcontextlost` fires, `WebGLContextManager.handleContextLost()` dispatches:

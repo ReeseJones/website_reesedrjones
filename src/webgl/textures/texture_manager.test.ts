@@ -15,7 +15,8 @@ describe("TextureManager", () => {
     beforeEach(() => {
         gl = createMockWebGL2Context();
         cm = createMockContextManager(gl);
-        textureManager = new TextureManager(cm);
+        textureManager = new TextureManager();
+        textureManager.attach(cm);
     });
 
     afterEach(() => {
@@ -28,6 +29,14 @@ describe("TextureManager", () => {
             expect(textureManager.restorationPriority).toBe(SubsystemRestorationPriority.Texture);
             expect(textureManager.textureCount).toBe(0);
             expect(textureManager.cubeTextureCount).toBe(0);
+        });
+
+        it("supports attach and detach lifecycle methods", () => {
+            const fresh = new TextureManager();
+            expect(fresh.getFallbackHandle("white")).toBeNull();
+            fresh.attach(cm);
+            expect(fresh.getFallbackHandle("white")).toBeDefined();
+            fresh.detach();
         });
     });
 

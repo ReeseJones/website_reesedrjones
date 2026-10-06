@@ -21,7 +21,8 @@ describe("ShaderManager", () => {
     beforeEach(() => {
         gl = createMockWebGL2Context();
         cm = createMockContextManager(gl);
-        shaderManager = new ShaderManager(cm);
+        shaderManager = new ShaderManager();
+        shaderManager.attach(cm);
     });
 
     afterEach(() => {
@@ -35,6 +36,19 @@ describe("ShaderManager", () => {
             expect(shaderManager.shaderCount).toBe(0);
             expect(shaderManager.activeShader).toBeNull();
             expect(shaderManager.activeProgram).toBeNull();
+        });
+
+        it("supports attach and detach lifecycle methods", () => {
+            const fresh = new ShaderManager();
+            expect(() => fresh.getOrCreate("custom_test" as ShaderKey, dummyOptions)).toThrow(
+                /before subsystem is attached/
+            );
+            fresh.attach(cm);
+            expect(() => fresh.getOrCreate("custom_test" as ShaderKey, dummyOptions)).not.toThrow();
+            fresh.detach();
+            expect(() => fresh.getOrCreate("other_test" as ShaderKey, dummyOptions)).toThrow(
+                /before subsystem is attached/
+            );
         });
     });
 
@@ -83,7 +97,8 @@ describe("ShaderManager", () => {
         it("throws an error if WebGL context is not available when compiling a new shader", () => {
             const cmNull = createMockContextManager(null as unknown as WebGL2RenderingContext);
             vi.mocked(cmNull.getContext).mockReturnValue(null);
-            const mgr = new ShaderManager(cmNull);
+            const mgr = new ShaderManager();
+            mgr.attach(cmNull);
 
             expect(() => mgr.getOrCreate("custom_test" as ShaderKey, dummyOptions)).toThrow(
                 "[ShaderManager] Cannot compile shader 'custom_test' before WebGL context is initialized."
