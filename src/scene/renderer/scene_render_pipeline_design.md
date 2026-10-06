@@ -294,8 +294,8 @@ import { PerspectiveCamera } from "./camera/perspective_camera";
 import { ModelInstance } from "./models/model_instance";
 import { SphereGeometry } from "./models/primitives/sphere_geometry";
 import { UnlitMaterial } from "./materials/unlit_material";
-import { GalaxyGeometry } from "./models/specialized/galaxy_geometry";
-import { GalaxyMaterial } from "./materials/specialized/galaxy_material";
+import { GalaxyGeometry } from "./models/galaxy_geometry";
+import { GalaxyMaterial } from "./materials/galaxy_material";
 import { BlendMode } from "./materials/material_types";
 
 export function SpaceExplorationView(): React.JSX.Element {

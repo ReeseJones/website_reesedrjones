@@ -10,10 +10,10 @@ export type UnlitShaderKey = (typeof UNLIT_SHADER_KEYS)[number];
 export const SKYBOX_SHADER_KEYS = ["skybox"] as const;
 export type SkyboxShaderKey = (typeof SKYBOX_SHADER_KEYS)[number];
 
-export type MaterialShaderKey = GalaxyShaderKey | UnlitShaderKey | SkyboxShaderKey;
-
 export const GENERATIVE_SHADER_KEYS = ["galactic_cloud"] as const;
 export type GenerativeShaderKey = (typeof GENERATIVE_SHADER_KEYS)[number];
+
+export type MaterialShaderKey = GalaxyShaderKey | UnlitShaderKey | SkyboxShaderKey | GenerativeShaderKey;
 
 /**
  * Canonical array of all registered shader program keys available in the engine.

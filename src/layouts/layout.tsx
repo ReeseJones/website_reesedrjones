@@ -4,7 +4,6 @@ import { Footer } from "../components/footer";
 import { Header } from "../components/header";
 import { useGalaxyController } from "../galaxy_backdrop/use_galaxy_controller";
 import { WebGLCanvas } from "../components/webgl_canvas/webgl_canvas";
-import { GalacticCloudPass } from "../galaxy_backdrop/galactic_cloud_pass";
 import { ImperativeGalaxyScenePass } from "../scene/test/imperative_galaxy_scene_pass";
 import { GalaxySettingsDialog } from "../galaxy_backdrop/galaxy_settings_dialog/galaxy_settings_dialog";
 import { Outlet } from "react-router-dom";
@@ -55,7 +54,6 @@ export const Layout = (props: LayoutProps) => {
                     pointerEvents: "none",
                 }}
             >
-                <GalacticCloudPass controller={backdropGalaxy} priority={-10} />
                 {/* Imperative 3D Scene Architecture Test Pass */}
                 <ImperativeGalaxyScenePass controller={backdropGalaxy} />
             </WebGLCanvas>

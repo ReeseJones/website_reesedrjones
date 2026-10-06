@@ -36,7 +36,7 @@ This document serves as the persistent single source of truth for the phased imp
     - `src/scene/materials/material_types.ts` & `src/scene/materials/material.ts` (Completed)
     - `src/scene/materials/unlit_material.ts` (Completed)
     - `src/scene/models/model_instance_types.ts` & `src/scene/models/model_instance.ts` (Completed)
-    - Specialized: `src/scene/models/specialized/galaxy_geometry.ts` & `src/scene/materials/specialized/galaxy_material.ts` (Completed)
+    - Procedural: `src/scene/models/galaxy_geometry.ts` & `src/scene/materials/galaxy_material.ts` (Completed)
   - **Commit Target:** `feat(scene): implement geometry, material, and model instance architecture`
 
 - **Phase 4: Scene Rendering Pipeline & WebGL Canvas Bridge**
@@ -57,7 +57,7 @@ This document serves as the persistent single source of truth for the phased imp
     - Unlit material: `src/scene/materials/unlit_material_types.ts` & `src/scene/materials/unlit_material.ts` supporting color tints and optional textures (Completed)
     - Context Manager integration: `getOrCreateShader`, `getShader`, and `releaseShader` constrained to `ShaderKey` in `src/webgl/core/context_manager_types.ts` & `src/webgl/core/context_manager.ts` (Completed)
     - Material typing: `shaderKey: ShaderKey` in `src/scene/materials/material_types.ts` & `src/scene/materials/material.ts` (Completed)
-    - Dynamic galaxy shader style support (`galaxy_orb` & `galaxy_pinprick`) in `src/scene/materials/specialized/galaxy_material.ts` & `src/scene/renderer/scene_renderer.ts` (Completed)
+    - Dynamic galaxy shader style support (`galaxy_orb` & `galaxy_pinprick`) in `src/scene/materials/galaxy_material.ts` & `src/scene/renderer/scene_renderer.ts` (Completed)
     - Imperative scene test pass: `src/scene/test/imperative_galaxy_scene_types.ts` & `src/scene/test/imperative_galaxy_scene_pass.tsx` (Completed)
     - Layout integration: Active mount in `src/layouts/layout.tsx` replacing hard-coded `GalaxyPass` while keeping legacy backdrop code intact (Completed)
     - Cooperative pipeline state management: `GalacticCloudRenderer` delegates to `contextManager.applyPipelineState` avoiding state collision (Completed)

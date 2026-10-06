@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { GalaxyGeometry } from "./galaxy_geometry";
 import { GALAXY_VERTEX_LAYOUT } from "./galaxy_geometry_types";
-import { DEFAULT_PINPRICK_PARAMETERS } from "../../../galaxy_backdrop/parameters/presets/pinprick";
+import { DEFAULT_PINPRICK_PARAMETERS } from "../../galaxy_backdrop/parameters/presets/pinprick";
 
 interface GalaxyStarVertex {
     radius: number;

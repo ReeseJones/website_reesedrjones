@@ -1,6 +1,6 @@
-import type { GalaxyParameters } from "../../../galaxy_backdrop/parameters/types";
-import type { MaterialOptions } from "../material_types";
-import type { GalaxyShaderKey } from "../../../webgl/shaders/shader_types";
+import type { GalaxyParameters } from "../../galaxy_backdrop/parameters/types";
+import type { MaterialOptions } from "./material_types";
+import type { GalaxyShaderKey } from "../../webgl/shaders/shader_types";
 
 /**
  * Configuration options for creating a GalaxyMaterial.

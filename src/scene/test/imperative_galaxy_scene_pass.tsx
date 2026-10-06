@@ -4,8 +4,16 @@ import { useWebGLPass } from "../../components/webgl_canvas/use_webgl_pass";
 import { useWebGLContext } from "../../components/webgl_canvas/webgl_context";
 import { Scene } from "../core/scene";
 import { PerspectiveCamera } from "../camera/perspective_camera";
-import { GalaxyGeometry } from "../models/specialized/galaxy_geometry";
-import { GalaxyMaterial } from "../materials/specialized/galaxy_material";
+import { GalaxyGeometry } from "../models/galaxy_geometry";
+import { GalaxyMaterial } from "../materials/galaxy_material";
+import { ScreenQuadGeometry } from "../models/screen_quad_geometry";
+import { GalacticCloudMaterial } from "../materials/galactic_cloud_material";
+import {
+    GALACTIC_CLOUD_RENDER_ORDER,
+    DEFAULT_CLOUD_PARALLAX_FACTOR,
+    DEG_TO_RAD,
+    HALF_FOV_FACTOR,
+} from "../materials/galactic_cloud_material_constants";
 import { BlendMode } from "../materials/material_types";
 import { ModelInstance } from "../models/model_instance";
 import { SceneRenderer } from "../renderer/scene_renderer";
@@ -33,6 +41,9 @@ export function ImperativeGalaxyScenePass({
     const geometryRef = useRef<GalaxyGeometry | null>(null);
     const materialRef = useRef<GalaxyMaterial | null>(null);
     const modelRef = useRef<ModelInstance | null>(null);
+    const cloudGeometryRef = useRef<ScreenQuadGeometry | null>(null);
+    const cloudMaterialRef = useRef<GalacticCloudMaterial | null>(null);
+    const cloudModelRef = useRef<ModelInstance | null>(null);
     const rendererRef = useRef<SceneRenderer | null>(null);
     const orientationControllerRef = useRef<OrientationInputController | null>(null);
 
@@ -85,13 +96,24 @@ export function ImperativeGalaxyScenePass({
 
             // 4. Model Instance Registration
             const model = new ModelInstance(geometry, material, "GalaxyModel");
+
+            // 5. Cloud Background Geometry, Material & Model Registration
+            const cloudGeometry = new ScreenQuadGeometry();
+            const cloudMaterial = new GalacticCloudMaterial({
+                params: currentParams,
+            });
+            const cloudModel = new ModelInstance(cloudGeometry, cloudMaterial, "GalacticCloudModel");
+            cloudModel.renderOrder = GALACTIC_CLOUD_RENDER_ORDER;
+            cloudModel.visible = currentParams.cloudEnabled ?? true;
+
             scene.add(camera);
+            scene.add(cloudModel);
             scene.add(model);
 
-            // 5. Scene Renderer Setup
+            // 6. Scene Renderer Setup
             const renderer = new SceneRenderer(contextManager);
 
-            // 6. Orientation / Input Controller
+            // 7. Orientation / Input Controller
             const orientationController = new OrientationInputController({
                 onUpdate: (pitch, yaw) => {
                     targetPitchOffset.current = pitch;
@@ -104,6 +126,9 @@ export function ImperativeGalaxyScenePass({
             geometryRef.current = geometry;
             materialRef.current = material;
             modelRef.current = model;
+            cloudGeometryRef.current = cloudGeometry;
+            cloudMaterialRef.current = cloudMaterial;
+            cloudModelRef.current = cloudModel;
             rendererRef.current = renderer;
             orientationControllerRef.current = orientationController;
         },
@@ -156,6 +181,32 @@ export function ImperativeGalaxyScenePass({
                 camera.transform.setRotationQuaternion(q[0], q[1], q[2], q[3]);
             }
 
+            // Update dynamic frame uniforms and visibility for galactic cloud
+            const cloudMaterial = cloudMaterialRef.current;
+            const cloudModel = cloudModelRef.current;
+            if (cloudMaterial && cloudModel) {
+                const fovRad = p.fov * DEG_TO_RAD;
+                const fovScale = Math.tan(fovRad * HALF_FOV_FACTOR);
+
+                const parallax = p.cloudParallaxFactor ?? DEFAULT_CLOUD_PARALLAX_FACTOR;
+                const effectivePitchOffset =
+                    currentPitchOffset.current * p.mouseSensitivity * parallax;
+                const effectiveYawOffset =
+                    currentYawOffset.current * p.mouseSensitivity * parallax;
+
+                cloudMaterial.updateFrameUniforms({
+                    aspect: dims.aspect,
+                    fovScale,
+                    pitch: p.pitchAngle,
+                    yaw: p.yawAngle,
+                    roll: p.rollAngle,
+                    effectivePitchOffset,
+                    effectiveYawOffset,
+                });
+
+                cloudModel.visible = p.cloudEnabled ?? true;
+            }
+
             // Execute scene graph render pass
             renderer.render(scene, camera, {
                 timeInfo,
@@ -169,6 +220,14 @@ export function ImperativeGalaxyScenePass({
         destroy: () => {
             orientationControllerRef.current?.detach();
             orientationControllerRef.current = null;
+
+            cloudGeometryRef.current?.dispose();
+            cloudGeometryRef.current = null;
+
+            cloudMaterialRef.current?.dispose();
+            cloudMaterialRef.current = null;
+
+            cloudModelRef.current = null;
 
             geometryRef.current?.dispose();
             geometryRef.current = null;
@@ -215,6 +274,7 @@ export function ImperativeGalaxyScenePass({
             geometryRef.current = newGeo;
         }
 
+        cloudMaterialRef.current?.updateParameters(activeParams);
         materialRef.current.updateParameters(activeParams);
     }, [activeParams]);
 

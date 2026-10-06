@@ -156,12 +156,12 @@ All geometry, material, and instance classes reside in `src/scene/models/` and `
   - [`src/scene/models/primitives/cube_geometry.ts`](primitives/cube_geometry.ts): Standard unit cube generator.
   - [`src/scene/models/primitives/sphere_geometry.ts`](primitives/sphere_geometry.ts): Standard unit sphere generator.
   - [`src/scene/models/primitives/quad_geometry.ts`](primitives/quad_geometry.ts): Standard unit quad / billboard generator.
-  - [`src/scene/models/specialized/galaxy_geometry.ts`](specialized/galaxy_geometry.ts): Procedural star buffer geometry wrapping `generateStarBuffer()`.
+  - [`src/scene/models/galaxy_geometry.ts`](galaxy_geometry.ts): Procedural star buffer geometry wrapping `generateStarBuffer()`.
 - **Material Layer (`src/scene/materials/`):**
   - [`src/scene/materials/material_types.ts`](../materials/material_types.ts): Core interfaces (`IMaterial`, `MaterialOptions`, `BlendMode`, `PipelineState`).
   - [`src/scene/materials/material.ts`](../materials/material.ts): Base material class managing shader keys, uniforms, and WebGL state assertion.
   - [`src/scene/materials/unlit_material.ts`](../materials/unlit_material.ts): Default material pairing with Cartesian `MeshGeometry`.
-  - [`src/scene/materials/specialized/galaxy_material.ts`](../materials/specialized/galaxy_material.ts): Domain material pairing with `GalaxyGeometry` (pinprick shaders + additive blend state + parameters).
+  - [`src/scene/materials/galaxy_material.ts`](../materials/galaxy_material.ts): Domain material pairing with `GalaxyGeometry` (pinprick shaders + additive blend state + parameters).
 - **Model Instance Layer (`src/scene/models/`):**
   - [`src/scene/models/model_instance_types.ts`](model_instance_types.ts): Contracts for renderable scene graph entities.
   - [`src/scene/models/model_instance.ts`](model_instance.ts): Class extending `SceneNode`, holding `geometry` and `material`.

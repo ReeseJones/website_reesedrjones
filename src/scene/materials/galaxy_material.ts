@@ -1,11 +1,11 @@
-import { Material } from "../material";
-import { BlendMode } from "../material_types";
+import { Material } from "./material";
+import { BlendMode } from "./material_types";
 import {
     DEFAULT_ORB_PARAMETERS,
     DEFAULT_PINPRICK_PARAMETERS,
-} from "../../../galaxy_backdrop/parameters/index";
-import type { GalaxyParameters } from "../../../galaxy_backdrop/parameters/types";
-import type { GalaxyShaderKey } from "../../../webgl/shaders/shader_types";
+} from "../../galaxy_backdrop/parameters/index";
+import type { GalaxyParameters } from "../../galaxy_backdrop/parameters/types";
+import type { GalaxyShaderKey } from "../../webgl/shaders/shader_types";
 import type { GalaxyMaterialOptions } from "./galaxy_material_types";
 
 /**

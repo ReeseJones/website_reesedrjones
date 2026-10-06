@@ -1,6 +1,6 @@
-import type { VertexLayoutSpec } from "../../../webgl/geometry/vertex_layout_types";
-import type { GalaxyParameters } from "../../../galaxy_backdrop/parameters/types";
-import { GLDataType } from "../../../webgl/core/webgl_constants_types";
+import type { VertexLayoutSpec } from "../../webgl/geometry/vertex_layout_types";
+import type { GalaxyParameters } from "../../galaxy_backdrop/parameters/types";
+import { GLDataType } from "../../webgl/core/webgl_constants_types";
 
 /**
  * Standard attribute location slot indices for procedural galaxy starfields.

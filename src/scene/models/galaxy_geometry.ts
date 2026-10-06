@@ -1,10 +1,10 @@
-import { MeshGeometry } from "../mesh_geometry";
-import { generateStarBuffer } from "../../../galaxy_backdrop/galaxy_math";
-import { DEFAULT_PINPRICK_PARAMETERS } from "../../../galaxy_backdrop/parameters/presets/pinprick";
-import type { GalaxyParameters } from "../../../galaxy_backdrop/parameters/types";
+import { MeshGeometry } from "./mesh_geometry";
+import { generateStarBuffer } from "../../galaxy_backdrop/galaxy_math";
+import { DEFAULT_PINPRICK_PARAMETERS } from "../../galaxy_backdrop/parameters/presets/pinprick";
+import type { GalaxyParameters } from "../../galaxy_backdrop/parameters/types";
 import { GALAXY_VERTEX_LAYOUT } from "./galaxy_geometry_types";
 import type { GalaxyGeometryOptions } from "./galaxy_geometry_types";
-import { GLPrimitive } from "../../../webgl/core/webgl_constants_types";
+import { GLPrimitive } from "../../webgl/core/webgl_constants_types";
 
 /**
  * Specialized procedural geometry for the interactive spiral galaxy backdrop.

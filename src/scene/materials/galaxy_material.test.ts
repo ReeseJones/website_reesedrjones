@@ -1,13 +1,13 @@
 import { describe, it, expect, vi } from "vitest";
 import { GalaxyMaterial } from "./galaxy_material";
-import { BlendMode } from "../material_types";
+import { BlendMode } from "./material_types";
 import {
     DEFAULT_GALAXY_PARAMETERS,
     DEFAULT_ORB_PARAMETERS,
     DEFAULT_PINPRICK_PARAMETERS,
-} from "../../../galaxy_backdrop/parameters/index";
-import { TextureUnit } from "../../../webgl/textures/texture_types";
-import { createMockTexture, createMockCubeTexture } from "../../../testing/mocks/mock_texture";
+} from "../../galaxy_backdrop/parameters/index";
+import { TextureUnit } from "../../webgl/textures/texture_types";
+import { createMockTexture, createMockCubeTexture } from "../../testing/mocks/mock_texture";
 
 describe("GalaxyMaterial", () => {
     describe("constructor and default initialization", () => {
