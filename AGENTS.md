@@ -15,7 +15,8 @@
 - `npm run deploy` — Build and deploy directly to Cloudflare (`wrangler deploy`) (Not for agents)
 - `npm run typecheck` — Run TypeScript type-checker without emitting code (`tsc --noEmit`)
 - `npm test` — Run TypeScript type checking (`tsc --noEmit`) and all unit tests with Vitest
-- `npm run test:watch` — Incremental targeted test runner in watch mode
+- `npm run test:smoke` — Fast token-efficient regression smoke test for agents (`tsc --noEmit` + `vitest run --reporter=dot --bail 1`)
+- `npm run test:watch` — Incremental targeted test runner in watch mode (Not for agents)
 - `npm run test:coverage` — Run unit tests with V8 code coverage report
 
 ## Interaction Protocol: Inquiries vs. Implementation
@@ -37,6 +38,7 @@
   - TypeScript & typing standards: [typescript_guidelines.md](src/project_guidelines/typescript_guidelines.md)
   - Parcel imports & asset indexing: [using_parcel_guideline.md](src/project_guidelines/using_parcel_guideline.md)
   - Unit testing standards & mocking: [unit_testing_guidelines.md](src/project_guidelines/unit_testing_guidelines.md)
+  - Running tests & token-efficient debugging: [running_tests_guidelines.md](src/project_guidelines/running_tests_guidelines.md)
   - Agent test authoring & subagent protocol: [agent_test_implementor_guidelines.md](src/project_guidelines/agent_test_implementor_guidelines.md)
 
 ## Rules

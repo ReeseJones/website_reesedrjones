@@ -215,8 +215,12 @@ Centralized mock generators in `src/testing/mocks/` are reserved exclusively for
 
 ## 7. Execution Commands & Workflows
 
+For detailed token-efficient agent testing, smoke checks, and failure isolation strategies, refer to [running_tests_guidelines.md](running_tests_guidelines.md).
+
 - **Type Check (TypeScript Validation):**
   - `npm run typecheck` (executes `tsc --noEmit` across all project source and test files).
+- **Fast Agent Smoke Test:**
+  - `npm run test:smoke` (compact dot reporter, bails on first failure to protect context tokens).
 - **Full Suite Run (All Tests & Type Check):**
   - `npm test` (executes `tsc --noEmit` followed by `vitest run` across all test files and exits).
 - **Targeted Incremental Development (Watch Mode):**

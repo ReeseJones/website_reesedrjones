@@ -20,6 +20,7 @@ Before writing any test code:
    - Read the target's explicit interface file (`*_types.ts`) and implementation file.
 2. **Review General Guidelines:**
    - Read [`src/project_guidelines/unit_testing_guidelines.md`](unit_testing_guidelines.md) for custom matchers, math tolerances, and return value assertion rules.
+   - Read [`src/project_guidelines/running_tests_guidelines.md`](running_tests_guidelines.md) for execution workflows and token-efficient testing standards.
 3. **Identify Pure-CPU vs. Hardware Dependencies:**
    - For scene nodes, cameras, materials, geometries, and transforms: instantiate the **real classes**.
    - For hardware boundaries (`WebGL2RenderingContext`, `IWebGLContextManager`, `ITexture`, `ICubeTexture`): import pre-built mock factories from `src/testing/mocks/`:
@@ -61,7 +62,7 @@ Before reporting completion to the orchestrating agent, execute and verify all t
    ```bash
    npm test
    ```
-   *Must execute type checking and all unit tests cleanly.*
+   *Must execute type checking and all unit tests cleanly. (Tip: during intermediate development iterations, run `npm run test:smoke` to check for regressions without burning context tokens).*
 
 ---
 

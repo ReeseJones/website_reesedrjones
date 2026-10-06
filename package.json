@@ -13,7 +13,8 @@
     "typecheck": "tsc --noEmit",
     "test": "tsc --noEmit && vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "test:smoke": "tsc --noEmit && vitest run --reporter=dot --bail 1"
   },
   "dependencies": {
     "gl-matrix": "^3.4.4",
