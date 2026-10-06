@@ -157,36 +157,38 @@ Done as needed by each item, not up front.
 
 ### B3. Texture Foundation
 
-- **B3.0 [texture.ts](../webgl/textures/texture.ts)** — `Texture` — 🔍 Awaiting Review
+- **B3.0 [texture.ts](../webgl/textures/texture.ts)** — `Texture` — ✅ Complete
   - Test: `texture.test.ts` (39 specs)
   - Focus: GPU handle lifecycle, parameter configuration, binding, unbinding, context loss recovery, deterministic disposal
-- **B3.1 [solid_color_texture.ts](../webgl/textures/solid_color_texture.ts)** & **[texture_factory.ts](../webgl/textures/texture_factory.ts)** — `SolidColorTexture`, `SolidColorCubeTexture`, `createSolid2DTexture`, `createSolidCubeTexture` — 🔍 Awaiting Review
+- **B3.1 [solid_color_texture.ts](../webgl/textures/solid_color_texture.ts)** & **[texture_factory.ts](../webgl/textures/texture_factory.ts)** — `SolidColorTexture`, `SolidColorCubeTexture`, `createSolid2DTexture`, `createSolidCubeTexture` — ✅ Complete
   - Tests: `solid_color_texture.test.ts` (31 specs), `texture_factory.test.ts` (13 specs)
   - Focus: 1×1 solid-color 2D and cubemap texture classes implementing `ITexture` and `ICubeTexture`, factory helper initialization, `setColor` re-upload, disposal
-- **B3.2 [texture_fallback.ts](../webgl/textures/texture_fallback.ts)** — `FallbackTextureRegistry` — ⬜ Not Started
+- **B3.2 [texture_fallback.ts](../webgl/textures/texture_fallback.ts)** — `FallbackTextureRegistry` — ✅ Complete
+  - Test: `texture_fallback.test.ts` (14 specs)
   - Focus: lazy creation and caching of the fallback textures, reset on context loss, destroy
-- **B3.3 [image_texture.ts](../webgl/textures/image_texture.ts)** — `ImageTexture` — 🔍 Awaiting Review
+- **B3.3 [image_texture.ts](../webgl/textures/image_texture.ts)** — `ImageTexture` — ✅ Complete
   - Test: `image_texture.test.ts` (13 specs)
   - Focus: 1×1 fallback before load, async load → upload + mipmap, load error path, context recovery, dispose
-- **B3.4 [cube_texture.ts](../webgl/textures/cube_texture.ts)** — `CubeTexture` — 🔍 Awaiting Review
+- **B3.4 [cube_texture.ts](../webgl/textures/cube_texture.ts)** — `CubeTexture` — ✅ Complete
   - Test: `cube_texture.test.ts` (7 specs)
   - Focus: 6-face load ordering, partial failure, fallback, context recovery, dispose
 
 ### B4. Subsystem Managers
 
-- **B4.1 [texture_manager.ts](../webgl/textures/texture_manager.ts)** — `TextureManager` — ⬜ Not Started
+- **B4.1 [texture_manager.ts](../webgl/textures/texture_manager.ts)** — `TextureManager` — ✅ Complete
+  - Test: `texture_manager.test.ts` (27 specs)
   - Focus: unit binding cache (redundant binds skipped), cube binding, `resetBindings`, register / unregister, max-unit bounds, context lifecycle, diagnostics
-- **B4.2 [shader_manager.ts](../webgl/shaders/shader_manager.ts)** — `ShaderManager` — ⬜ Not Started
+- **B4.2 [shader_manager.ts](../webgl/shaders/shader_manager.ts)** — `ShaderManager` — ✅ Complete
+  - Test: `shader_manager.test.ts` (21 specs)
   - Focus: `getOrCreateShader` caching / ref counting, release destroys at zero refs, redundant `use*` skipped, active program tracking, context lifecycle, diagnostics
 - **B4.3 [geometry_manager.ts](../webgl/geometry/geometry_manager.ts)** — `GeometryManager` — ✅ Complete
-  - Test: `geometry_manager.test.ts` (12 specs)
+  - Test: `geometry_manager.test.ts` (17 specs)
   - Focus: lazy upload on first bind, re-upload on version change, redundant bind skipped, release vs. dispose, `onDispose` cleanup, context lifecycle, counts / diagnostics
 
 ### B5. Orchestration (leaf / top consumer)
 
-- **B5.1 [pass_lifecycle.ts](../webgl/core/pass_lifecycle.ts)** — `initializeRenderPass` — ⬜ Not Started
-  - Focus: lifecycle callback ordering and return contract
-- **B5.2 [context_manager.ts](../webgl/core/context_manager.ts)** — `WebGLContextManager` — ⬜ Not Started
+- **B5.1 [context_manager.ts](../webgl/core/context_manager.ts)** — `WebGLContextManager` — ✅ Complete
+  - Test: `context_manager.test.ts` (34 specs)
   - Depends on: every manager above
   - Focus: `setContext` / `getContext`, subsystem registration and restoration-priority ordering, pipeline-state cache (redundant state calls skipped), `resetPipelineState`, delegation to the managers, context loss / restore fan-out, `maxTextureUnits`, `destroy`
 
@@ -199,8 +201,9 @@ Done as needed by each item, not up front.
 
 ## Progress Summary
 
-- **Scene:** 18 / 18 complete (A6.2, A6.3 deferred TODO) — 623 passing specs
-- **WebGL:** 5 / 14 complete, 2 in review (190 passing specs)
+- **Scene:** 18 / 18 complete (A6.2, A6.3 deferred TODO) — 600 passing specs
+- **WebGL:** 13 / 13 complete (328 passing specs)
 - **Phase 0 fixtures:** 3 / 3 operational
-- **Total Suite:** 27 test files, 807 passing specs
-- **Next Item:** B3.2 [texture_fallback.ts](../webgl/textures/texture_fallback.ts)
+- **Total Suite:** 34 test files, 928 passing specs
+- **Status:** All core unit test suites in Part A (Scene) and Part B (WebGL) are complete!
+
