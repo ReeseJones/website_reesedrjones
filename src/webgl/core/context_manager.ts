@@ -1,7 +1,7 @@
 import type { ShaderProgram } from "../shaders/shader_program";
 import type { ShaderProgramOptions } from "../shaders/shader_program_types";
 import type { IWebGLContextManager, WebGLContextManagerSubsystems } from "./context_manager_types";
-import type { PipelineState } from "../../scene/materials/material_types";
+import { BlendMode, type PipelineState } from "../../scene/materials/material_types";
 import type { ShaderKey } from "../shaders/shader_types";
 import type { IContextSubsystem, SubsystemDiagnostics } from "./subsystem_types";
 import type { IGeometryManager } from "../geometry/geometry_manager_types";
@@ -142,14 +142,18 @@ export class WebGLContextManager implements IWebGLContextManager {
         }
 
         if (!current || current.blendMode !== state.blendMode) {
-            if (state.blendMode === "opaque") {
-                gl.disable(gl.BLEND);
-            } else if (state.blendMode === "alpha") {
-                gl.enable(gl.BLEND);
-                gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-            } else if (state.blendMode === "additive") {
-                gl.enable(gl.BLEND);
-                gl.blendFunc(gl.ONE, gl.ONE);
+            switch (state.blendMode) {
+                case BlendMode.Opaque:
+                    gl.disable(gl.BLEND);
+                    break;
+                case BlendMode.Alpha:
+                    gl.enable(gl.BLEND);
+                    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+                    break;
+                case BlendMode.Additive:
+                    gl.enable(gl.BLEND);
+                    gl.blendFunc(gl.ONE, gl.ONE);
+                    break;
             }
         }
 

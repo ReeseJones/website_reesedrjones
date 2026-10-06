@@ -5,7 +5,14 @@ import type { ICubeTexture } from "../../webgl/textures/cube_texture_types";
 /**
  * WebGL blending mode presets for scene materials.
  */
-export type BlendMode = "opaque" | "alpha" | "additive";
+export enum BlendMode {
+    /** Opaque rendering: blending disabled, overwrites framebuffer. */
+    Opaque = 0,
+    /** Standard alpha blending: SRC_ALPHA, ONE_MINUS_SRC_ALPHA. */
+    Alpha = 1,
+    /** Additive blending: ONE, ONE. */
+    Additive = 2,
+}
 
 /**
  * Encapsulated WebGL pipeline rasterization and depth/blend state.
