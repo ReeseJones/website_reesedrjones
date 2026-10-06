@@ -92,3 +92,12 @@ export interface IWebGLContextManager {
     /** Disposes all subsystems, vertex buffers, and context references. */
     destroy(): void;
 }
+
+/**
+ * Core GPU resource subsystems injected into the WebGLContextManager coordinator constructor.
+ */
+export interface WebGLContextManagerSubsystems {
+    readonly shaders: IShaderManager;
+    readonly textures: ITextureManager;
+    readonly geometries: IGeometryManager;
+}

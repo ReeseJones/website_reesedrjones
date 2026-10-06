@@ -16,15 +16,27 @@ export class GeometryManager implements IGeometryManager {
     public readonly name = "geometry";
     public readonly restorationPriority = SubsystemRestorationPriority.Geometry;
 
-    private readonly _contextManager: IWebGLContextManager;
+    private _contextManager: IWebGLContextManager | null = null;
     private _gl: WebGL2RenderingContext | null = null;
     private readonly _records: Map<IMeshGeometry, GPUGeometryRecord> = new Map();
     private readonly _standaloneBuffers: Set<VertexBuffer> = new Set();
     private _activeGeometryId: number | null = null;
     private _nextId: number = 0;
 
-    constructor(contextManager: IWebGLContextManager) {
+    constructor() {}
+
+    /**
+     * Hook invoked when the subsystem is attached to an IWebGLContextManager coordinator.
+     */
+    public attach(contextManager: IWebGLContextManager): void {
         this._contextManager = contextManager;
+    }
+
+    /**
+     * Optional hook invoked when the subsystem is detached or replaced.
+     */
+    public detach(): void {
+        this._contextManager = null;
     }
 
     public get activeGeometryId(): number | null {
@@ -39,6 +51,9 @@ export class GeometryManager implements IGeometryManager {
      * Factory Request: Allocates a new managed VertexBuffer tracking VBO and VAO handles.
      */
     public createVertexBuffer(layout: VertexLayoutSpec): VertexBuffer {
+        if (!this._contextManager) {
+            throw new Error("[GeometryManager] Cannot create VertexBuffer before subsystem is attached to WebGLContextManager.");
+        }
         const buffer = new VertexBuffer(this._contextManager, layout);
         buffer.onDispose(() => this._standaloneBuffers.delete(buffer));
         this._standaloneBuffers.add(buffer);
@@ -69,7 +84,7 @@ export class GeometryManager implements IGeometryManager {
      */
     public unbind(): void {
         if (this._activeGeometryId !== null) {
-            const gl = this._gl ?? this._contextManager.getContext();
+            const gl = this._gl ?? this._contextManager?.getContext() ?? null;
             if (gl) {
                 gl.bindVertexArray(null);
             }
@@ -92,7 +107,7 @@ export class GeometryManager implements IGeometryManager {
 
         record.disposeListener();
 
-        const gl = this._gl ?? this._contextManager.getContext();
+        const gl = this._gl ?? this._contextManager?.getContext() ?? null;
         if (record.indexBuffer && gl && !gl.isContextLost()) {
             gl.deleteBuffer(record.indexBuffer);
             record.indexBuffer = null;
@@ -176,7 +191,7 @@ export class GeometryManager implements IGeometryManager {
     public destroy(): void {
         this.unbind();
 
-        const gl = this._gl ?? this._contextManager.getContext();
+        const gl = this._gl ?? this._contextManager?.getContext() ?? null;
 
         for (const record of this._records.values()) {
             record.disposeListener();
@@ -195,6 +210,7 @@ export class GeometryManager implements IGeometryManager {
 
         this._gl = null;
         this._activeGeometryId = null;
+        this._contextManager = null;
     }
 
     /**
@@ -211,7 +227,7 @@ export class GeometryManager implements IGeometryManager {
     // --- Private Helpers ---
 
     private _getGLContext(): WebGL2RenderingContext {
-        const gl = this._gl ?? this._contextManager.getContext();
+        const gl = this._gl ?? this._contextManager?.getContext() ?? null;
         if (!gl) {
             throw new Error("[GeometryManager] Cannot bind geometry without an active WebGL2 context.");
         }
@@ -226,6 +242,9 @@ export class GeometryManager implements IGeometryManager {
         const id = existingRecord?.id ?? ++this._nextId;
         if (existingRecord?.vertexBuffer) {
             existingRecord.vertexBuffer.dispose();
+        }
+        if (!this._contextManager) {
+            throw new Error("[GeometryManager] Cannot allocate geometry before subsystem is attached to WebGLContextManager.");
         }
         const vertexBuffer = new VertexBuffer(
             this._contextManager,

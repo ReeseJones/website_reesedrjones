@@ -14,7 +14,7 @@ export class TextureManager implements ITextureManager {
     public readonly name = "texture";
     public readonly restorationPriority = SubsystemRestorationPriority.Texture;
 
-    private readonly _contextManager: IWebGLContextManager;
+    private _contextManager: IWebGLContextManager | null = null;
     private _gl: WebGL2RenderingContext | null = null;
     private readonly _urlCache: Map<string, ITexture> = new Map();
     private readonly _boundTextures: Map<number, WebGLTexture | null> = new Map();
@@ -23,8 +23,20 @@ export class TextureManager implements ITextureManager {
     private readonly _disposalSubscribers: WeakSet<object> = new WeakSet();
     private _activeUnit: number = 0;
 
-    constructor(contextManager: IWebGLContextManager) {
+    constructor() {}
+
+    /**
+     * Hook invoked when the subsystem is attached to an IWebGLContextManager coordinator.
+     */
+    public attach(contextManager: IWebGLContextManager): void {
         this._contextManager = contextManager;
+    }
+
+    /**
+     * Optional hook invoked when the subsystem is detached or replaced.
+     */
+    public detach(): void {
+        this._contextManager = null;
     }
 
     public get textureCount(): number {
@@ -45,7 +57,7 @@ export class TextureManager implements ITextureManager {
         }
 
         const texture = new ImageTexture(url, options);
-        const gl = this._gl ?? this._contextManager.getContext();
+        const gl = this._gl ?? this._contextManager?.getContext() ?? null;
         if (gl) {
             texture.init(gl);
         }
@@ -176,7 +188,7 @@ export class TextureManager implements ITextureManager {
      * Unbinds any texture currently active on the specified hardware unit.
      */
     public unbind(unit: TextureUnit | number): void {
-        const gl = this._gl ?? this._contextManager.getContext();
+        const gl = this._gl ?? this._contextManager?.getContext() ?? null;
         if (!gl) return;
 
         if (this._boundTextures.has(unit) || this._boundCubeTextures.has(unit)) {
@@ -195,10 +207,10 @@ export class TextureManager implements ITextureManager {
      * Unbinds all 16 hardware texture units.
      */
     public unbindAll(): void {
-        const gl = this._gl ?? this._contextManager.getContext();
+        const gl = this._gl ?? this._contextManager?.getContext() ?? null;
         if (!gl) return;
 
-        const maxUnits = this._contextManager.maxTextureUnits;
+        const maxUnits = this._contextManager?.maxTextureUnits ?? 16;
         for (let unit = 0; unit < maxUnits; unit++) {
             if (this._boundTextures.get(unit) || this._boundCubeTextures.get(unit)) {
                 this.unbind(unit);
@@ -212,7 +224,7 @@ export class TextureManager implements ITextureManager {
     public getFallbackHandle(type: TextureFallbackType): WebGLTexture | null {
         let handle = this._fallbacks.get(type);
         if (!handle) {
-            const gl = this._gl ?? this._contextManager.getContext();
+            const gl = this._gl ?? this._contextManager?.getContext() ?? null;
             if (gl && !gl.isContextLost()) {
                 this._fallbacks.init(gl);
                 handle = this._fallbacks.get(type);
@@ -256,7 +268,7 @@ export class TextureManager implements ITextureManager {
      * Permanently destroys all managed textures, fallbacks, and caches.
      */
     public destroy(): void {
-        const gl = this._gl ?? this._contextManager.getContext();
+        const gl = this._gl ?? this._contextManager?.getContext() ?? null;
         this._fallbacks.destroy(gl);
 
         for (const tex of Array.from(this._urlCache.values())) {
@@ -268,6 +280,7 @@ export class TextureManager implements ITextureManager {
         this._boundCubeTextures.clear();
         this._activeUnit = 0;
         this._gl = null;
+        this._contextManager = null;
     }
 
     /**
@@ -294,7 +307,7 @@ export class TextureManager implements ITextureManager {
     }
 
     private _getGLContext(): WebGL2RenderingContext {
-        const gl = this._gl ?? this._contextManager.getContext();
+        const gl = this._gl ?? this._contextManager?.getContext() ?? null;
         if (!gl) {
             throw new Error("[TextureManager] Cannot perform texture operations without an active WebGL2 context.");
         }

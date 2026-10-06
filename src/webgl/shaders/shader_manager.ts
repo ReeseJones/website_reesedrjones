@@ -52,13 +52,25 @@ export class ShaderManager implements IShaderManager {
     public readonly name = "shader";
     public readonly restorationPriority = SubsystemRestorationPriority.Shader;
 
-    private readonly _contextManager: IWebGLContextManager;
+    private _contextManager: IWebGLContextManager | null = null;
     private readonly _registry = new Map<ShaderKey, ShaderProgram<never>>();
     private _currentShader: ShaderProgram<never> | null = null;
     private _currentProgram: WebGLProgram | null = null;
 
-    constructor(contextManager: IWebGLContextManager) {
+    constructor() {}
+
+    /**
+     * Hook invoked when the subsystem is attached to an IWebGLContextManager coordinator.
+     */
+    public attach(contextManager: IWebGLContextManager): void {
         this._contextManager = contextManager;
+    }
+
+    /**
+     * Optional hook invoked when the subsystem is detached or replaced.
+     */
+    public detach(): void {
+        this._contextManager = null;
     }
 
     public get activeShader(): ShaderProgram<never> | null {
@@ -82,6 +94,9 @@ export class ShaderManager implements IShaderManager {
     ): ShaderProgram<TUniforms> {
         let shader = this._registry.get(key);
         if (!shader) {
+            if (!this._contextManager) {
+                throw new Error(`[ShaderManager] Cannot compile shader '${key}' before subsystem is attached to WebGLContextManager.`);
+            }
             const gl = this._contextManager.getContext();
             if (!gl) {
                 throw new Error(`[ShaderManager] Cannot compile shader '${key}' before WebGL context is initialized.`);
@@ -125,7 +140,7 @@ export class ShaderManager implements IShaderManager {
 
         const program = shader ? shader.getProgram() : null;
         if (this._currentProgram !== program) {
-            const gl = this._contextManager.getContext();
+            const gl = this._contextManager?.getContext() ?? null;
             if (gl) {
                 gl.useProgram(program);
             }
@@ -158,7 +173,7 @@ export class ShaderManager implements IShaderManager {
             return;
         }
 
-        const gl = this._contextManager.getContext();
+        const gl = this._contextManager?.getContext() ?? null;
         if (gl) {
             gl.useProgram(program);
         }
@@ -205,6 +220,7 @@ export class ShaderManager implements IShaderManager {
             shader.dispose();
         }
         this._registry.clear();
+        this._contextManager = null;
     }
 
     /**

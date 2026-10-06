@@ -1,3 +1,5 @@
+import type { IWebGLContextManager } from "./context_manager_types";
+
 /**
  * Restoration priority constants for context restoration sequencing.
  * Lower numbers execute earlier during webglcontextrestored.
@@ -34,6 +36,12 @@ export interface IContextSubsystem {
      * Lower numbers run earlier.
      */
     readonly restorationPriority: number;
+
+    /** Hook invoked when the subsystem is attached/registered to an IWebGLContextManager coordinator */
+    attach(contextManager: IWebGLContextManager): void;
+
+    /** Optional hook invoked when the subsystem is detached or replaced */
+    detach?(): void;
 
     /** Hook invoked upon canvas webglcontextlost */
     onContextLost(): void;
