@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { applyMaterial } from "./material_binder";
 import { Material } from "./material";
+import { BlendMode } from "./material_types";
 import { UnlitMaterial } from "./unlit_material";
 import { createMockContextManager, createMockShaderProgram } from "../../testing/mocks/mock_context_manager";
 import { createMockWebGL2Context } from "../../testing/mocks/mock_gl_context";
@@ -17,7 +18,7 @@ describe("applyMaterial", () => {
         const material = new Material({
             shaderKey: "unlit",
             pipelineState: {
-                blendMode: "additive",
+                blendMode: BlendMode.Additive,
                 depthWrite: false,
             },
             uniforms: {

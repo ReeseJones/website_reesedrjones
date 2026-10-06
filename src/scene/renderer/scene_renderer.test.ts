@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { mat4, mat3 } from "gl-matrix";
 import { SceneRenderer } from "./scene_renderer";
 import type { IScene } from "../core/scene_types";
-import type { IMaterial, PipelineState } from "../materials/material_types";
+import { BlendMode, type IMaterial, type PipelineState } from "../materials/material_types";
 import type { IMeshGeometry } from "../models/mesh_geometry_types";
 import type { CanvasDimensions, TimeInfo } from "../../components/webgl_canvas/types";
 import type { RenderOptions } from "./scene_renderer_types";
@@ -300,7 +300,7 @@ describe("SceneRenderer", () => {
             mockCm.shaders.get = vi.fn(() => mockShader);
 
             const customState: Partial<PipelineState> = {
-                blendMode: "additive",
+                blendMode: BlendMode.Additive,
                 depthTest: false,
                 depthWrite: false,
                 cullFace: false,

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { GalaxyMaterial } from "./galaxy_material";
+import { BlendMode } from "../material_types";
 import {
     DEFAULT_GALAXY_PARAMETERS,
     DEFAULT_ORB_PARAMETERS,
@@ -19,7 +20,7 @@ describe("GalaxyMaterial", () => {
         it("configures default pipelineState for additive point-cloud rendering", () => {
             const material = new GalaxyMaterial();
             expect(material.pipelineState).toEqual({
-                blendMode: "additive",
+                blendMode: BlendMode.Additive,
                 depthTest: false,
                 depthWrite: false,
                 cullFace: false,
@@ -116,7 +117,7 @@ describe("GalaxyMaterial", () => {
         it("allows custom options.pipelineState to override default additive state", () => {
             const material = new GalaxyMaterial({
                 pipelineState: {
-                    blendMode: "opaque",
+                    blendMode: BlendMode.Opaque,
                     depthTest: true,
                     depthWrite: true,
                     cullFace: true,
@@ -124,7 +125,7 @@ describe("GalaxyMaterial", () => {
             });
 
             expect(material.pipelineState).toEqual({
-                blendMode: "opaque",
+                blendMode: BlendMode.Opaque,
                 depthTest: true,
                 depthWrite: true,
                 cullFace: true,
@@ -139,7 +140,7 @@ describe("GalaxyMaterial", () => {
             });
 
             expect(material.pipelineState).toEqual({
-                blendMode: "additive",
+                blendMode: BlendMode.Additive,
                 depthTest: true,
                 depthWrite: false,
                 cullFace: false,
@@ -322,7 +323,7 @@ describe("GalaxyMaterial", () => {
             expect(cloned).not.toBe(material);
             expect(cloned.shaderKey).toBe("galaxy_pinprick");
             expect(cloned.pipelineState).toEqual({
-                blendMode: "additive",
+                blendMode: BlendMode.Additive,
                 depthTest: true,
                 depthWrite: false,
                 cullFace: false,

@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { Skybox } from "./skybox";
 import { SkyboxMaterial } from "./skybox_material";
+import { BlendMode } from "../materials/material_types";
 import { ModelInstance } from "../models/model_instance";
 import { SceneNode } from "../core/scene_node";
 import { Scene } from "../core/scene";
@@ -145,7 +146,7 @@ describe("Skybox", () => {
         it("passes pipelineState overrides through to SkyboxMaterial", () => {
             const skybox = new Skybox({
                 pipelineState: {
-                    blendMode: "alpha",
+                    blendMode: BlendMode.Alpha,
                     depthTest: false,
                     depthWrite: true,
                     cullFace: true,
@@ -153,7 +154,7 @@ describe("Skybox", () => {
             });
 
             expect(skybox.skyboxMaterial.pipelineState).toEqual({
-                blendMode: "alpha",
+                blendMode: BlendMode.Alpha,
                 depthTest: false,
                 depthWrite: true,
                 cullFace: true,

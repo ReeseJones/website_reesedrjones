@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { Material } from "./material";
+import { BlendMode } from "./material_types";
 import type { ITexture } from "../../webgl/textures/texture_types";
 import { TextureUnit } from "../../webgl/textures/texture_types";
 import type { ICubeTexture } from "../../webgl/textures/cube_texture_types";
@@ -12,24 +13,24 @@ describe("Material", () => {
 
             expect(material.shaderKey).toBe("unlit");
             expect(material.pipelineState).toEqual({
-                blendMode: "opaque",
+                blendMode: BlendMode.Opaque,
                 depthTest: true,
                 depthWrite: true,
                 cullFace: true,
             });
         });
 
-        it("accepts partial pipelineState overrides (e.g. blendMode: 'additive', depthWrite: false)", () => {
+        it("accepts partial pipelineState overrides (e.g. blendMode: BlendMode.Additive, depthWrite: false)", () => {
             const material = new Material({
                 shaderKey: "unlit",
                 pipelineState: {
-                    blendMode: "additive",
+                    blendMode: BlendMode.Additive,
                     depthWrite: false,
                 },
             });
 
             expect(material.pipelineState).toEqual({
-                blendMode: "additive",
+                blendMode: BlendMode.Additive,
                 depthTest: true,
                 depthWrite: false,
                 cullFace: true,
@@ -101,7 +102,7 @@ describe("Material", () => {
             const material = new Material({
                 shaderKey: "unlit",
                 pipelineState: {
-                    blendMode: "alpha",
+                    blendMode: BlendMode.Alpha,
                     depthTest: false,
                     depthWrite: false,
                     cullFace: false,
@@ -109,7 +110,7 @@ describe("Material", () => {
             });
 
             const state = material.pipelineState;
-            expect(state.blendMode).toBe("alpha");
+            expect(state.blendMode).toBe(BlendMode.Alpha);
             expect(state.depthTest).toBe(false);
             expect(state.depthWrite).toBe(false);
             expect(state.cullFace).toBe(false);
@@ -333,7 +334,7 @@ describe("Material", () => {
             const material = new Material({
                 shaderKey: "unlit",
                 pipelineState: {
-                    blendMode: "opaque",
+                    blendMode: BlendMode.Opaque,
                     depthTest: true,
                     depthWrite: true,
                     cullFace: true,
@@ -341,12 +342,12 @@ describe("Material", () => {
             });
 
             const cloned = material.clone();
-            cloned.pipelineState.blendMode = "additive";
+            cloned.pipelineState.blendMode = BlendMode.Additive;
             cloned.pipelineState.depthWrite = false;
 
-            expect(material.pipelineState.blendMode).toBe("opaque");
+            expect(material.pipelineState.blendMode).toBe(BlendMode.Opaque);
             expect(material.pipelineState.depthWrite).toBe(true);
-            expect(cloned.pipelineState.blendMode).toBe("additive");
+            expect(cloned.pipelineState.blendMode).toBe(BlendMode.Additive);
             expect(cloned.pipelineState.depthWrite).toBe(false);
         });
 

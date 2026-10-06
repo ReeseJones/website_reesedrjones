@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { SkyboxMaterial } from "./skybox_material";
+import { BlendMode } from "../materials/material_types";
 import { TextureUnit } from "../../webgl/textures/texture_types";
 import { createMockCubeTexture } from "../../testing/mocks/mock_texture";
 
@@ -14,7 +15,7 @@ describe("SkyboxMaterial", () => {
             const material = new SkyboxMaterial();
 
             expect(material.pipelineState).toEqual({
-                blendMode: "opaque",
+                blendMode: BlendMode.Opaque,
                 depthTest: true,
                 depthWrite: false,
                 cullFace: false,
@@ -23,7 +24,7 @@ describe("SkyboxMaterial", () => {
             expect(material.pipelineState.depthWrite).toBe(false);
             expect(material.pipelineState.cullFace).toBe(false);
             expect(material.pipelineState.depthTest).toBe(true);
-            expect(material.pipelineState.blendMode).toBe("opaque");
+            expect(material.pipelineState.blendMode).toBe(BlendMode.Opaque);
         });
 
         it("initializes default uniforms (u_tint: [1.0, 1.0, 1.0], u_exposure: 1.0, u_rotationY: 0.0)", () => {
@@ -77,10 +78,10 @@ describe("SkyboxMaterial", () => {
             expect(uniforms["u_rotationY"]).toBeCloseTo(Math.PI / 4);
         });
 
-        it("accepts custom pipelineState overrides (e.g. blendMode: 'alpha', depthTest: false)", () => {
+        it("accepts custom pipelineState overrides (e.g. blendMode: BlendMode.Alpha, depthTest: false)", () => {
             const material = new SkyboxMaterial({
                 pipelineState: {
-                    blendMode: "alpha",
+                    blendMode: BlendMode.Alpha,
                     depthTest: false,
                     depthWrite: true,
                     cullFace: true,
@@ -88,7 +89,7 @@ describe("SkyboxMaterial", () => {
             });
 
             expect(material.pipelineState).toEqual({
-                blendMode: "alpha",
+                blendMode: BlendMode.Alpha,
                 depthTest: false,
                 depthWrite: true,
                 cullFace: true,
@@ -241,7 +242,7 @@ describe("SkyboxMaterial", () => {
                 tint: [0.4, 0.5, 0.6],
                 rotationY: 0.75,
                 pipelineState: {
-                    blendMode: "alpha",
+                    blendMode: BlendMode.Alpha,
                     depthTest: true,
                     depthWrite: false,
                     cullFace: true,
@@ -263,14 +264,14 @@ describe("SkyboxMaterial", () => {
             const cloned = original.clone();
 
             cloned.pipelineState.depthWrite = true;
-            cloned.pipelineState.blendMode = "additive";
+            cloned.pipelineState.blendMode = BlendMode.Additive;
             cloned.pipelineState.cullFace = true;
 
             expect(original.pipelineState.depthWrite).toBe(false);
-            expect(original.pipelineState.blendMode).toBe("opaque");
+            expect(original.pipelineState.blendMode).toBe(BlendMode.Opaque);
             expect(original.pipelineState.cullFace).toBe(false);
             expect(cloned.pipelineState.depthWrite).toBe(true);
-            expect(cloned.pipelineState.blendMode).toBe("additive");
+            expect(cloned.pipelineState.blendMode).toBe(BlendMode.Additive);
             expect(cloned.pipelineState.cullFace).toBe(true);
         });
 

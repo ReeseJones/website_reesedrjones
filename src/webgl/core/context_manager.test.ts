@@ -4,7 +4,7 @@ import { ShaderManager } from "../shaders/shader_manager";
 import { TextureManager } from "../textures/texture_manager";
 import { GeometryManager } from "../geometry/geometry_manager";
 import type { IContextSubsystem, SubsystemDiagnostics } from "./subsystem_types";
-import type { PipelineState } from "../../scene/materials/material_types";
+import { BlendMode, type PipelineState } from "../../scene/materials/material_types";
 import type { ShaderKey } from "../shaders/shader_types";
 import type { ShaderProgramOptions } from "../shaders/shader_program_types";
 import { createMockWebGL2Context } from "../../testing/mocks/mock_gl_context";
@@ -166,7 +166,7 @@ describe("WebGLContextManager", () => {
             // Verify currentPipelineState is reset to null by applying a pipeline state,
             // calling setContext again, and confirming calls are reapplied.
             const testState: PipelineState = {
-                blendMode: "alpha",
+                blendMode: BlendMode.Alpha,
                 depthTest: true,
                 depthWrite: true,
                 cullFace: true,
@@ -271,7 +271,7 @@ describe("WebGLContextManager", () => {
 
             // Pipeline state cache should be cleared so applying state does nothing with null context
             manager.applyPipelineState({
-                blendMode: "opaque",
+                blendMode: BlendMode.Opaque,
                 depthTest: true,
                 depthWrite: true,
                 cullFace: true,
@@ -312,7 +312,7 @@ describe("WebGLContextManager", () => {
 
             expect(() => {
                 cm.applyPipelineState({
-                    blendMode: "alpha",
+                    blendMode: BlendMode.Alpha,
                     depthTest: true,
                     depthWrite: true,
                     cullFace: true,
@@ -327,7 +327,7 @@ describe("WebGLContextManager", () => {
             manager.applyPipelineState({
                 depthTest: true,
                 depthWrite: false,
-                blendMode: "opaque",
+                blendMode: BlendMode.Opaque,
                 cullFace: false,
             });
             expect(gl.enable).toHaveBeenCalledWith(gl.DEPTH_TEST);
@@ -337,7 +337,7 @@ describe("WebGLContextManager", () => {
             manager.applyPipelineState({
                 depthTest: false,
                 depthWrite: false,
-                blendMode: "opaque",
+                blendMode: BlendMode.Opaque,
                 cullFace: false,
             });
             expect(gl.disable).toHaveBeenCalledWith(gl.DEPTH_TEST);
@@ -350,7 +350,7 @@ describe("WebGLContextManager", () => {
             manager.applyPipelineState({
                 depthTest: false,
                 depthWrite: true,
-                blendMode: "opaque",
+                blendMode: BlendMode.Opaque,
                 cullFace: false,
             });
             expect(gl.depthMask).toHaveBeenCalledWith(true);
@@ -359,13 +359,13 @@ describe("WebGLContextManager", () => {
             manager.applyPipelineState({
                 depthTest: false,
                 depthWrite: false,
-                blendMode: "opaque",
+                blendMode: BlendMode.Opaque,
                 cullFace: false,
             });
             expect(gl.depthMask).toHaveBeenCalledWith(false);
         });
 
-        it("applies blendMode ('opaque' -> disable BLEND; 'alpha' -> enable BLEND + blendFunc(SRC_ALPHA, ONE_MINUS_SRC_ALPHA); 'additive' -> enable BLEND + blendFunc(ONE, ONE))", () => {
+        it("applies blendMode (BlendMode.Opaque -> disable BLEND; BlendMode.Alpha -> enable BLEND + blendFunc(SRC_ALPHA, ONE_MINUS_SRC_ALPHA); BlendMode.Additive -> enable BLEND + blendFunc(ONE, ONE))", () => {
             manager.setContext(gl);
 
             // Opaque mode disables BLEND
@@ -373,7 +373,7 @@ describe("WebGLContextManager", () => {
             manager.applyPipelineState({
                 depthTest: false,
                 depthWrite: false,
-                blendMode: "opaque",
+                blendMode: BlendMode.Opaque,
                 cullFace: false,
             });
             expect(gl.disable).toHaveBeenCalledWith(gl.BLEND);
@@ -383,7 +383,7 @@ describe("WebGLContextManager", () => {
             manager.applyPipelineState({
                 depthTest: false,
                 depthWrite: false,
-                blendMode: "alpha",
+                blendMode: BlendMode.Alpha,
                 cullFace: false,
             });
             expect(gl.enable).toHaveBeenCalledWith(gl.BLEND);
@@ -394,7 +394,7 @@ describe("WebGLContextManager", () => {
             manager.applyPipelineState({
                 depthTest: false,
                 depthWrite: false,
-                blendMode: "additive",
+                blendMode: BlendMode.Additive,
                 cullFace: false,
             });
             expect(gl.enable).toHaveBeenCalledWith(gl.BLEND);
@@ -408,7 +408,7 @@ describe("WebGLContextManager", () => {
             manager.applyPipelineState({
                 depthTest: false,
                 depthWrite: false,
-                blendMode: "opaque",
+                blendMode: BlendMode.Opaque,
                 cullFace: true,
             });
             expect(gl.enable).toHaveBeenCalledWith(gl.CULL_FACE);
@@ -417,7 +417,7 @@ describe("WebGLContextManager", () => {
             manager.applyPipelineState({
                 depthTest: false,
                 depthWrite: false,
-                blendMode: "opaque",
+                blendMode: BlendMode.Opaque,
                 cullFace: false,
             });
             expect(gl.disable).toHaveBeenCalledWith(gl.CULL_FACE);
@@ -429,7 +429,7 @@ describe("WebGLContextManager", () => {
             const state: PipelineState = {
                 depthTest: true,
                 depthWrite: true,
-                blendMode: "alpha",
+                blendMode: BlendMode.Alpha,
                 cullFace: true,
             };
 
@@ -463,7 +463,7 @@ describe("WebGLContextManager", () => {
             const state: PipelineState = {
                 depthTest: true,
                 depthWrite: true,
-                blendMode: "alpha",
+                blendMode: BlendMode.Alpha,
                 cullFace: true,
             };
 
@@ -490,7 +490,7 @@ describe("WebGLContextManager", () => {
             manager.applyPipelineState({
                 depthTest: true,
                 depthWrite: true,
-                blendMode: "opaque",
+                blendMode: BlendMode.Opaque,
                 cullFace: false,
             });
             vi.clearAllMocks();
@@ -503,7 +503,7 @@ describe("WebGLContextManager", () => {
             manager.applyPipelineState({
                 depthTest: true,
                 depthWrite: false,
-                blendMode: "opaque",
+                blendMode: BlendMode.Opaque,
                 cullFace: false,
             });
             expect(gl.depthMask).not.toHaveBeenCalled();
@@ -708,7 +708,7 @@ describe("WebGLContextManager", () => {
         it("clears currentPipelineState and gl references to null", () => {
             manager.setContext(gl);
             manager.applyPipelineState({
-                blendMode: "alpha",
+                blendMode: BlendMode.Alpha,
                 depthTest: true,
                 depthWrite: true,
                 cullFace: true,
@@ -723,7 +723,7 @@ describe("WebGLContextManager", () => {
             // Calling applyPipelineState after destroy should not invoke GL calls
             vi.clearAllMocks();
             manager.applyPipelineState({
-                blendMode: "additive",
+                blendMode: BlendMode.Additive,
                 depthTest: false,
                 depthWrite: false,
                 cullFace: false,

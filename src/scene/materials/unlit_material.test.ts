@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { UnlitMaterial } from "./unlit_material";
+import { BlendMode } from "./material_types";
 import type { ITexture } from "../../webgl/textures/texture_types";
 import { TextureUnit } from "../../webgl/textures/texture_types";
 import { createMockTexture } from "../../testing/mocks/mock_texture";
@@ -16,10 +17,10 @@ describe("UnlitMaterial", () => {
             expect(material.getUniforms()["u_color"]).toEqual([1.0, 1.0, 1.0, 1.0]);
         });
 
-        it("initializes default pipelineState (blendMode: 'opaque', depthTest: true, depthWrite: true, cullFace: true)", () => {
+        it("initializes default pipelineState (blendMode: BlendMode.Opaque, depthTest: true, depthWrite: true, cullFace: true)", () => {
             const material = new UnlitMaterial();
             expect(material.pipelineState).toEqual({
-                blendMode: "opaque",
+                blendMode: BlendMode.Opaque,
                 depthTest: true,
                 depthWrite: true,
                 cullFace: true,
@@ -57,15 +58,15 @@ describe("UnlitMaterial", () => {
             expect(material.shaderKey).toBe("unlit");
         });
 
-        it("supports custom pipelineState overrides (e.g. blendMode: 'alpha', depthWrite: false)", () => {
+        it("supports custom pipelineState overrides (e.g. blendMode: BlendMode.Alpha, depthWrite: false)", () => {
             const material = new UnlitMaterial({
                 pipelineState: {
-                    blendMode: "alpha",
+                    blendMode: BlendMode.Alpha,
                     depthWrite: false,
                 },
             });
             expect(material.pipelineState).toEqual({
-                blendMode: "alpha",
+                blendMode: BlendMode.Alpha,
                 depthTest: true,
                 depthWrite: false,
                 cullFace: true,
@@ -205,7 +206,7 @@ describe("UnlitMaterial", () => {
             const tex = createMockTexture("color");
             const material = new UnlitMaterial({
                 shaderKey: "unlit",
-                pipelineState: { blendMode: "alpha", depthWrite: false },
+                pipelineState: { blendMode: BlendMode.Alpha, depthWrite: false },
                 color: [0.5, 0.5, 0.5, 0.5],
                 texture: tex,
                 uniforms: { u_custom: 42 },
@@ -214,7 +215,7 @@ describe("UnlitMaterial", () => {
             const clone = material.clone();
             expect(clone.shaderKey).toBe("unlit");
             expect(clone.pipelineState).toEqual({
-                blendMode: "alpha",
+                blendMode: BlendMode.Alpha,
                 depthTest: true,
                 depthWrite: false,
                 cullFace: true,
@@ -228,12 +229,12 @@ describe("UnlitMaterial", () => {
         it("deep-copies pipelineState (mutating clone pipelineState does not affect original)", () => {
             const material = new UnlitMaterial();
             const clone = material.clone();
-            clone.pipelineState.blendMode = "additive";
+            clone.pipelineState.blendMode = BlendMode.Additive;
             clone.pipelineState.depthWrite = false;
 
-            expect(material.pipelineState.blendMode).toBe("opaque");
+            expect(material.pipelineState.blendMode).toBe(BlendMode.Opaque);
             expect(material.pipelineState.depthWrite).toBe(true);
-            expect(clone.pipelineState.blendMode).toBe("additive");
+            expect(clone.pipelineState.blendMode).toBe(BlendMode.Additive);
             expect(clone.pipelineState.depthWrite).toBe(false);
         });
 
