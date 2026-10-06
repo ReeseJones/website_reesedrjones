@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { useWebGLPass } from "../components/webgl_canvas/use_webgl_pass";
 import { useWebGLContext } from "../components/webgl_canvas/webgl_context";
 import { GalacticCloudRenderer } from "./galactic_cloud_renderer";
-import type { GalacticCloudPassProps } from "./galaxy_pass_types";
+import type { GalacticCloudPassProps } from "./galactic_cloud_pass_types";
 
 /**
  * Renderless pass component for the Galactic Cloud & Infinite Horizon background simulation.

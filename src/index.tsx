@@ -10,29 +10,6 @@ import { Main } from './pages/main';
 import { ArticlesIndexPage } from './pages/articles/articles_index_page';
 import { ARTICLE_PAGES } from "./pages/articles/index_instance";
 
-/*
-function Index() {
-  return (
-    <StrictMode>
-      <BrowserRouter>
-        <Routes>
-          <Route element={<Layout />}>
-            <Route path="/" element={<Main />} />
-            <Route path="/about-me" element={<AboutMePage />} />
-            <Route path="/articles" element={<ArticlesIndexPage />}></Route>
-            {ARTICLE_PAGES.map((pageDetails) => {
-              const ArticleComponent = pageDetails.articleComponent;
-              return <Route path={`/articles/${pageDetails.path}`} element={<ArticleComponent/>}></Route>;
-            })}
-            <Route path="*" element={<NotFoundPage />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>,
-    </StrictMode>
-  );
-}
-  */
-
 const router = createBrowserRouter([
   {
     Component: Layout,

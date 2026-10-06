@@ -28,6 +28,6 @@ Refactor [`GalaxyRenderer`](galaxy_renderer.ts) out of its legacy imperative pas
   * Cooperatively manages pipeline state (additive blending, depth test disabled) through [`contextManager.applyPipelineState()`](../webgl/core/context_manager.ts).
 
 ### 4. Migration & Cleanup
-* Deprecate imperative [`GalaxyRenderer`](galaxy_renderer.ts) and [`GalaxyPass`](galaxy_pass.tsx).
-* Move backdrop rendering into the main scene render loop executed by [`SceneRenderer`](../scene/renderer/scene_renderer.ts).
-* Remove direct calls to `geometries.createVertexBuffer()` in favor of declarative `GeometryManager.bind()` / `GeometryManager.draw()`.
+* Deprecate and remove imperative `GalaxyRenderer` and `GalaxyPass` (Completed).
+* Move backdrop rendering into the main scene render loop executed by [`SceneRenderer`](../scene/renderer/scene_renderer.ts) via [`ImperativeGalaxyScenePass`](../scene/test/imperative_galaxy_scene_pass.tsx) (Completed).
+* Remove direct calls to `geometries.createVertexBuffer()` in favor of declarative `GeometryManager.bind()` / `GeometryManager.draw()` (Completed).

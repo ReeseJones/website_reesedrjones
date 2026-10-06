@@ -8,11 +8,3 @@ export interface GalacticCloudPassProps {
     /** Subscriber priority (default: -10 for background pass) */
     priority?: number;
 }
-
-export interface GalaxyPassProps {
-    /** Target parameters or controller instance */
-    params?: GalaxyParameters;
-    controller?: GalaxyController;
-    /** Subscriber priority (default: 0 for stars/orbs pass) */
-    priority?: number;
-}
