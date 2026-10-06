@@ -218,7 +218,11 @@ export interface IMeshGeometry {
 ### Material Interfaces (`src/scene/materials/material_types.ts`)
 
 ```typescript
-export type BlendMode = "opaque" | "alpha" | "additive";
+export enum BlendMode {
+    Opaque = 0,
+    Alpha = 1,
+    Additive = 2,
+}
 
 export interface PipelineState {
     /** Blending mode preset */
@@ -283,16 +287,16 @@ export interface IModelInstance extends ISceneNode {
 
 Materials declare their desired rasterization and blending configurations declaratively via `pipelineState`. The rendering pipeline applies these settings cooperatively through `contextManager.applyPipelineState(material.pipelineState)` to benefit from state caching and driver call deduplication:
 
-- **Opaque Preset (`blendMode: "opaque"`):**
+- **Opaque Preset (`blendMode: BlendMode.Opaque`):**
   - `gl.disable(gl.BLEND)`
   - `gl.enable(gl.DEPTH_TEST)`
   - `gl.depthMask(true)`
-- **Alpha Blending Preset (`blendMode: "alpha"`):**
+- **Alpha Blending Preset (`blendMode: BlendMode.Alpha`):**
   - `gl.enable(gl.BLEND)`
   - `gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)`
   - `gl.enable(gl.DEPTH_TEST)`
   - `gl.depthMask(false)`
-- **Additive Preset (`blendMode: "additive"` — Used by Galaxy & Clouds):**
+- **Additive Preset (`blendMode: BlendMode.Additive` — Used by Galaxy & Clouds):**
   - `gl.enable(gl.BLEND)`
   - `gl.blendFunc(gl.ONE, gl.ONE)`
   - `gl.disable(gl.DEPTH_TEST)`
@@ -333,7 +337,7 @@ const galaxyMat = new GalaxyMaterial({
     // Automatically selects "galaxy_orb" or "galaxy_pinprick" based on galaxyParams.style
     params: galaxyParams,
     pipelineState: {
-        blendMode: "additive",
+        blendMode: BlendMode.Additive,
         depthTest: false,
         depthWrite: false,
     },

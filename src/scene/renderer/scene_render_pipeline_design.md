@@ -21,7 +21,7 @@ To ensure crisp system boundaries, responsibilities for state, order, and execut
 - **`Material` (Declarative State Owner):**
   - **Responsibility:** Declares the visual and physical properties of a surface. It is purely a declarative configuration object and issues zero WebGL driver calls directly.
   - **Parameters:** `pipelineState: PipelineState` containing:
-    - `blendMode`: `"opaque" | "alpha" | "additive"`
+    - `blendMode`: `BlendMode` (`BlendMode.Opaque` | `BlendMode.Alpha` | `BlendMode.Additive`)
     - `depthTest`: boolean (enables/disables Z-buffer depth testing)
     - `depthWrite`: boolean (controls `gl.depthMask`)
     - `cullFace`: boolean (enables/disables backface culling)
@@ -42,11 +42,11 @@ When flying a camera through a 3D scene that contains both solid structures (ast
 ```mermaid
 flowchart TD
     subgraph Stage1 ["Stage 1: Opaque Draw Calls (renderOrder: 0)"]
-        SolidMesh["Spaceships, Asteroids, Dyson Spheres<br/>• depthTest: true<br/>• depthWrite: true (Writes Z-Buffer)<br/>• blendMode: 'opaque'"]
+        SolidMesh["Spaceships, Asteroids, Dyson Spheres<br/>• depthTest: true<br/>• depthWrite: true (Writes Z-Buffer)<br/>• blendMode: BlendMode.Opaque"]
     end
 
     subgraph Stage2 ["Stage 2: Additive Particle Draw Calls (renderOrder: 10)"]
-        Stars["Galaxy Stars & Galactic Cloud<br/>• depthTest: true (Reads Z-Buffer)<br/>• depthWrite: false (NEVER writes depth)<br/>• blendMode: 'additive' (Photon accumulation)"]
+        Stars["Galaxy Stars & Galactic Cloud<br/>• depthTest: true (Reads Z-Buffer)<br/>• depthWrite: false (NEVER writes depth)<br/>• blendMode: BlendMode.Additive (Photon accumulation)"]
     end
 
     Stage1 -->|"Populates Depth Buffer (Z-Buffer)"| Stage2
@@ -296,6 +296,7 @@ import { SphereGeometry } from "./models/primitives/sphere_geometry";
 import { UnlitMaterial } from "./materials/unlit_material";
 import { GalaxyGeometry } from "./models/specialized/galaxy_geometry";
 import { GalaxyMaterial } from "./materials/specialized/galaxy_material";
+import { BlendMode } from "./materials/material_types";
 
 export function SpaceExplorationView(): React.JSX.Element {
     const { scene, camera } = useMemo(() => {
@@ -307,7 +308,7 @@ export function SpaceExplorationView(): React.JSX.Element {
         // 1. Add Opaque Spacecraft (renderOrder: 0, writes depth)
         const shipGeo = new SphereGeometry({ radius: 3, segments: 16 });
         const shipMat = new UnlitMaterial({ 
-            pipelineState: { depthTest: true, depthWrite: true, blendMode: "opaque" }
+            pipelineState: { depthTest: true, depthWrite: true, blendMode: BlendMode.Opaque }
         });
         const ship = new ModelInstance(shipGeo, shipMat);
         ship.renderOrder = 0;
@@ -317,7 +318,7 @@ export function SpaceExplorationView(): React.JSX.Element {
         const galaxyGeo = new GalaxyGeometry();
         const galaxyMat = new GalaxyMaterial({ 
             shaderKey: "galaxy_pinprick",
-            pipelineState: { depthTest: true, depthWrite: false, blendMode: "additive" }
+            pipelineState: { depthTest: true, depthWrite: false, blendMode: BlendMode.Additive }
         });
         const galaxy = new ModelInstance(galaxyGeo, galaxyMat);
         galaxy.renderOrder = 10;
