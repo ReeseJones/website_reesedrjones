@@ -113,7 +113,7 @@ function validateShaderSamplers(filePath, source) {
 }
 
 function parseUniformsFromGLSL(source) {
-    const uniformRegex = /uniform\s+(\w+)\s+(\w+)(?:\s*\[\s*\d+\s*\])?\s*;/g;
+    const uniformRegex = /uniform\s+(?:lowp\s+|mediump\s+|highp\s+)?(\w+)\s+(\w+)(?:\s*\[\s*\d+\s*\])?\s*;/g;
     const uniforms = [];
     let match;
 
@@ -125,6 +125,116 @@ function parseUniformsFromGLSL(source) {
     }
 
     return uniforms;
+}
+
+function parseInputsFromVertGLSL(source) {
+    // Matches: layout(location = N) in [qualifiers] type name;
+    // or: in [qualifiers] type name;
+    const lines = source.split(/\r?\n/);
+    const inputs = [];
+    const layoutRegex = /^\s*layout\s*\(\s*location\s*=\s*(\d+)\s*\)\s*in\s+(?:(?:lowp|mediump|highp)\s+)*(\w+)\s+(\w+)\s*;/;
+    const plainInRegex = /^\s*in\s+(?:(?:lowp|mediump|highp)\s+)*(\w+)\s+(\w+)\s*;/;
+
+    for (const line of lines) {
+        const trimmed = line.trim();
+        if (trimmed.startsWith("//") || trimmed.startsWith("/*")) continue;
+
+        const layoutMatch = trimmed.match(layoutRegex);
+        if (layoutMatch) {
+            inputs.push({
+                location: parseInt(layoutMatch[1], 10),
+                type: layoutMatch[2],
+                name: layoutMatch[3],
+            });
+            continue;
+        }
+
+        const plainMatch = trimmed.match(plainInRegex);
+        if (plainMatch) {
+            inputs.push({
+                location: 0,
+                type: plainMatch[1],
+                name: plainMatch[2],
+            });
+        }
+    }
+    return inputs;
+}
+
+function parseOutputsFromVertGLSL(source) {
+    // Matches: out [qualifiers] type name;
+    // Skips layout(...) or comments
+    const lines = source.split(/\r?\n/);
+    const outputs = [];
+    const outRegex = /^\s*out\s+(?:(?:flat|smooth|noperspective|centroid|lowp|mediump|highp)\s+)*(\w+)\s+(\w+)\s*;/;
+
+    for (const line of lines) {
+        const trimmed = line.trim();
+        if (trimmed.startsWith("//") || trimmed.startsWith("/*")) continue;
+        const match = trimmed.match(outRegex);
+        if (match) {
+            outputs.push({
+                type: match[1],
+                name: match[2],
+            });
+        }
+    }
+    return outputs;
+}
+
+function parseInputsFromFragGLSL(source) {
+    // Matches: in [qualifiers] type name;
+    // Skips layout(...) or comments
+    const lines = source.split(/\r?\n/);
+    const inputs = [];
+    const inRegex = /^\s*in\s+(?:(?:flat|smooth|noperspective|centroid|lowp|mediump|highp)\s+)*(\w+)\s+(\w+)\s*;/;
+
+    for (const line of lines) {
+        const trimmed = line.trim();
+        if (trimmed.startsWith("//") || trimmed.startsWith("/*")) continue;
+        const match = trimmed.match(inRegex);
+        if (match) {
+            inputs.push({
+                type: match[1],
+                name: match[2],
+            });
+        }
+    }
+    return inputs;
+}
+
+function parseOutputsFromFragGLSL(source) {
+    // Matches: layout(location = N) out [qualifiers] type name;
+    // or: out [qualifiers] type name;
+    const lines = source.split(/\r?\n/);
+    const outputs = [];
+    const layoutRegex = /^\s*layout\s*\(\s*location\s*=\s*(\d+)\s*\)\s*out\s+(?:(?:flat|smooth|noperspective|centroid|lowp|mediump|highp)\s+)*(\w+)\s+(\w+)\s*;/;
+    const plainOutRegex = /^\s*out\s+(?:(?:flat|smooth|noperspective|centroid|lowp|mediump|highp)\s+)*(\w+)\s+(\w+)\s*;/;
+
+    for (const line of lines) {
+        const trimmed = line.trim();
+        if (trimmed.startsWith("//") || trimmed.startsWith("/*")) continue;
+
+        const layoutMatch = trimmed.match(layoutRegex);
+        if (layoutMatch) {
+            outputs.push({
+                location: parseInt(layoutMatch[1], 10),
+                type: layoutMatch[2],
+                name: layoutMatch[3],
+            });
+            continue;
+        }
+
+        const plainMatch = trimmed.match(plainOutRegex);
+        if (plainMatch) {
+            outputs.push({
+                location: 0,
+                type: plainMatch[1],
+                name: plainMatch[2],
+            });
+        }
+    }
+    return outputs;
 }
 
 function findShaderFiles(dir, fileList = []) {
@@ -144,97 +254,6 @@ function findShaderFiles(dir, fileList = []) {
     return fileList;
 }
 
-function processShaderGroup(basePath, vertPath, fragPath, allValidationErrors) {
-    const baseName = path.basename(basePath);
-    const pascalBase = toPascalCase(baseName);
-    const combinedInterfaceName = `${pascalBase}Uniforms`;
-
-    const vertSource = vertPath ? fs.readFileSync(vertPath, "utf-8") : "";
-    const fragSource = fragPath ? fs.readFileSync(fragPath, "utf-8") : "";
-
-    if (vertPath) {
-        const errors = validateShaderSamplers(vertPath, vertSource);
-        allValidationErrors.push(...errors);
-    }
-    if (fragPath) {
-        const errors = validateShaderSamplers(fragPath, fragSource);
-        allValidationErrors.push(...errors);
-    }
-
-    const vertUniforms = vertSource ? parseUniformsFromGLSL(vertSource) : [];
-    const fragUniforms = fragSource ? parseUniformsFromGLSL(fragSource) : [];
-
-    // Process Vertex Shader .d.ts
-    if (vertPath) {
-        const vertInterfaceName = `${pascalBase}VertUniforms`;
-        const lines = [
-            "/* Auto-generated transparent shader ambient type declarations */",
-            "declare const shaderSource: string;",
-            "export default shaderSource;",
-            "",
-            `export interface ${vertInterfaceName} {`,
-        ];
-
-        for (const u of vertUniforms) {
-            lines.push(`    ${u.name}: ${mapGLSLTypeToTS(u.type)};`);
-        }
-        lines.push("}");
-        lines.push("");
-
-        // Combined interface export
-        if (fragPath) {
-            const fragInterfaceName = `${pascalBase}FragUniforms`;
-            lines.push(`export interface ${fragInterfaceName} {`);
-            for (const u of fragUniforms) {
-                lines.push(`    ${u.name}: ${mapGLSLTypeToTS(u.type)};`);
-            }
-            lines.push("}");
-            lines.push("");
-            lines.push(`export type ${combinedInterfaceName} = ${vertInterfaceName} & ${fragInterfaceName};`);
-        } else {
-            lines.push(`export type ${combinedInterfaceName} = ${vertInterfaceName};`);
-        }
-        lines.push("");
-
-        writeDtsIfChanged(`${vertPath}.d.ts`, lines.join("\n"));
-    }
-
-    // Process Fragment Shader .d.ts
-    if (fragPath) {
-        const fragInterfaceName = `${pascalBase}FragUniforms`;
-        const lines = [
-            "/* Auto-generated transparent shader ambient type declarations */",
-            "declare const shaderSource: string;",
-            "export default shaderSource;",
-            "",
-            `export interface ${fragInterfaceName} {`,
-        ];
-
-        for (const u of fragUniforms) {
-            lines.push(`    ${u.name}: ${mapGLSLTypeToTS(u.type)};`);
-        }
-        lines.push("}");
-        lines.push("");
-
-        // Combined interface export
-        if (vertPath) {
-            const vertInterfaceName = `${pascalBase}VertUniforms`;
-            lines.push(`export interface ${vertInterfaceName} {`);
-            for (const u of vertUniforms) {
-                lines.push(`    ${u.name}: ${mapGLSLTypeToTS(u.type)};`);
-            }
-            lines.push("}");
-            lines.push("");
-            lines.push(`export type ${combinedInterfaceName} = ${vertInterfaceName} & ${fragInterfaceName};`);
-        } else {
-            lines.push(`export type ${combinedInterfaceName} = ${fragInterfaceName};`);
-        }
-        lines.push("");
-
-        writeDtsIfChanged(`${fragPath}.d.ts`, lines.join("\n"));
-    }
-}
-
 function writeDtsIfChanged(dtsPath, newContent) {
     if (!fs.existsSync(dtsPath) || fs.readFileSync(dtsPath, "utf-8") !== newContent) {
         fs.writeFileSync(dtsPath, newContent, "utf-8");
@@ -242,28 +261,115 @@ function writeDtsIfChanged(dtsPath, newContent) {
     }
 }
 
+function processVertexShader(filePath, allValidationErrors) {
+    const baseName = path.basename(filePath, ".vert");
+    const pascalBase = toPascalCase(baseName);
+    const source = fs.readFileSync(filePath, "utf-8");
+
+    const errors = validateShaderSamplers(filePath, source);
+    allValidationErrors.push(...errors);
+
+    const inputs = parseInputsFromVertGLSL(source);
+    const uniforms = parseUniformsFromGLSL(source);
+    const outputs = parseOutputsFromVertGLSL(source);
+
+    const vertInputsInterfaceName = `${pascalBase}VertInputs`;
+    const vertUniformInterfaceName = `${pascalBase}VertUniforms`;
+    const vertOutputsInterfaceName = `${pascalBase}VertOutputs`;
+
+    const lines = [
+        "/* Auto-generated transparent shader ambient type declarations */",
+        "declare const shaderSource: string;",
+        "export default shaderSource;",
+        "",
+        `export interface ${vertInputsInterfaceName} {`,
+    ];
+
+    for (const i of inputs) {
+        lines.push(`    ${i.name}: { location: ${i.location}; type: "${i.type}" };`);
+    }
+    lines.push("}");
+    lines.push("");
+
+    lines.push(`export interface ${vertUniformInterfaceName} {`);
+    for (const u of uniforms) {
+        lines.push(`    ${u.name}: ${mapGLSLTypeToTS(u.type)};`);
+    }
+    lines.push("}");
+    lines.push("");
+
+    lines.push(`export interface ${vertOutputsInterfaceName} {`);
+    for (const o of outputs) {
+        lines.push(`    ${o.name}: "${o.type}";`);
+    }
+    lines.push("}");
+    lines.push("");
+
+    writeDtsIfChanged(`${filePath}.d.ts`, lines.join("\n"));
+}
+
+function processFragmentShader(filePath, allValidationErrors) {
+    const baseName = path.basename(filePath, ".frag");
+    const pascalBase = toPascalCase(baseName);
+    const source = fs.readFileSync(filePath, "utf-8");
+
+    const errors = validateShaderSamplers(filePath, source);
+    allValidationErrors.push(...errors);
+
+    const inputs = parseInputsFromFragGLSL(source);
+    const uniforms = parseUniformsFromGLSL(source);
+    const outputs = parseOutputsFromFragGLSL(source);
+
+    const fragInputsInterfaceName = `${pascalBase}FragInputs`;
+    const fragUniformInterfaceName = `${pascalBase}FragUniforms`;
+    const fragOutputsInterfaceName = `${pascalBase}FragOutputs`;
+
+    const lines = [
+        "/* Auto-generated transparent shader ambient type declarations */",
+        "declare const shaderSource: string;",
+        "export default shaderSource;",
+        "",
+        `export interface ${fragInputsInterfaceName} {`,
+    ];
+
+    for (const i of inputs) {
+        lines.push(`    ${i.name}: "${i.type}";`);
+    }
+    lines.push("}");
+    lines.push("");
+
+    lines.push(`export interface ${fragUniformInterfaceName} {`);
+    for (const u of uniforms) {
+        lines.push(`    ${u.name}: ${mapGLSLTypeToTS(u.type)};`);
+    }
+    lines.push("}");
+    lines.push("");
+
+    lines.push(`export interface ${fragOutputsInterfaceName} {`);
+    for (const o of outputs) {
+        lines.push(`    ${o.name}: { location: ${o.location}; type: "${o.type}" };`);
+    }
+    lines.push("}");
+    lines.push("");
+
+    writeDtsIfChanged(`${filePath}.d.ts`, lines.join("\n"));
+}
+
 function main() {
     const srcDir = path.join(__dirname, "..", "src");
     if (!fs.existsSync(srcDir)) return;
 
     const shaderFiles = findShaderFiles(srcDir);
-    const groups = new Map(); // key: basePath without .vert or .frag
-
-    for (const file of shaderFiles) {
-        const basePath = file.replace(/\.(vert|frag)$/, "");
-        if (!groups.has(basePath)) {
-            groups.set(basePath, {});
-        }
-        if (file.endsWith(".vert")) groups.get(basePath).vert = file;
-        if (file.endsWith(".frag")) groups.get(basePath).frag = file;
-    }
-
-    console.log(`[generate:shaders] Found ${groups.size} shader program pairs.`);
+    console.log(`[generate:shaders] Found ${shaderFiles.length} shader files.`);
 
     const allValidationErrors = [];
 
-    for (const [basePath, pair] of groups.entries()) {
-        processShaderGroup(basePath, pair.vert, pair.frag, allValidationErrors);
+    for (const file of shaderFiles) {
+        if (file.endsWith(".vert")) {
+            processVertexShader(file, allValidationErrors);
+        } else if (file.endsWith(".frag")) {
+            processFragmentShader(file, allValidationErrors);
+        }
     }
 
     if (allValidationErrors.length > 0) {
