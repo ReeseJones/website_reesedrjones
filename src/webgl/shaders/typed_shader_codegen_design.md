@@ -75,6 +75,17 @@ this.shaderProgram.setUniforms<GalacticCloudFragUniforms>({
 });
 ```
 
+### Aggregate Stage Registry Generation (`generated_shader_stage_types.ts`)
+
+In addition to per-shader `.d.ts` companion files, `scripts/generate_shader_types.js` aggregates all discovered vertex and fragment shaders into a central type declaration file at `src/webgl/shaders/generated_shader_stage_types.ts`.
+
+This generated module contains:
+- `VERTEX_SHADER_KEYS` array and `VertexShaderKey` union.
+- `FRAGMENT_SHADER_KEYS` array and `FragmentShaderKey` union.
+- Per-stage mapping interfaces: `VertexInputMap`, `VertexUniformMap`, `VertexOutputMap`, `FragmentInputMap`, `FragmentUniformMap`, and `FragmentOutputMap`.
+
+These types are imported and re-exported by [`shader_types.ts`](shader_types.ts), leaving `shader_types.ts` focused strictly on designer-oriented concerns (program keys, groupings, stage pairings, and compatibility assertions).
+
 ---
 
 ## 4. Dynamic Runtime `VertexLayout` Parsing

@@ -1,74 +1,24 @@
 import type {
-    GalaxyPinprickVertInputs,
-    GalaxyPinprickVertUniforms,
-    GalaxyPinprickVertOutputs,
-} from "../../galaxy_backdrop/shaders/galaxy_pinprick.vert";
-import type {
-    GalaxyPinprickFragInputs,
-    GalaxyPinprickFragUniforms,
-    GalaxyPinprickFragOutputs,
-} from "../../galaxy_backdrop/shaders/galaxy_pinprick.frag";
-import type {
-    GalaxyOrbVertInputs,
-    GalaxyOrbVertUniforms,
-    GalaxyOrbVertOutputs,
-} from "../../galaxy_backdrop/shaders/galaxy_orb.vert";
-import type {
-    GalaxyOrbFragInputs,
-    GalaxyOrbFragUniforms,
-    GalaxyOrbFragOutputs,
-} from "../../galaxy_backdrop/shaders/galaxy_orb.frag";
-import type {
-    GalacticCloudVertInputs,
-    GalacticCloudVertUniforms,
-    GalacticCloudVertOutputs,
-} from "../../galaxy_backdrop/shaders/galactic_cloud.vert";
-import type {
-    GalacticCloudFragInputs,
-    GalacticCloudFragUniforms,
-    GalacticCloudFragOutputs,
-} from "../../galaxy_backdrop/shaders/galactic_cloud.frag";
-import type {
-    MeshStandardVertInputs,
-    MeshStandardVertUniforms,
-    MeshStandardVertOutputs,
-} from "../../scene/shaders/mesh_standard.vert";
-import type {
-    UnlitFragInputs,
-    UnlitFragUniforms,
-    UnlitFragOutputs,
-} from "../../scene/shaders/unlit.frag";
-import type {
-    SkyboxVertInputs,
-    SkyboxVertUniforms,
-    SkyboxVertOutputs,
-} from "../../scene/shaders/skybox.vert";
-import type {
-    SkyboxFragInputs,
-    SkyboxFragUniforms,
-    SkyboxFragOutputs,
-} from "../../scene/shaders/skybox.frag";
+    VertexShaderKey,
+    FragmentShaderKey,
+    VertexUniformMap,
+    VertexOutputMap,
+    FragmentInputMap,
+    FragmentUniformMap,
+} from "./generated_shader_stage_types";
 
-/**
- * Canonical arrays of registered vertex and fragment shader keys.
- */
-export const VERTEX_SHADER_KEYS = [
-    "galaxy_pinprick",
-    "galaxy_orb",
-    "galactic_cloud",
-    "mesh_standard",
-    "skybox",
-] as const;
-export type VertexShaderKey = (typeof VERTEX_SHADER_KEYS)[number];
-
-export const FRAGMENT_SHADER_KEYS = [
-    "galaxy_pinprick",
-    "galaxy_orb",
-    "galactic_cloud",
-    "unlit",
-    "skybox",
-] as const;
-export type FragmentShaderKey = (typeof FRAGMENT_SHADER_KEYS)[number];
+export {
+    VERTEX_SHADER_KEYS,
+    FRAGMENT_SHADER_KEYS,
+    type VertexShaderKey,
+    type FragmentShaderKey,
+    type VertexInputMap,
+    type VertexUniformMap,
+    type VertexOutputMap,
+    type FragmentInputMap,
+    type FragmentUniformMap,
+    type FragmentOutputMap,
+} from "./generated_shader_stage_types";
 
 /**
  * Canonical arrays of registered shader program keys grouped by functional domain.
@@ -102,72 +52,6 @@ export const AVAILABLE_SHADER_KEYS = [
  * Guarantees materials and renderers only reference registered shader programs.
  */
 export type ShaderKey = MaterialShaderKey | GenerativeShaderKey;
-
-/**
- * Mapping table from canonical VertexShaderKey to auto-generated GLSL input attributes layout.
- */
-export interface VertexInputMap {
-    galaxy_pinprick: GalaxyPinprickVertInputs;
-    galaxy_orb: GalaxyOrbVertInputs;
-    galactic_cloud: GalacticCloudVertInputs;
-    mesh_standard: MeshStandardVertInputs;
-    skybox: SkyboxVertInputs;
-}
-
-/**
- * Mapping table from canonical VertexShaderKey to auto-generated GLSL uniform interface.
- */
-export interface VertexUniformMap {
-    galaxy_pinprick: GalaxyPinprickVertUniforms;
-    galaxy_orb: GalaxyOrbVertUniforms;
-    galactic_cloud: GalacticCloudVertUniforms;
-    mesh_standard: MeshStandardVertUniforms;
-    skybox: SkyboxVertUniforms;
-}
-
-/**
- * Mapping table from canonical FragmentShaderKey to auto-generated GLSL uniform interface.
- */
-export interface FragmentUniformMap {
-    galaxy_pinprick: GalaxyPinprickFragUniforms;
-    galaxy_orb: GalaxyOrbFragUniforms;
-    galactic_cloud: GalacticCloudFragUniforms;
-    unlit: UnlitFragUniforms;
-    skybox: SkyboxFragUniforms;
-}
-
-/**
- * Mapping table from canonical VertexShaderKey to auto-generated GLSL output varyings.
- */
-export interface VertexOutputMap {
-    galaxy_pinprick: GalaxyPinprickVertOutputs;
-    galaxy_orb: GalaxyOrbVertOutputs;
-    galactic_cloud: GalacticCloudVertOutputs;
-    mesh_standard: MeshStandardVertOutputs;
-    skybox: SkyboxVertOutputs;
-}
-
-/**
- * Mapping table from canonical FragmentShaderKey to auto-generated GLSL input varyings.
- */
-export interface FragmentInputMap {
-    galaxy_pinprick: GalaxyPinprickFragInputs;
-    galaxy_orb: GalaxyOrbFragInputs;
-    galactic_cloud: GalacticCloudFragInputs;
-    unlit: UnlitFragInputs;
-    skybox: SkyboxFragInputs;
-}
-
-/**
- * Mapping table from canonical FragmentShaderKey to auto-generated GLSL output render targets.
- */
-export interface FragmentOutputMap {
-    galaxy_pinprick: GalaxyPinprickFragOutputs;
-    galaxy_orb: GalaxyOrbFragOutputs;
-    galactic_cloud: GalacticCloudFragOutputs;
-    unlit: UnlitFragOutputs;
-    skybox: SkyboxFragOutputs;
-}
 
 /**
  * Single source of truth for pairing vertex and fragment stages into programs.

@@ -255,8 +255,9 @@ function findShaderFiles(dir, fileList = []) {
 }
 
 function writeDtsIfChanged(dtsPath, newContent) {
-    if (!fs.existsSync(dtsPath) || fs.readFileSync(dtsPath, "utf-8") !== newContent) {
-        fs.writeFileSync(dtsPath, newContent, "utf-8");
+    const normalizedNew = newContent.replace(/\r\n/g, "\n");
+    if (!fs.existsSync(dtsPath) || fs.readFileSync(dtsPath, "utf-8").replace(/\r\n/g, "\n") !== normalizedNew) {
+        fs.writeFileSync(dtsPath, normalizedNew, "utf-8");
         console.log(`[generate:shaders] Updated ${path.relative(process.cwd(), dtsPath)}`);
     }
 }
@@ -355,6 +356,127 @@ function processFragmentShader(filePath, allValidationErrors) {
     writeDtsIfChanged(`${filePath}.d.ts`, lines.join("\n"));
 }
 
+function generateStageRegistryTypes(targetFilePath, vertFiles, fragFiles) {
+    const lines = [
+        "/* Auto-generated shader stage registry types. Do not edit directly. */",
+        "",
+    ];
+
+    const vertexStages = vertFiles
+        .map((file) => {
+            const key = path.basename(file, ".vert");
+            const pascal = toPascalCase(key);
+            let relImport = path.relative(path.dirname(targetFilePath), file).replace(/\\/g, "/");
+            if (!relImport.startsWith(".")) {
+                relImport = "./" + relImport;
+            }
+            return {
+                key,
+                pascal,
+                relImport,
+                inputs: `${pascal}VertInputs`,
+                uniforms: `${pascal}VertUniforms`,
+                outputs: `${pascal}VertOutputs`,
+            };
+        })
+        .sort((a, b) => a.key.localeCompare(b.key));
+
+    const fragmentStages = fragFiles
+        .map((file) => {
+            const key = path.basename(file, ".frag");
+            const pascal = toPascalCase(key);
+            let relImport = path.relative(path.dirname(targetFilePath), file).replace(/\\/g, "/");
+            if (!relImport.startsWith(".")) {
+                relImport = "./" + relImport;
+            }
+            return {
+                key,
+                pascal,
+                relImport,
+                inputs: `${pascal}FragInputs`,
+                uniforms: `${pascal}FragUniforms`,
+                outputs: `${pascal}FragOutputs`,
+            };
+        })
+        .sort((a, b) => a.key.localeCompare(b.key));
+
+    for (const v of vertexStages) {
+        lines.push(`import type {`);
+        lines.push(`    ${v.inputs},`);
+        lines.push(`    ${v.uniforms},`);
+        lines.push(`    ${v.outputs},`);
+        lines.push(`} from "${v.relImport}";`);
+    }
+    for (const f of fragmentStages) {
+        lines.push(`import type {`);
+        lines.push(`    ${f.inputs},`);
+        lines.push(`    ${f.uniforms},`);
+        lines.push(`    ${f.outputs},`);
+        lines.push(`} from "${f.relImport}";`);
+    }
+    lines.push("");
+
+    lines.push("export const VERTEX_SHADER_KEYS = [");
+    for (const v of vertexStages) {
+        lines.push(`    "${v.key}",`);
+    }
+    lines.push("] as const;");
+    lines.push("export type VertexShaderKey = (typeof VERTEX_SHADER_KEYS)[number];");
+    lines.push("");
+
+    lines.push("export const FRAGMENT_SHADER_KEYS = [");
+    for (const f of fragmentStages) {
+        lines.push(`    "${f.key}",`);
+    }
+    lines.push("] as const;");
+    lines.push("export type FragmentShaderKey = (typeof FRAGMENT_SHADER_KEYS)[number];");
+    lines.push("");
+
+    lines.push("export interface VertexInputMap {");
+    for (const v of vertexStages) {
+        lines.push(`    ${v.key}: ${v.inputs};`);
+    }
+    lines.push("}");
+    lines.push("");
+
+    lines.push("export interface VertexUniformMap {");
+    for (const v of vertexStages) {
+        lines.push(`    ${v.key}: ${v.uniforms};`);
+    }
+    lines.push("}");
+    lines.push("");
+
+    lines.push("export interface VertexOutputMap {");
+    for (const v of vertexStages) {
+        lines.push(`    ${v.key}: ${v.outputs};`);
+    }
+    lines.push("}");
+    lines.push("");
+
+    lines.push("export interface FragmentInputMap {");
+    for (const f of fragmentStages) {
+        lines.push(`    ${f.key}: ${f.inputs};`);
+    }
+    lines.push("}");
+    lines.push("");
+
+    lines.push("export interface FragmentUniformMap {");
+    for (const f of fragmentStages) {
+        lines.push(`    ${f.key}: ${f.uniforms};`);
+    }
+    lines.push("}");
+    lines.push("");
+
+    lines.push("export interface FragmentOutputMap {");
+    for (const f of fragmentStages) {
+        lines.push(`    ${f.key}: ${f.outputs};`);
+    }
+    lines.push("}");
+    lines.push("");
+
+    writeDtsIfChanged(targetFilePath, lines.join("\n"));
+}
+
 function main() {
     const srcDir = path.join(__dirname, "..", "src");
     if (!fs.existsSync(srcDir)) return;
@@ -363,14 +485,21 @@ function main() {
     console.log(`[generate:shaders] Found ${shaderFiles.length} shader files.`);
 
     const allValidationErrors = [];
+    const vertFiles = [];
+    const fragFiles = [];
 
     for (const file of shaderFiles) {
         if (file.endsWith(".vert")) {
+            vertFiles.push(file);
             processVertexShader(file, allValidationErrors);
         } else if (file.endsWith(".frag")) {
+            fragFiles.push(file);
             processFragmentShader(file, allValidationErrors);
         }
     }
+
+    const stageTypesFile = path.join(srcDir, "webgl", "shaders", "generated_shader_stage_types.ts");
+    generateStageRegistryTypes(stageTypesFile, vertFiles, fragFiles);
 
     if (allValidationErrors.length > 0) {
         console.error("\n[generate:shaders] ❌ Shader Sampler Validation FAILED:");

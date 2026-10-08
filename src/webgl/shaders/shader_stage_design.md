@@ -135,30 +135,36 @@ export interface IShaderProgram<TUniforms extends object = Record<string, unknow
 }
 ```
 
-### 3.4 Keys, Maps & Compatibility (`shader_types.ts`, revised)
+### 3.4 Keys, Maps & Compatibility (`generated_shader_stage_types.ts` & `shader_types.ts`)
+
+`scripts/generate_shader_types.js` automatically derives stage keys, key unions, and mapping interfaces directly from discovered shader files into `generated_shader_stage_types.ts`:
 
 ```typescript
-export const VERTEX_SHADER_KEYS = ["unlit", "skybox", "galaxy_pinprick", "galaxy_orb", "galactic_cloud"] as const;
+// Auto-generated in generated_shader_stage_types.ts:
+export const VERTEX_SHADER_KEYS = ["galactic_cloud", "galaxy_orb", "galaxy_pinprick", "mesh_standard", "skybox"] as const;
 export type VertexShaderKey = (typeof VERTEX_SHADER_KEYS)[number];
 
-export const FRAGMENT_SHADER_KEYS = ["unlit", "skybox", "galaxy_pinprick", "galaxy_orb", "galactic_cloud"] as const;
+export const FRAGMENT_SHADER_KEYS = ["galactic_cloud", "galaxy_orb", "galaxy_pinprick", "skybox", "unlit"] as const;
 export type FragmentShaderKey = (typeof FRAGMENT_SHADER_KEYS)[number];
 
-// The ShaderKey program unions and domain groupings stay as they are today.
+export interface VertexInputMap    { mesh_standard: MeshStandardVertInputs;   /* ... */ }
+export interface VertexUniformMap  { mesh_standard: MeshStandardVertUniforms; /* ... */ }
+export interface VertexOutputMap   { mesh_standard: MeshStandardVertOutputs;  /* ... */ }
+export interface FragmentInputMap  { unlit: UnlitFragInputs;                  /* ... */ }
+export interface FragmentUniformMap{ unlit: UnlitFragUniforms;                /* ... */ }
+export interface FragmentOutputMap { unlit: UnlitFragOutputs;                 /* ... */ }
+```
 
-/** Per-stage generated interfaces. */
-export interface VertexUniformMap   { unlit: UnlitVertUniforms;  /* ... */ }
-export interface FragmentUniformMap { unlit: UnlitFragUniforms;  /* ... */ }
-export interface VertexOutputMap    { unlit: UnlitVertOutputs;   /* ... */ }
-export interface FragmentInputMap   { unlit: UnlitFragInputs;    /* ... */ }
+In `shader_types.ts`, these generated types are re-exported, while designer-curated program keys, domain groupings, and stage pairings remain hand-authored:
 
+```typescript
 /** Single source of truth for pairing stages into programs. */
 export interface ShaderProgramStageMap {
-    unlit:           { vertex: "unlit";           fragment: "unlit" };
-    skybox:          { vertex: "skybox";          fragment: "skybox" };
+    unlit:           { vertex: "mesh_standard";  fragment: "unlit" };
+    skybox:          { vertex: "skybox";         fragment: "skybox" };
     galaxy_pinprick: { vertex: "galaxy_pinprick"; fragment: "galaxy_pinprick" };
-    galaxy_orb:      { vertex: "galaxy_orb";      fragment: "galaxy_orb" };
-    galactic_cloud:  { vertex: "galactic_cloud";  fragment: "galactic_cloud" };
+    galaxy_orb:      { vertex: "galaxy_orb";     fragment: "galaxy_orb" };
+    galactic_cloud:  { vertex: "galactic_cloud"; fragment: "galactic_cloud" };
 }
 
 export type ShaderUniformsOf<K extends ShaderKey> =
