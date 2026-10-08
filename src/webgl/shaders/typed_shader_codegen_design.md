@@ -48,10 +48,24 @@ The code generator script lives in `scripts/generate_shader_types.js` and is hoo
 - `"build": "npm run generate:shaders && parcel build src/index.html --public-url /"`
 - `"start": "npm run generate:shaders && rimraf dist && parcel"`
 
-### Developer Workflow
+### Developer Workflow & Generated Interface Structure
+
+For each vertex shader (`*.vert`), the generator emits:
+- `<Name>VertInputs`: input attribute names mapped to their `{ location: number; type: string }` declaration.
+- `<Name>VertUniforms`: uniform names mapped to their TypeScript data types.
+- `<Name>VertOutputs`: varying names mapped to their GLSL type strings.
+
+For each fragment shader (`*.frag`), the generator emits:
+- `<Name>FragInputs`: varying names mapped to their GLSL type strings.
+- `<Name>FragUniforms`: uniform names mapped to their TypeScript data types.
+- `<Name>FragOutputs`: fragment output / render target names mapped to `{ location: number; type: string }`.
 
 ```ts
-import galacticCloudFrag, { GalacticCloudFragUniforms } from "./shaders/galactic_cloud.frag";
+import galacticCloudFrag, {
+    GalacticCloudFragInputs,
+    GalacticCloudFragUniforms,
+    GalacticCloudFragOutputs,
+} from "./shaders/galactic_cloud.frag";
 
 // In renderer code:
 this.shaderProgram.setUniforms<GalacticCloudFragUniforms>({

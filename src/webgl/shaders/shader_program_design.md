@@ -24,8 +24,8 @@ import type { ResourceFactoryToken } from "../core/resource_token";
 export interface IShaderProgram<TUniforms extends object = Record<string, unknown>>
     extends IWebGLResource {
     readonly label: string;
-    readonly vertSource: string;
-    readonly fragSource: string;
+    readonly vertex: IVertexShader;
+    readonly fragment: IFragmentShader;
     readonly isValid: boolean;
 
     /** Gets the underlying WebGLProgram GPU handle, or null if context lost or disposed */

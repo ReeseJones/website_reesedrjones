@@ -14,7 +14,7 @@ This document establishes the unified, engine-wide standard for all WebGL resour
 
 ### Core Architectural Principles
 
-- **Unified `IWebGLResource` Contract:** Every class wrapping a native WebGL handle (`WebGLBuffer`, `WebGLVertexArrayObject`, `WebGLProgram`, `WebGLTexture`) implements `IWebGLResource` (which extends `IDisposable`).
+- **Unified `IWebGLResource` Contract:** Every class wrapping a native WebGL handle (`WebGLBuffer`, `WebGLVertexArrayObject`, `WebGLShader`, `WebGLProgram`, `WebGLTexture`) implements `IWebGLResource` (which extends `IDisposable`). The core resources include `VertexBuffer`, `ShaderStage` (`VertexShader`, `FragmentShader`), `ShaderProgram`, and `Texture`.
 - **Single Public Teardown Method (`dispose()`):** Eliminates the dual `destroy()` / `dispose()` anti-pattern. There is only one public destruction method: `dispose()`. It immediately frees GPU handles (`gl.delete*`), unbinds from context slots if active, marks `isDisposed = true`, and notifies manager caches to auto-evict.
 - **Dedicated Context Recovery Hooks:** Hardware handle loss and restoration are handled strictly via `onContextLost()` (nulling handle references without driver calls) and `onContextRestored(gl)` (reallocating handles and re-uploading data to the new context).
 - **Inversion of Disposal Control:** Subsystem managers do not provide individual `dispose(resource)` methods. The resource itself is disposed via `resource.dispose()`. The owning manager registers an `onDispose` listener during registration/caching and automatically prunes its cache upon disposal.

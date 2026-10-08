@@ -87,23 +87,52 @@ export interface IShaderManager extends IContextSubsystem {
     readonly activeProgram: WebGLProgram | null;
 
     /** Total number of unique shader programs registered in memory */
-    readonly shaderCount: number;
+    readonly programCount: number;
+
+    /** Total number of unique vertex shader stages registered in memory */
+    readonly vertexShaderCount: number;
+
+    /** Total number of unique fragment shader stages registered in memory */
+    readonly fragmentShaderCount: number;
 
     /**
-     * Factory & Registry: Retrieves an existing cached ShaderProgram or compiles and caches a new one.
-     * Hooks shader.onDispose() to automatically prune the shader from the registry upon disposal.
+     * Factory & Registry: Retrieves an existing cached VertexShader or compiles and caches a new one.
      */
-    getOrCreate<TUniforms extends object = Record<string, unknown>>(
-        key: ShaderKey,
-        options: ShaderProgramOptions
-    ): ShaderProgram<TUniforms>;
+    getOrCreateVertexShader(
+        key: VertexShaderKey,
+        def?: ShaderStageDef
+    ): VertexShader;
+
+    /**
+     * Factory & Registry: Retrieves an existing cached FragmentShader or compiles and caches a new one.
+     */
+    getOrCreateFragmentShader(
+        key: FragmentShaderKey,
+        def?: ShaderStageDef
+    ): FragmentShader;
+
+    /**
+     * Registry Query: Retrieves an existing compiled VertexShader if registered.
+     */
+    getVertexShader(key: VertexShaderKey): VertexShader | null;
+
+    /**
+     * Registry Query: Retrieves an existing compiled FragmentShader if registered.
+     */
+    getFragmentShader(key: FragmentShaderKey): FragmentShader | null;
+
+    /**
+     * Factory & Registry: Retrieves an existing cached ShaderProgram or links and caches a new one.
+     */
+    getOrCreate<K extends ShaderKey>(
+        key: K,
+        def?: ShaderProgramDef<K>
+    ): ShaderProgram<ShaderUniformsOf<K>>;
 
     /**
      * Registry Query: Retrieves an existing compiled ShaderProgram if registered.
      */
-    get<TUniforms extends object = Record<string, unknown>>(
-        key: ShaderKey
-    ): ShaderProgram<TUniforms> | null;
+    get<K extends ShaderKey>(key: K): ShaderProgram<ShaderUniformsOf<K>> | null;
 
     /**
      * Checks if a shader with the given key is currently registered.
