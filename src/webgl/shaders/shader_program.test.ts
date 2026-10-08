@@ -1,5 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { ShaderProgram } from "./shader_program";
+import { VertexShader } from "./vertex_shader";
+import { FragmentShader } from "./fragment_shader";
 import type { IWebGLContextManager } from "../core/context_manager_types";
 import { createMockWebGL2Context } from "../../testing/mocks/mock_gl_context";
 import { createMockContextManager } from "../../testing/mocks/mock_context_manager";
@@ -10,66 +12,72 @@ describe("ShaderProgram", () => {
     const testVertSource = `#version 300 es\nin vec3 a_position;\nvoid main() { gl_Position = vec4(a_position, 1.0); }`;
     const testFragSource = `#version 300 es\nout vec4 fragColor;\nvoid main() { fragColor = vec4(1.0); }`;
 
+    let mockVertex: VertexShader;
+    let mockFragment: FragmentShader;
+
     beforeEach(() => {
         gl = createMockWebGL2Context();
         cm = createMockContextManager(gl);
+        mockVertex = new VertexShader(cm, { source: testVertSource, label: "test.vert" });
+        mockFragment = new FragmentShader(cm, { source: testFragSource, label: "test.frag" });
     });
 
     afterEach(() => {
         vi.restoreAllMocks();
     });
 
-    describe("constructor and program compilation / linking", () => {
-        it("compiles vertex and fragment shaders, creates WebGLProgram, attaches shaders, links program, checks LINK_STATUS, and detaches & deletes intermediate shaders", () => {
+    describe("constructor and program linking", () => {
+        it("links vertex and fragment shader handles, creates WebGLProgram, attaches shaders, links program, checks LINK_STATUS, and detaches shaders without deleting them", () => {
+            const vsHandle = mockVertex.getShader()!;
+            const fsHandle = mockFragment.getShader()!;
+            vi.mocked(gl.detachShader).mockClear();
+            vi.mocked(gl.deleteShader).mockClear();
+
             const shader = new ShaderProgram(cm, {
-                vertSource: testVertSource,
-                fragSource: testFragSource,
+                vertex: mockVertex,
+                fragment: mockFragment,
                 label: "TestShader",
             });
-
-            expect(gl.createShader).toHaveBeenCalledWith(gl.VERTEX_SHADER);
-            expect(gl.createShader).toHaveBeenCalledWith(gl.FRAGMENT_SHADER);
-            expect(gl.shaderSource).toHaveBeenCalledWith(expect.anything(), testVertSource);
-            expect(gl.shaderSource).toHaveBeenCalledWith(expect.anything(), testFragSource);
-            expect(gl.compileShader).toHaveBeenCalledTimes(2);
 
             expect(gl.createProgram).toHaveBeenCalledTimes(1);
             const program = shader.getProgram();
             expect(program).not.toBeNull();
 
-            expect(gl.attachShader).toHaveBeenCalledTimes(2);
+            expect(gl.attachShader).toHaveBeenCalledWith(program, vsHandle);
+            expect(gl.attachShader).toHaveBeenCalledWith(program, fsHandle);
             expect(gl.linkProgram).toHaveBeenCalledWith(program);
             expect(gl.getProgramParameter).toHaveBeenCalledWith(program, gl.LINK_STATUS);
 
-            expect(gl.detachShader).toHaveBeenCalledTimes(2);
-            expect(gl.deleteShader).toHaveBeenCalledTimes(2);
+            expect(gl.detachShader).toHaveBeenCalledWith(program, vsHandle);
+            expect(gl.detachShader).toHaveBeenCalledWith(program, fsHandle);
+            expect(gl.deleteShader).not.toHaveBeenCalled();
         });
 
-        it("initializes public properties: label (or default 'ShaderProgram'), vertSource, fragSource", () => {
+        it("initializes public properties: label (or default 'ShaderProgram'), vertex, fragment", () => {
             const customShader = new ShaderProgram(cm, {
-                vertSource: testVertSource,
-                fragSource: testFragSource,
+                vertex: mockVertex,
+                fragment: mockFragment,
                 label: "CustomGalaxyShader",
             });
 
             expect(customShader.label).toBe("CustomGalaxyShader");
-            expect(customShader.vertSource).toBe(testVertSource);
-            expect(customShader.fragSource).toBe(testFragSource);
+            expect(customShader.vertex).toBe(mockVertex);
+            expect(customShader.fragment).toBe(mockFragment);
 
             const defaultShader = new ShaderProgram(cm, {
-                vertSource: testVertSource,
-                fragSource: testFragSource,
+                vertex: mockVertex,
+                fragment: mockFragment,
             });
 
             expect(defaultShader.label).toBe("ShaderProgram");
-            expect(defaultShader.vertSource).toBe(testVertSource);
-            expect(defaultShader.fragSource).toBe(testFragSource);
+            expect(defaultShader.vertex).toBe(mockVertex);
+            expect(defaultShader.fragment).toBe(mockFragment);
         });
 
         it("isValid returns true and getProgram() returns WebGLProgram handle on successful link", () => {
             const shader = new ShaderProgram(cm, {
-                vertSource: testVertSource,
-                fragSource: testFragSource,
+                vertex: mockVertex,
+                fragment: mockFragment,
             });
 
             expect(shader.isValid).toBe(true);
@@ -99,8 +107,8 @@ describe("ShaderProgram", () => {
             });
 
             const shader = new ShaderProgram(cm, {
-                vertSource: testVertSource,
-                fragSource: testFragSource,
+                vertex: mockVertex,
+                fragment: mockFragment,
                 samplers: {
                     u_cubeTexture: 11,
                 },
@@ -126,31 +134,43 @@ describe("ShaderProgram", () => {
             const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
             const shader = new ShaderProgram(cm, {
-                vertSource: testVertSource,
-                fragSource: testFragSource,
+                vertex: mockVertex,
+                fragment: mockFragment,
                 label: "FailingLinkShader",
             });
 
             expect(consoleSpy).toHaveBeenCalledWith("[FailingLinkShader] Program link failed: Mismatched varying types");
-            expect(gl.deleteShader).toHaveBeenCalledTimes(2);
+            expect(gl.deleteShader).not.toHaveBeenCalled();
             expect(gl.deleteProgram).toHaveBeenCalledTimes(1);
             expect(shader.isValid).toBe(false);
             expect(shader.getProgram()).toBeNull();
         });
 
-        it("shader compilation failure (compileShader returns null): does not create program, isValid returns false, getProgram() returns null", () => {
-            vi.mocked(gl.getShaderParameter).mockReturnValue(false);
-            vi.mocked(gl.getShaderInfoLog).mockReturnValue("Syntax error in vertex shader");
+        it("stage invalid (getShader returns null): does not create program, isValid returns false, getProgram() returns null", () => {
+            const invalidVertex = {
+                stage: 0x8b31 as const,
+                source: "invalid",
+                label: "CompileFailShader.vert",
+                infoLog: "Syntax error in vertex shader",
+                isValid: false,
+                isDisposed: false,
+                vertexLayout: { stride: 0, attributes: [] },
+                getShader: () => null,
+                onContextLost: vi.fn(),
+                onContextRestored: vi.fn(),
+                onDispose: vi.fn(),
+                dispose: vi.fn(),
+            };
             const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
             const shader = new ShaderProgram(cm, {
-                vertSource: "invalid vertex source",
-                fragSource: testFragSource,
+                vertex: invalidVertex as any,
+                fragment: mockFragment,
                 label: "CompileFailShader",
             });
 
             expect(consoleSpy).toHaveBeenCalledWith(
-                expect.stringContaining("[CompileFailShader] VERTEX shader compile failed")
+                expect.stringContaining("[CompileFailShader] Cannot link program: vertex or fragment stage handle is null/invalid")
             );
             expect(gl.createProgram).not.toHaveBeenCalled();
             expect(shader.isValid).toBe(false);
@@ -161,8 +181,8 @@ describe("ShaderProgram", () => {
             vi.mocked(cm.getContext).mockReturnValue(null);
 
             const shader = new ShaderProgram(cm, {
-                vertSource: testVertSource,
-                fragSource: testFragSource,
+                vertex: mockVertex,
+                fragment: mockFragment,
             });
 
             expect(shader.isValid).toBe(false);
@@ -173,8 +193,8 @@ describe("ShaderProgram", () => {
     describe("getUniformLocation and caching", () => {
         it("queries gl.getUniformLocation on first lookup and caches location handle in internal map", () => {
             const shader = new ShaderProgram(cm, {
-                vertSource: testVertSource,
-                fragSource: testFragSource,
+                vertex: mockVertex,
+                fragment: mockFragment,
             });
 
             const loc = shader.getUniformLocation("u_time");
@@ -186,8 +206,8 @@ describe("ShaderProgram", () => {
 
         it("subsequent calls return cached location without invoking gl.getUniformLocation again", () => {
             const shader = new ShaderProgram(cm, {
-                vertSource: testVertSource,
-                fragSource: testFragSource,
+                vertex: mockVertex,
+                fragment: mockFragment,
             });
 
             const locFirst = shader.getUniformLocation("u_time");
@@ -199,8 +219,8 @@ describe("ShaderProgram", () => {
 
         it("returns null if program is null or if uniform is not found in GL program", () => {
             const shader = new ShaderProgram(cm, {
-                vertSource: testVertSource,
-                fragSource: testFragSource,
+                vertex: mockVertex,
+                fragment: mockFragment,
             });
 
             vi.mocked(gl.getUniformLocation).mockReturnValue(null);
@@ -218,8 +238,8 @@ describe("ShaderProgram", () => {
 
         beforeEach(() => {
             shader = new ShaderProgram(cm, {
-                vertSource: testVertSource,
-                fragSource: testFragSource,
+                vertex: mockVertex,
+                fragment: mockFragment,
             });
         });
 
@@ -435,8 +455,8 @@ describe("ShaderProgram", () => {
 
         beforeEach(() => {
             shader = new ShaderProgram(cm, {
-                vertSource: testVertSource,
-                fragSource: testFragSource,
+                vertex: mockVertex,
+                fragment: mockFragment,
             });
         });
 
@@ -571,8 +591,8 @@ describe("ShaderProgram", () => {
     describe(".onContextLost()", () => {
         it("invalidates program handle and clears uniform location cache without calling gl.deleteProgram", () => {
             const shader = new ShaderProgram(cm, {
-                vertSource: testVertSource,
-                fragSource: testFragSource,
+                vertex: mockVertex,
+                fragment: mockFragment,
             });
 
             expect(shader.isValid).toBe(true);
@@ -590,8 +610,8 @@ describe("ShaderProgram", () => {
     describe(".onContextRestored()", () => {
         it("recompiles program and restores all cached uniforms to the new program", () => {
             const shader = new ShaderProgram(cm, {
-                vertSource: testVertSource,
-                fragSource: testFragSource,
+                vertex: mockVertex,
+                fragment: mockFragment,
             });
 
             const initialProgram = shader.getProgram();
@@ -662,8 +682,8 @@ describe("ShaderProgram", () => {
 
         it("does nothing if shader is already disposed", () => {
             const shader = new ShaderProgram(cm, {
-                vertSource: testVertSource,
-                fragSource: testFragSource,
+                vertex: mockVertex,
+                fragment: mockFragment,
             });
 
             shader.dispose();
@@ -680,8 +700,8 @@ describe("ShaderProgram", () => {
     describe(".onDispose()", () => {
         it("registers callback invoked when dispose() is called", () => {
             const shader = new ShaderProgram(cm, {
-                vertSource: testVertSource,
-                fragSource: testFragSource,
+                vertex: mockVertex,
+                fragment: mockFragment,
             });
             const callback = vi.fn();
 
@@ -694,8 +714,8 @@ describe("ShaderProgram", () => {
 
         it("returns an unsubscribe function that unregisters the callback", () => {
             const shader = new ShaderProgram(cm, {
-                vertSource: testVertSource,
-                fragSource: testFragSource,
+                vertex: mockVertex,
+                fragment: mockFragment,
             });
             const callback = vi.fn();
 
@@ -708,8 +728,8 @@ describe("ShaderProgram", () => {
 
         it("invokes callback immediately if shader is already disposed", () => {
             const shader = new ShaderProgram(cm, {
-                vertSource: testVertSource,
-                fragSource: testFragSource,
+                vertex: mockVertex,
+                fragment: mockFragment,
             });
             shader.dispose();
 
@@ -722,8 +742,8 @@ describe("ShaderProgram", () => {
     describe(".dispose()", () => {
         it("calls gl.deleteProgram with current program handle and unbinds from contextManager", () => {
             const shader = new ShaderProgram(cm, {
-                vertSource: testVertSource,
-                fragSource: testFragSource,
+                vertex: mockVertex,
+                fragment: mockFragment,
             });
 
             vi.mocked(cm.getCurrentShader).mockReturnValue(shader as any);
@@ -740,8 +760,8 @@ describe("ShaderProgram", () => {
 
         it("does not call gl.deleteProgram if context is lost (gl.isContextLost() === true)", () => {
             const shader = new ShaderProgram(cm, {
-                vertSource: testVertSource,
-                fragSource: testFragSource,
+                vertex: mockVertex,
+                fragment: mockFragment,
             });
 
             vi.mocked(gl.isContextLost).mockReturnValue(true);
@@ -755,8 +775,8 @@ describe("ShaderProgram", () => {
 
         it("is idempotent: calling dispose multiple times does not error or delete twice", () => {
             const shader = new ShaderProgram(cm, {
-                vertSource: testVertSource,
-                fragSource: testFragSource,
+                vertex: mockVertex,
+                fragment: mockFragment,
             });
             const callback = vi.fn();
             shader.onDispose(callback);

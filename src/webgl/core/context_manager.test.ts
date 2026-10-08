@@ -567,15 +567,15 @@ describe("WebGLContextManager", () => {
                 .spyOn(manager.shaders, "getOrCreate")
                 .mockReturnValue(mockShader as never);
 
-            const options: ShaderProgramOptions = {
-                vertSource: "void main() {}",
-                fragSource: "void main() {}",
+            const def = {
+                vertex: "mesh_standard" as const,
+                fragment: "unlit" as const,
                 label: "mock_label",
             };
 
-            const result = manager.getOrCreateShader("test_key" as ShaderKey, options);
+            const result = manager.getOrCreateShader("test_key" as ShaderKey, def as any);
 
-            expect(getOrCreateSpy).toHaveBeenCalledWith("test_key", options);
+            expect(getOrCreateSpy).toHaveBeenCalledWith("test_key", def);
             expect(result).toBe(mockShader);
         });
 

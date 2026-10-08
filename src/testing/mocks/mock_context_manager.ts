@@ -5,10 +5,57 @@ import type { IGeometryManager } from "../../webgl/geometry/geometry_manager_typ
 import type { ITextureManager } from "../../webgl/textures/texture_manager_types";
 import type { VertexBuffer } from "../../webgl/geometry/vertex_buffer";
 import type { ShaderProgram } from "../../webgl/shaders/shader_program";
-import type { ShaderProgramOptions } from "../../webgl/shaders/shader_program_types";
-import type { ShaderKey } from "../../webgl/shaders/shader_types";
+import type { VertexShader } from "../../webgl/shaders/vertex_shader";
+import type { FragmentShader } from "../../webgl/shaders/fragment_shader";
+import type {
+    ShaderKey,
+    VertexShaderKey,
+    FragmentShaderKey,
+    ShaderProgramDef,
+    ShaderStageDef,
+} from "../../webgl/shaders/shader_types";
 import type { IMeshGeometry } from "../../scene/models/mesh_geometry_types";
 import { SubsystemRestorationPriority } from "../../webgl/core/subsystem_types";
+import { ShaderStageType } from "../../webgl/shaders/shader_stage_constants";
+
+/**
+ * Creates a spy-wrapped VertexShader stage.
+ */
+export function createMockVertexShader(key: string = "mesh_standard"): VertexShader {
+    return {
+        stage: ShaderStageType.Vertex,
+        label: `${key}.vert`,
+        source: "",
+        infoLog: null,
+        isValid: true,
+        isDisposed: false,
+        vertexLayout: { stride: 0, attributes: [] },
+        getShader: vi.fn(() => ({} as WebGLShader)),
+        onContextLost: vi.fn(),
+        onContextRestored: vi.fn(),
+        onDispose: vi.fn(),
+        dispose: vi.fn(),
+    } as unknown as VertexShader;
+}
+
+/**
+ * Creates a spy-wrapped FragmentShader stage.
+ */
+export function createMockFragmentShader(key: string = "unlit"): FragmentShader {
+    return {
+        stage: ShaderStageType.Fragment,
+        label: `${key}.frag`,
+        source: "",
+        infoLog: null,
+        isValid: true,
+        isDisposed: false,
+        getShader: vi.fn(() => ({} as WebGLShader)),
+        onContextLost: vi.fn(),
+        onContextRestored: vi.fn(),
+        onDispose: vi.fn(),
+        dispose: vi.fn(),
+    } as unknown as FragmentShader;
+}
 
 /**
  * Creates a spy-wrapped ShaderProgram conforming to the methods used during rendering.
@@ -16,8 +63,8 @@ import { SubsystemRestorationPriority } from "../../webgl/core/subsystem_types";
 export function createMockShaderProgram(key: string = "unlit"): ShaderProgram<never> {
     return {
         label: key,
-        vertSource: "",
-        fragSource: "",
+        vertex: createMockVertexShader(key),
+        fragment: createMockFragmentShader(key),
         isValid: true,
         isDisposed: false,
         getProgram: vi.fn(() => ({} as WebGLProgram)),
@@ -48,8 +95,14 @@ export function createMockContextManager(gl?: WebGL2RenderingContext): IWebGLCon
         restorationPriority: SubsystemRestorationPriority.Shader,
         activeProgram: null,
         activeShader: null,
-        shaderCount: 0,
-        getOrCreate: vi.fn((_key: ShaderKey, _options: ShaderProgramOptions) => createMockShaderProgram(_key)),
+        programCount: 0,
+        vertexShaderCount: 0,
+        fragmentShaderCount: 0,
+        getOrCreateVertexShader: vi.fn((key: VertexShaderKey, _def?: ShaderStageDef) => createMockVertexShader(key)),
+        getOrCreateFragmentShader: vi.fn((key: FragmentShaderKey, _def?: ShaderStageDef) => createMockFragmentShader(key)),
+        getVertexShader: vi.fn(() => null),
+        getFragmentShader: vi.fn(() => null),
+        getOrCreate: vi.fn((_key: any, _def?: any) => createMockShaderProgram(_key) as any),
         get: vi.fn(() => null),
         has: vi.fn(() => false),
         bind: vi.fn(),

@@ -12,9 +12,9 @@ describe("ShaderManager", () => {
     let cm: ReturnType<typeof createMockContextManager>;
     let shaderManager: ShaderManager;
 
-    const dummyOptions: ShaderProgramOptions = {
-        vertSource: "#version 300 es\nvoid main() { gl_Position = vec4(0.0); }",
-        fragSource: "#version 300 es\nprecision mediump float;\nout vec4 color;\nvoid main() { color = vec4(1.0); }",
+    const dummyProgramDef = {
+        vertex: "mesh_standard" as const,
+        fragment: "unlit" as const,
         label: "test_shader",
     };
 
@@ -33,20 +33,20 @@ describe("ShaderManager", () => {
         it("identifies as shader subsystem with Priority 10 (Shader)", () => {
             expect(shaderManager.name).toBe("shader");
             expect(shaderManager.restorationPriority).toBe(SubsystemRestorationPriority.Shader);
-            expect(shaderManager.shaderCount).toBe(0);
+            expect(shaderManager.programCount).toBe(0);
             expect(shaderManager.activeShader).toBeNull();
             expect(shaderManager.activeProgram).toBeNull();
         });
 
         it("supports attach and detach lifecycle methods", () => {
             const fresh = new ShaderManager();
-            expect(() => fresh.getOrCreate("custom_test" as ShaderKey, dummyOptions)).toThrow(
+            expect(() => fresh.getOrCreate("custom_test" as ShaderKey, dummyProgramDef)).toThrow(
                 /before subsystem is attached/
             );
             fresh.attach(cm);
-            expect(() => fresh.getOrCreate("custom_test" as ShaderKey, dummyOptions)).not.toThrow();
+            expect(() => fresh.getOrCreate("custom_test" as ShaderKey, dummyProgramDef)).not.toThrow();
             fresh.detach();
-            expect(() => fresh.getOrCreate("other_test" as ShaderKey, dummyOptions)).toThrow(
+            expect(() => fresh.getOrCreate("other_test" as ShaderKey, dummyProgramDef)).toThrow(
                 /before subsystem is attached/
             );
         });
@@ -54,36 +54,36 @@ describe("ShaderManager", () => {
 
     describe(".getOrCreate()", () => {
         it("compiles, caches, and returns a new ShaderProgram on first request", () => {
-            const shader = shaderManager.getOrCreate("custom_test" as ShaderKey, dummyOptions);
+            const shader = shaderManager.getOrCreate("custom_test" as ShaderKey, dummyProgramDef);
 
             expect(shader).toBeInstanceOf(ShaderProgram);
-            expect(shaderManager.shaderCount).toBe(1);
+            expect(shaderManager.programCount).toBe(1);
             expect(shaderManager.has("custom_test" as ShaderKey)).toBe(true);
             expect(shaderManager.get("custom_test" as ShaderKey)).toBe(shader);
         });
 
         it("returns existing cached ShaderProgram on subsequent calls with the same key", () => {
-            const shader1 = shaderManager.getOrCreate("custom_test" as ShaderKey, dummyOptions);
-            const shader2 = shaderManager.getOrCreate("custom_test" as ShaderKey, dummyOptions);
+            const shader1 = shaderManager.getOrCreate("custom_test" as ShaderKey, dummyProgramDef);
+            const shader2 = shaderManager.getOrCreate("custom_test" as ShaderKey, dummyProgramDef);
 
             expect(shader1).toBe(shader2);
-            expect(shaderManager.shaderCount).toBe(1);
+            expect(shaderManager.programCount).toBe(1);
         });
 
         it("automatically evicts shader from registry when shader.dispose() is called", () => {
-            const shader = shaderManager.getOrCreate("custom_test" as ShaderKey, dummyOptions);
-            expect(shaderManager.shaderCount).toBe(1);
+            const shader = shaderManager.getOrCreate("custom_test" as ShaderKey, dummyProgramDef);
+            expect(shaderManager.programCount).toBe(1);
             expect(shaderManager.has("custom_test" as ShaderKey)).toBe(true);
 
             shader.dispose();
 
-            expect(shaderManager.shaderCount).toBe(0);
+            expect(shaderManager.programCount).toBe(0);
             expect(shaderManager.has("custom_test" as ShaderKey)).toBe(false);
             expect(shaderManager.get("custom_test" as ShaderKey)).toBeNull();
         });
 
         it("unbinds the shader if the active shader is disposed", () => {
-            const shader = shaderManager.getOrCreate("custom_test" as ShaderKey, dummyOptions);
+            const shader = shaderManager.getOrCreate("custom_test" as ShaderKey, dummyProgramDef);
             shaderManager.bind(shader);
             expect(shaderManager.activeShader).toBe(shader);
 
@@ -100,8 +100,8 @@ describe("ShaderManager", () => {
             const mgr = new ShaderManager();
             mgr.attach(cmNull);
 
-            expect(() => mgr.getOrCreate("custom_test" as ShaderKey, dummyOptions)).toThrow(
-                "[ShaderManager] Cannot compile shader 'custom_test' before WebGL context is initialized."
+            expect(() => mgr.getOrCreate("custom_test" as ShaderKey, dummyProgramDef)).toThrow(
+                "[ShaderManager] Cannot link shader program 'custom_test' before WebGL context is initialized."
             );
         });
     });
@@ -113,7 +113,7 @@ describe("ShaderManager", () => {
         });
 
         it("get returns cached instance and has returns true for registered keys", () => {
-            const shader = shaderManager.getOrCreate("custom_test" as ShaderKey, dummyOptions);
+            const shader = shaderManager.getOrCreate("custom_test" as ShaderKey, dummyProgramDef);
             expect(shaderManager.has("custom_test" as ShaderKey)).toBe(true);
             expect(shaderManager.get("custom_test" as ShaderKey)).toBe(shader);
         });
@@ -121,7 +121,7 @@ describe("ShaderManager", () => {
 
     describe(".bind()", () => {
         it("calls gl.useProgram with program handle and updates activeShader and activeProgram", () => {
-            const shader = shaderManager.getOrCreate("custom_test" as ShaderKey, dummyOptions);
+            const shader = shaderManager.getOrCreate("custom_test" as ShaderKey, dummyProgramDef);
             const progHandle = shader.getProgram();
 
             shaderManager.bind(shader);
@@ -132,7 +132,7 @@ describe("ShaderManager", () => {
         });
 
         it("skips redundant gl.useProgram calls if shader is already active", () => {
-            const shader = shaderManager.getOrCreate("custom_test" as ShaderKey, dummyOptions);
+            const shader = shaderManager.getOrCreate("custom_test" as ShaderKey, dummyProgramDef);
             shaderManager.bind(shader);
 
             vi.mocked(gl.useProgram).mockClear();
@@ -143,7 +143,7 @@ describe("ShaderManager", () => {
         });
 
         it("bind(null) unbinds the active shader and program", () => {
-            const shader = shaderManager.getOrCreate("custom_test" as ShaderKey, dummyOptions);
+            const shader = shaderManager.getOrCreate("custom_test" as ShaderKey, dummyProgramDef);
             shaderManager.bind(shader);
 
             vi.mocked(gl.useProgram).mockClear();
@@ -175,7 +175,7 @@ describe("ShaderManager", () => {
 
         it("throws an error if key is not registered and not a standard shader", () => {
             expect(() => shaderManager.bindKey("unknown_key" as ShaderKey)).toThrow(
-                "[ShaderManager] Shader 'unknown_key' is not registered with WebGLContextManager."
+                "[ShaderManager] Shader program 'unknown_key' is not registered with WebGLContextManager."
             );
         });
     });
@@ -204,7 +204,7 @@ describe("ShaderManager", () => {
 
     describe(".unbind()", () => {
         it("calls gl.useProgram(null) and clears active state", () => {
-            const shader = shaderManager.getOrCreate("custom_test" as ShaderKey, dummyOptions);
+            const shader = shaderManager.getOrCreate("custom_test" as ShaderKey, dummyProgramDef);
             shaderManager.bind(shader);
 
             shaderManager.unbind();
@@ -217,8 +217,8 @@ describe("ShaderManager", () => {
 
     describe(".onContextLost() and .onContextRestored()", () => {
         it("onContextLost forwards to all registered shaders and resets active state", () => {
-            const shader1 = shaderManager.getOrCreate("custom_test1" as ShaderKey, dummyOptions);
-            const shader2 = shaderManager.getOrCreate("custom_test2" as ShaderKey, dummyOptions);
+            const shader1 = shaderManager.getOrCreate("custom_test1" as ShaderKey, dummyProgramDef);
+            const shader2 = shaderManager.getOrCreate("custom_test2" as ShaderKey, dummyProgramDef);
             const lostSpy1 = vi.spyOn(shader1, "onContextLost");
             const lostSpy2 = vi.spyOn(shader2, "onContextLost");
 
@@ -232,8 +232,8 @@ describe("ShaderManager", () => {
         });
 
         it("onContextRestored forwards to all registered shaders with the new context and resets active state", () => {
-            const shader1 = shaderManager.getOrCreate("custom_test1" as ShaderKey, dummyOptions);
-            const shader2 = shaderManager.getOrCreate("custom_test2" as ShaderKey, dummyOptions);
+            const shader1 = shaderManager.getOrCreate("custom_test1" as ShaderKey, dummyProgramDef);
+            const shader2 = shaderManager.getOrCreate("custom_test2" as ShaderKey, dummyProgramDef);
             const restoredSpy1 = vi.spyOn(shader1, "onContextRestored");
             const restoredSpy2 = vi.spyOn(shader2, "onContextRestored");
 
@@ -249,8 +249,8 @@ describe("ShaderManager", () => {
 
     describe(".destroy()", () => {
         it("unbinds context, disposes all registered shaders, and clears registry", () => {
-            const shader1 = shaderManager.getOrCreate("custom_test1" as ShaderKey, dummyOptions);
-            const shader2 = shaderManager.getOrCreate("custom_test2" as ShaderKey, dummyOptions);
+            const shader1 = shaderManager.getOrCreate("custom_test1" as ShaderKey, dummyProgramDef);
+            const shader2 = shaderManager.getOrCreate("custom_test2" as ShaderKey, dummyProgramDef);
             const disposeSpy1 = vi.spyOn(shader1, "dispose");
             const disposeSpy2 = vi.spyOn(shader2, "dispose");
 
@@ -261,7 +261,7 @@ describe("ShaderManager", () => {
             expect(shaderManager.activeProgram).toBeNull();
             expect(disposeSpy1).toHaveBeenCalledTimes(1);
             expect(disposeSpy2).toHaveBeenCalledTimes(1);
-            expect(shaderManager.shaderCount).toBe(0);
+            expect(shaderManager.programCount).toBe(0);
         });
     });
 
@@ -273,11 +273,11 @@ describe("ShaderManager", () => {
             expect(diagInitial.activeBindings).toBe(0);
             expect(diagInitial.details?.currentShaderLabel).toBeNull();
 
-            const shader = shaderManager.getOrCreate("custom_test" as ShaderKey, dummyOptions);
+            const shader = shaderManager.getOrCreate("custom_test" as ShaderKey, dummyProgramDef);
             shaderManager.bind(shader);
 
             const diagActive = shaderManager.getDiagnostics();
-            expect(diagActive.resourceCount).toBe(1);
+            expect(diagActive.resourceCount).toBe(3);
             expect(diagActive.activeBindings).toBe(1);
             expect(diagActive.details?.currentShaderLabel).toBe("test_shader");
 
