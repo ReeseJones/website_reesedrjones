@@ -1,3 +1,4 @@
+import type { IVertexShader, IFragmentShader } from "./shader_stage_types";
 import type { IWebGLResource } from "../core/resource_types";
 
 export type UniformValue =
@@ -21,10 +22,10 @@ export type UniformType =
     | "mat4";
 
 export interface ShaderProgramOptions {
-    /** Vertex shader GLSL source code */
-    vertSource: string;
-    /** Fragment shader GLSL source code */
-    fragSource: string;
+    /** Reusable Vertex Shader stage */
+    vertex: IVertexShader;
+    /** Reusable Fragment Shader stage */
+    fragment: IFragmentShader;
     /** Debug label used in console log diagnostic messages */
     label?: string;
     /** Explicit sampler uniform name to TextureUnit/integer mapping overrides */
@@ -42,8 +43,8 @@ export interface CachedUniform {
 export interface IShaderProgram<TUniforms extends object = Record<string, unknown>>
     extends IWebGLResource {
     readonly label: string;
-    readonly vertSource: string;
-    readonly fragSource: string;
+    readonly vertex: IVertexShader;
+    readonly fragment: IFragmentShader;
     readonly isValid: boolean;
 
     /** Gets the underlying WebGLProgram GPU handle, or null if context lost or disposed */

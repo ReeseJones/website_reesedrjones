@@ -2,7 +2,7 @@ import type { ShaderProgram } from "../shaders/shader_program";
 import type { ShaderProgramOptions } from "../shaders/shader_program_types";
 import type { IWebGLContextManager, WebGLContextManagerSubsystems } from "./context_manager_types";
 import { BlendMode, type PipelineState } from "../../scene/materials/material_types";
-import type { ShaderKey } from "../shaders/shader_types";
+import type { ShaderKey, ShaderProgramDef, ShaderUniformsOf } from "../shaders/shader_types";
 import type { IContextSubsystem, SubsystemDiagnostics } from "./subsystem_types";
 import type { IGeometryManager } from "../geometry/geometry_manager_types";
 import type { ITextureManager } from "../textures/texture_manager_types";
@@ -101,22 +101,22 @@ export class WebGLContextManager implements IWebGLContextManager {
     }
 
     /**
-     * Factory & Registry: Retrieves a cached ShaderProgram or compiles and caches a new one.
+     * Factory & Registry: Retrieves a cached ShaderProgram or links and caches a new one.
      */
-    public getOrCreateShader<TUniforms extends object = Record<string, unknown>>(
-        key: ShaderKey,
-        options: ShaderProgramOptions
-    ): ShaderProgram<TUniforms> {
-        return this.shaders.getOrCreate<TUniforms>(key, options);
+    public getOrCreateShader<K extends ShaderKey>(
+        key: K,
+        def?: ShaderProgramDef<K>
+    ): ShaderProgram<ShaderUniformsOf<K>> {
+        return this.shaders.getOrCreate<K>(key, def);
     }
 
     /**
      * Registry Query: Retrieves an existing compiled ShaderProgram if registered.
      */
-    public getShader<TUniforms extends object = Record<string, unknown>>(
-        key: ShaderKey
-    ): ShaderProgram<TUniforms> | null {
-        return this.shaders.get<TUniforms>(key);
+    public getShader<K extends ShaderKey>(
+        key: K
+    ): ShaderProgram<ShaderUniformsOf<K>> | null {
+        return this.shaders.get<K>(key);
     }
 
     /**

@@ -1,7 +1,7 @@
 import type { ShaderProgram } from "../shaders/shader_program";
 import type { ShaderProgramOptions } from "../shaders/shader_program_types";
 import type { PipelineState } from "../../scene/materials/material_types";
-import type { ShaderKey } from "../shaders/shader_types";
+import type { ShaderKey, ShaderProgramDef, ShaderUniformsOf } from "../shaders/shader_types";
 import type { IGeometryManager } from "../geometry/geometry_manager_types";
 import type { ITextureManager } from "../textures/texture_manager_types";
 import type { IShaderManager } from "../shaders/shader_manager_types";
@@ -32,20 +32,19 @@ export interface IWebGLContextManager {
     useProgram(program: WebGLProgram | null): void;
 
     /**
-     * Factory & Registry: Retrieves a shared ShaderProgram (incrementing refCount) or
-     * compiles and caches a new one (refCount = 1).
+     * Factory & Registry: Retrieves a shared ShaderProgram or links and caches a new one.
      */
-    getOrCreateShader<TUniforms extends object = Record<string, unknown>>(
-        key: ShaderKey,
-        options: ShaderProgramOptions
-    ): ShaderProgram<TUniforms>;
+    getOrCreateShader<K extends ShaderKey>(
+        key: K,
+        def?: ShaderProgramDef<K>
+    ): ShaderProgram<ShaderUniformsOf<K>>;
 
     /**
-     * Registry Query: Retrieves an existing compiled ShaderProgram if registered, without altering refCount.
+     * Registry Query: Retrieves an existing compiled ShaderProgram if registered.
      */
-    getShader<TUniforms extends object = Record<string, unknown>>(
-        key: ShaderKey
-    ): ShaderProgram<TUniforms> | null;
+    getShader<K extends ShaderKey>(
+        key: K
+    ): ShaderProgram<ShaderUniformsOf<K>> | null;
 
     /** Asserts desired WebGL pipeline state; skips redundant driver calls. */
     applyPipelineState(state: PipelineState): void;

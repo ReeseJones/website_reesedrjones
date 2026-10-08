@@ -27,3 +27,37 @@ export function compileShader(
 
     return shader;
 }
+
+/**
+ * Standalone WebGL program linking utility.
+ * Attaches vertex and fragment shaders, links the program, detaches shaders,
+ * verifies link status, and cleans up on failure without deleting the underlying shaders.
+ */
+export function linkProgram(
+    gl: WebGL2RenderingContext,
+    vs: WebGLShader,
+    fs: WebGLShader,
+    label = "ShaderProgram"
+): WebGLProgram | null {
+    const program = gl.createProgram();
+    if (!program) return null;
+
+    gl.attachShader(program, vs);
+    gl.attachShader(program, fs);
+    gl.linkProgram(program);
+
+    // Detach shaders immediately after linking
+    gl.detachShader(program, vs);
+    gl.detachShader(program, fs);
+
+    const linked = gl.getProgramParameter(program, gl.LINK_STATUS);
+    if (!linked) {
+        console.error(
+            `[${label}] Program link failed: ${gl.getProgramInfoLog(program)}`
+        );
+        gl.deleteProgram(program);
+        return null;
+    }
+
+    return program;
+}

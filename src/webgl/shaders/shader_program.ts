@@ -3,20 +3,21 @@ import type {
     CachedUniform,
     IShaderProgram,
 } from "./shader_program_types";
+import type { IVertexShader, IFragmentShader } from "./shader_stage_types";
 import type { IWebGLContextManager } from "../core/context_manager_types";
-import { compileShader } from "./shader_compiler";
+import { compileShader, linkProgram } from "./shader_compiler";
 import { DEFAULT_TEXTURE_UNIT_MAP } from "../textures/texture_types";
 
 /**
  * Robust WebGL2 Shader Program wrapper.
- * Manages GLSL shader compilation, link status checking, location caching, redundant upload elimination,
- * client-side uniform memory caching, and automated context restoration.
+ * Links reusable vertex and fragment shader stages, manages location caching,
+ * redundant upload elimination, client-side uniform memory caching, and automated context restoration.
  */
 export class ShaderProgram<TUniforms extends object = Record<string, unknown>>
     implements IShaderProgram<TUniforms> {
     public readonly label: string;
-    public readonly vertSource: string;
-    public readonly fragSource: string;
+    public readonly vertex: IVertexShader;
+    public readonly fragment: IFragmentShader;
 
     private contextManager: IWebGLContextManager;
     private program: WebGLProgram | null = null;
@@ -34,9 +35,16 @@ export class ShaderProgram<TUniforms extends object = Record<string, unknown>>
         contextManager: IWebGLContextManager,
         options: ShaderProgramOptions
     ) {
+        if (options.vertex.isDisposed) {
+            throw new Error(`[${options.label ?? "ShaderProgram"}] Cannot construct ShaderProgram with disposed vertex shader stage.`);
+        }
+        if (options.fragment.isDisposed) {
+            throw new Error(`[${options.label ?? "ShaderProgram"}] Cannot construct ShaderProgram with disposed fragment shader stage.`);
+        }
+
         this.contextManager = contextManager;
-        this.vertSource = options.vertSource;
-        this.fragSource = options.fragSource;
+        this.vertex = options.vertex;
+        this.fragment = options.fragment;
         this.label = options.label ?? "ShaderProgram";
         this.optionsSamplers = options.samplers;
 
@@ -354,33 +362,39 @@ export class ShaderProgram<TUniforms extends object = Record<string, unknown>>
         const gl = glContext ?? this.gl;
         if (!gl || gl.isContextLost()) return false;
 
-        const vs = compileShader(gl, gl.VERTEX_SHADER, this.vertSource, this.label);
-        const fs = compileShader(gl, gl.FRAGMENT_SHADER, this.fragSource, this.label);
-        if (!vs || !fs) return false;
+        let vsHandle = this.vertex.getShader();
+        let fsHandle = this.fragment.getShader();
+        let transientVs: WebGLShader | null = null;
+        let transientFs: WebGLShader | null = null;
 
-        const program = gl.createProgram();
-        if (!program) return false;
+        // If vertex shader was disposed, compile a transient handle from preserved source
+        if (!vsHandle && this.vertex.isDisposed) {
+            transientVs = compileShader(gl, gl.VERTEX_SHADER, this.vertex.source, `${this.label}_transient_vs`);
+            vsHandle = transientVs;
+        }
 
-        gl.attachShader(program, vs);
-        gl.attachShader(program, fs);
-        gl.linkProgram(program);
+        // If fragment shader was disposed, compile a transient handle from preserved source
+        if (!fsHandle && this.fragment.isDisposed) {
+            transientFs = compileShader(gl, gl.FRAGMENT_SHADER, this.fragment.source, `${this.label}_transient_fs`);
+            fsHandle = transientFs;
+        }
 
-        const linked = gl.getProgramParameter(program, gl.LINK_STATUS);
-        if (!linked) {
-            console.error(
-                `[${this.label}] Program link failed: ${gl.getProgramInfoLog(program)}`
-            );
-            gl.deleteShader(vs);
-            gl.deleteShader(fs);
-            gl.deleteProgram(program);
+        if (!vsHandle || !fsHandle) {
+            console.error(`[${this.label}] Cannot link program: vertex or fragment stage handle is null/invalid.`);
+            if (transientVs) gl.deleteShader(transientVs);
+            if (transientFs) gl.deleteShader(transientFs);
             return false;
         }
 
-        // Shaders can be detached after successful link
-        gl.detachShader(program, vs);
-        gl.detachShader(program, fs);
-        gl.deleteShader(vs);
-        gl.deleteShader(fs);
+        const program = linkProgram(gl, vsHandle, fsHandle, this.label);
+
+        // Always clean up transient shaders immediately after linking
+        if (transientVs) gl.deleteShader(transientVs);
+        if (transientFs) gl.deleteShader(transientFs);
+
+        if (!program) {
+            return false;
+        }
 
         this.program = program;
 
