@@ -7,7 +7,8 @@ import { WebGLCanvas } from "../components/webgl_canvas/webgl_canvas";
 import { ImperativeGalaxyScenePass } from "../scene/test/imperative_galaxy_scene_pass";
 import { GalaxySettingsDialog } from "../galaxy_backdrop/galaxy_settings_dialog/galaxy_settings_dialog";
 import { Outlet } from "react-router-dom";
-import { useResizeCallbackRef, Dimensions } from "../hooks/use_resize_callback_ref";
+import { useResizeCallbackRef } from "../hooks/use_resize_callback_ref";
+import type { Dimensions } from "../hooks/use_resize_callback_ref_types";
 import { classNameMap } from "../lib/classNameMap";
 
 export interface LayoutProps {
