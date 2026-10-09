@@ -138,10 +138,13 @@ function shimWebGLConstants() {
 shimWebGLConstants();
 
 import { expect } from "vitest";
+import * as domMatchers from "@testing-library/jest-dom/matchers";
+import type { TestingLibraryMatchers } from "@testing-library/jest-dom/matchers";
 import { toBeMatrixCloseTo } from "./matrix_test_helpers";
 
 expect.extend({
     toBeMatrixCloseTo,
+    ...domMatchers,
 });
 
 interface CustomMatchers<R = unknown> {
@@ -152,7 +155,9 @@ declare module "vitest" {
     interface Assertion<
         R extends void | Promise<void> = void,
         T = unknown
-    > extends CustomMatchers<R> {}
-    interface AsymmetricMatchersContaining extends CustomMatchers {}
+    > extends CustomMatchers<R>, TestingLibraryMatchers<T, R> {}
+    interface AsymmetricMatchersContaining
+        extends CustomMatchers,
+            TestingLibraryMatchers<unknown, unknown> {}
 }
 

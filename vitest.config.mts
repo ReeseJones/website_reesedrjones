@@ -43,9 +43,25 @@ export default defineConfig({
     plugins: [parcelCompatibilityPlugin()],
     test: {
         globals: true,
-        environment: "node",
         setupFiles: ["src/testing/setup.ts"],
-        include: ["src/**/*.{test,spec}.{ts,tsx}"],
+        projects: [
+            {
+                test: {
+                    name: "node",
+                    environment: "node",
+                    include: ["src/**/*.{test,spec}.ts"],
+                    setupFiles: ["src/testing/setup.ts"],
+                },
+            },
+            {
+                test: {
+                    name: "dom",
+                    environment: "happy-dom",
+                    include: ["src/**/*.{test,spec}.tsx"],
+                    setupFiles: ["src/testing/setup.ts"],
+                },
+            },
+        ],
         coverage: {
             provider: "v8",
             reporter: ["text", "html", "json"],
