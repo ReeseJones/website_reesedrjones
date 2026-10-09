@@ -1,0 +1,58 @@
+@use "../../shared";
+
+$fps-counter-bg: rgba(shared.$primary-color, 0.75);
+$fps-counter-border-color: rgba(255, 255, 255, 0.15);
+$fps-counter-border-width: 1px;
+$fps-counter-radius: 4px;
+$fps-counter-padding: 0.25rem 0.5rem;
+$fps-counter-offset: 0.5rem;
+$fps-counter-z-index: 10;
+$fps-counter-font-size: 0.75rem;
+
+.fps-counter {
+  position: absolute;
+  z-index: $fps-counter-z-index;
+  display: inline-flex;
+  align-items: center;
+  padding: $fps-counter-padding;
+  border-radius: $fps-counter-radius;
+  background-color: $fps-counter-bg;
+  border: $fps-counter-border-width solid $fps-counter-border-color;
+  color: shared.$font-color;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: $fps-counter-font-size;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+  user-select: none;
+  white-space: nowrap;
+
+  &.top-left,
+  &--top-left {
+    top: $fps-counter-offset;
+    left: $fps-counter-offset;
+  }
+
+  &.top-right,
+  &--top-right {
+    top: $fps-counter-offset;
+    right: $fps-counter-offset;
+  }
+
+  &.bottom-left,
+  &--bottom-left {
+    bottom: $fps-counter-offset;
+    left: $fps-counter-offset;
+  }
+
+  &.bottom-right,
+  &--bottom-right {
+    bottom: $fps-counter-offset;
+    right: $fps-counter-offset;
+  }
+
+  > .value {
+    color: inherit;
+    font: inherit;
+  }
+}
