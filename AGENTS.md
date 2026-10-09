@@ -32,6 +32,8 @@
 - **Pre-action requirement:** Always inspect and read the relevant guidelines in [src/project_guidelines/](src/project_guidelines/) before planning, designing, writing, or editing code. Never assume conventions or invent ad-hoc patterns when an established project guideline exists.
 - **Guideline reference index:**
   - Git & branch management: [git_guidelines.md](src/project_guidelines/git_guidelines.md) (Always work on `staging`)
+  - React components & architecture: [react_guidelines.md](src/project_guidelines/react_guidelines.md)
+  - React component & hook unit testing: [making_react_unit_tests_guidelines.md](src/project_guidelines/making_react_unit_tests_guidelines.md)
   - WebGL & shaders: [webgl_guidelines.md](src/project_guidelines/webgl_guidelines.md)
   - CSS & SCSS styling: [css_guidelines.md](src/project_guidelines/css_guidelines.md)
   - HTML & layout: [html_layout_guidelines.md](src/project_guidelines/html_layout_guidelines.md)
