@@ -19,6 +19,7 @@ import { ModelInstance } from "../models/model_instance";
 import { SceneRenderer } from "../renderer/scene_renderer";
 import { OrientationInputController } from "../../galaxy_backdrop/orientation_input";
 import { DEFAULT_GALAXY_PARAMETERS } from "../../galaxy_backdrop/parameters/index";
+import { calculateAutoFarPlane } from "../../galaxy_backdrop/galaxy_math";
 import type { GalaxyParameters } from "../../galaxy_backdrop/parameters/types";
 import type { ImperativeGalaxyScenePassProps } from "./imperative_galaxy_scene_types";
 
@@ -72,11 +73,16 @@ export function ImperativeGalaxyScenePass({
             const scene = new Scene("GalaxyTestScene");
 
             // 2. Camera Configuration
+            const initialFar = calculateAutoFarPlane(
+                currentParams.cameraDistance,
+                currentParams.diskRadius,
+                currentParams.farPlane
+            );
             const camera = new PerspectiveCamera(
                 {
                     fov: currentParams.fov,
                     near: currentParams.nearPlane,
-                    far: currentParams.farPlane,
+                    far: initialFar,
                     aspect: dims.aspect,
                 },
                 "BackdropCamera"
@@ -150,7 +156,7 @@ export function ImperativeGalaxyScenePass({
             // Synchronize camera perspective settings
             camera.fov = p.fov;
             camera.near = p.nearPlane;
-            camera.far = p.farPlane;
+            camera.far = calculateAutoFarPlane(p.cameraDistance, p.diskRadius, p.farPlane);
 
             // Synthesize view matrix matching parallax, offset, and distance
             const aspectScale = Math.min(1.0, dims.aspect / 1.5);
