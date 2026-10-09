@@ -9,11 +9,10 @@ This document specifies the testing principles, authoring conventions, custom ma
 - **Mandatory Verification Benchmark:** Unit tests serve as the benchmark for confirming that newly written or refactored code compiles, runs without runtime exceptions, asserts expected behavior and returns, and satisfies its intended contract.
 - **Target Classes and Functions:** Unit tests target **classes and functions**. Plain constants, enums, and raw data structures (such as `STANDARD_VERTEX_LAYOUT` or constants in `*_types.ts`) are not tested with standalone unit test files; their correctness is asserted implicitly through the classes and generator functions that consume them.
 - **Pure CPU & Headless Execution:** Unit tests must remain fast, deterministic, and runnable in headless CLI/CI environments. Never initialize real browser WebGL2 canvases or context instances in unit tests. Use pure mathematical calculations, interface stubs, and mock fixtures.
-- **Headless Node Environment Rationale (Why Not a Web Environment):** Although the application is built strictly for web browsers, unit tests execute in headless Node.js (`environment: "node"`) for clear architectural reasons:
-  - **Simulated DOMs Do Not Implement WebGL2:** Environments like `happy-dom` or `jsdom` emulate the HTML DOM tree but lack a WebGL2 implementation; `HTMLCanvasElement.prototype.getContext("webgl2")` returns `null` unless mocked anyway.
-  - **Browser Runner Overhead & Flakiness:** Spawning real browser processes (e.g. Playwright or Chromium via Vitest Browser Mode) introduces significant process startup latency, IPC communication overhead, and GPU driver variability across CI runners for operations that do not require GPU hardware.
-  - **Mathematical & Contract Scope:** Over 90% of the graphics engine code (matrix and vector calculations, projection mathematics, transform hierarchy dirty propagation, geometry attribute interleaving, buffer packing, state deduplication) is pure CPU logic.
-  - **Global Constant Shimming:** Static enum constants (`WebGL2RenderingContext.<CONSTANT>`) are shimmed onto `globalThis.WebGL2RenderingContext` in [`src/testing/setup.ts`](../testing/setup.ts) via Vitest's `setupFiles`, preventing `ReferenceError` on WebGL constants in Node.js.
+- **Dual-Environment Architecture (Node vs. happy-dom):**
+  - **`*.test.ts` files execute in headless Node.js (`environment: "node"`):** Over 90% of graphics engine code (matrix and vector calculations, projection mathematics, transform hierarchy dirty propagation, geometry attribute interleaving, buffer packing, state deduplication) is pure CPU logic. Running in pure Node avoids simulated DOM overhead and provides maximum execution speed. Static enum constants (`WebGL2RenderingContext.<CONSTANT>`) are shimmed onto `globalThis.WebGL2RenderingContext` in [`src/testing/setup.ts`](../testing/setup.ts).
+  - **`*.test.tsx` files execute in simulated DOM (`environment: "happy-dom"`):** All React components, custom hooks, and DOM-interacting units execute in happy-dom via Vitest's `projects` configuration. This provides access to `window`, `document`, and React's DOM renderer lifecycle.
+  - **Extension-Based Convention:** Feature directories collocate components, hooks, shaders, and engine classes. The file extension dictates the test environment: pure TypeScript tests must be named `*.test.ts`; React component and hook tests must be named `*.test.tsx`.
   - **Deterministic Hardware Boundaries:** WebGL state machine dispatch is verified with deterministic spy fakes ([`createMockWebGL2Context`](../testing/mocks/mock_gl_context.ts)) rather than real GPU rasterization. Actual GPU compilation and visual regression checks are intentionally separated from unit tests.
 - **Zero Magic Numbers & High-Readability Assertions:** Never write assertions with incomprehensible raw index arithmetic (such as `expect(attrs[0]).toBeCloseTo(...)`). Instead, use structured test helper decoders (e.g., [`getVertex`](../testing/geometry_test_helpers.ts)) that unpack raw interleaved buffers into named spatial, normal, and texture coordinate fields.
 - **Foundation-First Test Progression:** Tests must be implemented and maintained in foundation-first dependency order: low-level mathematical structures and primitive geometries first, followed by composite objects, cameras, materials, and finally renderers.
@@ -213,7 +212,37 @@ Centralized mock generators in `src/testing/mocks/` are reserved exclusively for
 
 ---
 
-## 7. Execution Commands & Workflows
+## 7. React Component & Hook Testing Standards
+
+All React components, custom hooks, and DOM-centric test suites are authored in `*.test.tsx` files and execute inside the `happy-dom` test project with `@testing-library/react`.
+
+### A. Testing Philosophy & Query Priorities
+- **Test Behavior Over Implementation Details:** Never assert against internal component state, private method signatures, or internal hook names. Test what users and assistive technologies perceive: rendered text, accessibility roles, visual presence, and response to user actions.
+- **Accessible Query Priority Order:**
+  - `getByRole` (e.g. `screen.getByRole("button", { name: /save/i })`): Preferred default. Enforces accessibility contracts and mirrors screen reader navigation.
+  - `getByText`, `getByLabelText`, `getByPlaceholderText`: Secondary queries for form inputs and textual readouts.
+  - `getByTestId`: Use strictly as a last resort when elements lack semantic roles or text hooks.
+- **Realistic User Interactions:**
+  - Use `@testing-library/user-event` via `const user = userEvent.setup()` for user interactions (clicks, keyboard input, typing, focusing).
+  - Use `fireEvent` only when triggering lower-level synthetic events (such as native `<input type="color">` value changes).
+
+### B. React Hook Testing Protocol (`renderHook`)
+- **Isolation via `renderHook`:** Custom hooks cannot be invoked outside a React component lifecycle. Use `renderHook(() => useMyHook(props))` from `@testing-library/react`.
+- **Verify Hook Return Contracts:** Assert `result.current` return values, state transitions, and memoized function stability across rerenders.
+- **State Mutations via `act()`:** Wrap imperative callbacks returned by `result.current` in `act(() => { result.current.action(); })` when testing state modifications outside user-event flows.
+- **Lifecycle & Cleanup Verification:** Call `unmount()` on the hook runner to verify cleanup effects (e.g. detaching event listeners, canceling timers, cleaning up observers).
+
+### C. DOM Assertions (`@testing-library/jest-dom`)
+DOM matchers are registered globally in [`src/testing/setup.ts`](../testing/setup.ts) and fully typed on Vitest's `expect`:
+- `expect(element).toBeInTheDocument()`
+- `expect(element).toBeVisible()`
+- `expect(element).toHaveAttribute("aria-expanded", "true")`
+- `expect(element).toHaveTextContent("...")`
+- `expect(element).toBeDisabled()`
+
+---
+
+## 8. Execution Commands & Workflows
 
 For detailed token-efficient agent testing, smoke checks, and failure isolation strategies, refer to [running_tests_guidelines.md](running_tests_guidelines.md).
 
