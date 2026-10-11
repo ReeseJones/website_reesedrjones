@@ -214,24 +214,19 @@ export interface ISceneNode {
 
 ```typescript
 import type { ISceneNode } from "./scene_node_types";
+import type { ICamera } from "../camera/camera_types";
 
-export interface IScene {
-    /** Root container node */
-    readonly root: ISceneNode;
+export interface IScene extends ISceneNode {
+    /** Appointed active camera for the scene */
+    activeCamera: ICamera | null;
     
-    /** Adds top-level nodes to the scene */
-    add(node: ISceneNode): this;
-    
-    /** Removes nodes from the scene */
-    remove(node: ISceneNode): boolean;
-    
-    /** Updates transforms for the entire graph */
+    /** Synchronizes transforms throughout the entire scene graph */
     update(): void;
     
     /** Traverses all visible nodes in the scene */
     traverseVisible(callback: (node: ISceneNode) => void): void;
     
-    /** Clears all scene nodes and frees resources */
+    /** Clears all child nodes from the scene */
     clear(): void;
 }
 ```

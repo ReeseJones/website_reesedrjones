@@ -269,16 +269,16 @@ describe("Skybox", () => {
 
             // Attach to Scene
             const scene = new Scene("SpaceScene");
-            const sceneChainResult = scene.add(skybox);
+            const sceneChainResult = scene.addChild(skybox);
             expect(sceneChainResult).toBe(scene);
-            expect(skybox.parent).toBe(scene.root);
-            expect(scene.root.children).toContain(skybox);
+            expect(skybox.parent).toBe(scene);
+            expect(scene.children).toContain(skybox);
 
             // Remove from Scene
-            const removed = scene.remove(skybox);
+            const removed = scene.removeChild(skybox);
             expect(removed).toBe(true);
             expect(skybox.parent).toBeNull();
-            expect(scene.root.children).not.toContain(skybox);
+            expect(scene.children).not.toContain(skybox);
         });
 
         it("updating transform (position, rotation, scale) updates worldMatrix", () => {

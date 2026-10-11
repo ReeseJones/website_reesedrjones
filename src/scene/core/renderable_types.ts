@@ -12,6 +12,7 @@ export interface RenderContext {
     readonly camera: ICamera;
     readonly dimensions: CanvasDimensions;
     readonly time: number;
+    readonly frameId: number;
 }
 
 /**

@@ -143,7 +143,7 @@ describe("SceneRenderer", () => {
             const camera = createCamera({ x: 42.5, y: -18.25, z: 100.0 });
             const instance = createModelInstance();
             const scene = new Scene();
-            scene.add(instance);
+            scene.addChild(instance);
 
             renderer.render(scene, camera, defaultOptions);
 
@@ -163,8 +163,8 @@ describe("SceneRenderer", () => {
             const instanceNode = createModelInstance({ name: "MeshNode" });
 
             const scene = new Scene();
-            scene.add(plainNode);
-            scene.add(instanceNode);
+            scene.addChild(plainNode);
+            scene.addChild(instanceNode);
             const camera = createCamera();
 
             renderer.render(scene, camera, defaultOptions);
@@ -184,8 +184,8 @@ describe("SceneRenderer", () => {
             });
 
             const scene = new Scene();
-            scene.add(visibleInstance);
-            scene.add(invisibleInstance);
+            scene.addChild(visibleInstance);
+            scene.addChild(invisibleInstance);
 
             const camera = createCamera();
             renderer.render(scene, camera, defaultOptions);
@@ -230,9 +230,9 @@ describe("SceneRenderer", () => {
             });
 
             const scene = new Scene();
-            scene.add(instOrder10);
-            scene.add(instOrderMinus100);
-            scene.add(instOrder0);
+            scene.addChild(instOrder10);
+            scene.addChild(instOrderMinus100);
+            scene.addChild(instOrder0);
 
             const camera = createCamera();
             renderer.render(scene, camera, defaultOptions);
@@ -279,9 +279,9 @@ describe("SceneRenderer", () => {
             });
 
             const scene = new Scene();
-            scene.add(instOrder5);
-            scene.add(instOrderUndefined);
-            scene.add(instOrderMinus5);
+            scene.addChild(instOrder5);
+            scene.addChild(instOrderUndefined);
+            scene.addChild(instOrderMinus5);
 
             const camera = createCamera();
             renderer.render(scene, camera, defaultOptions);
@@ -312,7 +312,7 @@ describe("SceneRenderer", () => {
             const instance = createModelInstance({ material });
 
             const scene = new Scene();
-            scene.add(instance);
+            scene.addChild(instance);
             const camera = createCamera();
 
             renderer.render(scene, camera, defaultOptions);
@@ -326,7 +326,7 @@ describe("SceneRenderer", () => {
             const instance = createModelInstance({ material });
 
             const scene = new Scene();
-            scene.add(instance);
+            scene.addChild(instance);
             const camera = createCamera();
 
             renderer.render(scene, camera, defaultOptions);
@@ -346,15 +346,15 @@ describe("SceneRenderer", () => {
             instance.updateWorldTransform();
 
             const scene = new Scene();
-            scene.add(instance);
+            scene.addChild(instance);
 
             renderer.render(scene, camera, defaultOptions);
 
             const expectedMV = new Float32Array(16);
             mat4.multiply(
-                expectedMV as unknown as mat4,
-                camera.viewMatrix as unknown as mat4,
-                instance.worldMatrix as unknown as mat4
+                expectedMV,
+                camera.viewMatrix,
+                instance.worldMatrix
             );
 
             const mvCall = (mockShader.setMat4 as any).mock.calls.find(
@@ -375,12 +375,12 @@ describe("SceneRenderer", () => {
 
             const expectedNormal = new Float32Array(9);
             mat3.normalFromMat4(
-                expectedNormal as unknown as mat3,
-                instanceInvertible.worldMatrix as unknown as mat4
+                expectedNormal,
+                instanceInvertible.worldMatrix
             );
 
             let scene = new Scene();
-            scene.add(instanceInvertible);
+            scene.addChild(instanceInvertible);
 
             const camera = createCamera();
             renderer.render(scene, camera, defaultOptions);
@@ -399,7 +399,7 @@ describe("SceneRenderer", () => {
             const identity3 = new Float32Array([1, 0, 0, 0, 1, 0, 0, 0, 1]);
 
             scene = new Scene();
-            scene.add(instanceDegenerate);
+            scene.addChild(instanceDegenerate);
 
             // Overwrite worldMatrix again after scene.update()
             vi.spyOn(scene, "update").mockImplementation(() => {
@@ -422,7 +422,7 @@ describe("SceneRenderer", () => {
             const camera = createCamera({ x: 1.0, y: 2.0, z: 3.0 });
             const instance = createModelInstance();
             const scene = new Scene();
-            scene.add(instance);
+            scene.addChild(instance);
 
             renderer.render(scene, camera, defaultOptions);
 
@@ -456,7 +456,7 @@ describe("SceneRenderer", () => {
             const camera = createCamera();
             const instance = createModelInstance();
             const scene = new Scene();
-            scene.add(instance);
+            scene.addChild(instance);
 
             renderer.render(scene, camera, defaultOptions);
 
@@ -491,7 +491,7 @@ describe("SceneRenderer", () => {
             const instance = createModelInstance({ material });
 
             const scene = new Scene();
-            scene.add(instance);
+            scene.addChild(instance);
             const camera = createCamera();
 
             renderer.render(scene, camera, defaultOptions);
@@ -520,7 +520,7 @@ describe("SceneRenderer", () => {
             const instance = createModelInstance({ material });
 
             const scene = new Scene();
-            scene.add(instance);
+            scene.addChild(instance);
             const camera = createCamera();
 
             renderer.render(scene, camera, defaultOptions);
@@ -538,7 +538,7 @@ describe("SceneRenderer", () => {
             const instance = createModelInstance({ material: materialNoTexture });
 
             const scene = new Scene();
-            scene.add(instance);
+            scene.addChild(instance);
 
             const camera = createCamera();
             renderer.render(scene, camera, defaultOptions);
@@ -562,7 +562,7 @@ describe("SceneRenderer", () => {
             const instance = createModelInstance({ material });
 
             const scene = new Scene();
-            scene.add(instance);
+            scene.addChild(instance);
             const camera = createCamera();
 
             renderer.render(scene, camera, defaultOptions);
@@ -584,7 +584,7 @@ describe("SceneRenderer", () => {
             const instance = createModelInstance({ geometry });
 
             const scene = new Scene();
-            scene.add(instance);
+            scene.addChild(instance);
             const camera = createCamera();
 
             renderer.render(scene, camera, defaultOptions);
@@ -611,7 +611,7 @@ describe("SceneRenderer", () => {
             });
 
             const scene = new Scene();
-            scene.add(instance);
+            scene.addChild(instance);
             const camera = createCamera();
 
             renderer.render(scene, camera, defaultOptions);
@@ -652,7 +652,7 @@ describe("SceneRenderer", () => {
             });
 
             const scene = new Scene();
-            scene.add(instance);
+            scene.addChild(instance);
             const camera = createCamera();
 
             renderer.render(scene, camera, defaultOptions);
@@ -667,8 +667,8 @@ describe("SceneRenderer", () => {
             const instance2 = createModelInstance();
 
             const scene = new Scene();
-            scene.add(instance1);
-            scene.add(instance2);
+            scene.addChild(instance1);
+            scene.addChild(instance2);
             const camera = createCamera();
 
             renderer.render(scene, camera, defaultOptions);
@@ -684,7 +684,7 @@ describe("SceneRenderer", () => {
 
             const instance = createModelInstance();
             const scene = new Scene();
-            scene.add(instance);
+            scene.addChild(instance);
             const camera = createCamera();
 
             renderer.render(scene, camera, defaultOptions);
@@ -745,6 +745,47 @@ describe("SceneRenderer", () => {
 
             expect(mockCm.setDepthMask).not.toHaveBeenCalled();
             expect(mockGl.clear).not.toHaveBeenCalled();
+        });
+
+        it("resolves scene.activeCamera when camera parameter is null or undefined", () => {
+            const scene = new Scene();
+            const activeCam = createCamera();
+            scene.activeCamera = activeCam;
+            const instance = createModelInstance();
+            scene.addChild(instance);
+
+            renderer.render(scene, null, defaultOptions);
+
+            expect(activeCam.updateAspectRatio).toHaveBeenCalledTimes(1);
+            expect(activeCam.updateMatrices).toHaveBeenCalledTimes(1);
+        });
+
+        it("throws an error when camera is omitted and scene.activeCamera is null", () => {
+            const scene = new Scene();
+            scene.activeCamera = null;
+
+            expect(() => renderer.render(scene, null, defaultOptions)).toThrow(
+                "[SceneRenderer] No camera provided and scene.activeCamera is null."
+            );
+        });
+
+        it("increments frameId on successive render calls and passes it to renderContext", () => {
+            const scene = new Scene();
+            const camera = createCamera();
+            const renderSpy = vi.fn();
+            const mockRenderable = new SceneNode("MockRenderable") as any;
+            mockRenderable.isRenderable = true;
+            mockRenderable.renderOrder = 0;
+            mockRenderable.render = renderSpy;
+            scene.addChild(mockRenderable);
+
+            renderer.render(scene, camera, defaultOptions);
+            expect(renderSpy).toHaveBeenCalledTimes(1);
+            expect(renderSpy.mock.calls[0][0].frameId).toBe(1);
+
+            renderer.render(scene, camera, defaultOptions);
+            expect(renderSpy).toHaveBeenCalledTimes(2);
+            expect(renderSpy.mock.calls[1][0].frameId).toBe(2);
         });
     });
 });

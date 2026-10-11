@@ -1,29 +1,21 @@
 import { SceneNode } from "./scene_node";
 import type { ISceneNode } from "./scene_node_types";
 import type { IScene } from "./scene_types";
+import type { ICamera } from "../camera/camera_types";
 
 /**
  * Top-level container managing the root of the scene graph, hierarchical transform
- * updates, and visibility-pruned traversals.
+ * updates, active camera, and visibility-pruned traversals.
  */
-export class Scene implements IScene {
-    public readonly root: SceneNode;
+export class Scene extends SceneNode implements IScene {
+    public activeCamera: ICamera | null = null;
 
-    constructor(rootName: string = "SceneRoot") {
-        this.root = new SceneNode(rootName);
-    }
-
-    public add(node: ISceneNode): this {
-        this.root.addChild(node);
-        return this;
-    }
-
-    public remove(node: ISceneNode): boolean {
-        return this.root.removeChild(node);
+    constructor(name: string = "SceneRoot", id?: string) {
+        super(name, id);
     }
 
     public update(): void {
-        this.root.updateWorldTransform();
+        this.updateWorldTransform();
     }
 
     public traverseVisible(callback: (node: ISceneNode) => void): void {
@@ -38,18 +30,18 @@ export class Scene implements IScene {
             }
         };
 
-        visit(this.root);
+        visit(this);
     }
 
     public clear(): void {
-        const children = [...this.root.children];
+        const children = [...this.children];
         for (let i = 0; i < children.length; i++) {
             children[i].destroy();
         }
     }
 
-    public destroy(): void {
+    public override destroy(): void {
         this.clear();
-        this.root.destroy();
+        super.destroy();
     }
 }

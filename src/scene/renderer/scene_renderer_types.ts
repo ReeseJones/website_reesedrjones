@@ -55,7 +55,7 @@ export interface ISceneRenderer {
      * 4. Asserts pipeline states with contextManager caching.
      * 5. Uploads Tier A/B/C uniforms and issues draw calls.
      */
-    render(scene: IScene, camera: ICamera, options: RenderOptions): void;
+    render(scene: IScene, camera: ICamera | null | undefined, options: RenderOptions): void;
 
     /**
      * Clears internal transient render queues and resets pipeline state.

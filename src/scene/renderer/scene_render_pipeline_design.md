@@ -135,21 +135,24 @@ sequenceDiagram
         Renderer->>Manager: applyPipelineState(item.material.pipelineState)
         Manager-->>GPU: (Issues driver calls only on state diff)
         Renderer->>Manager: useShader(item.material.shaderProgram)
-        Renderer->>GPU: Upload Tier A Uniforms (VP, V, P, cameraPos, time)
-        Renderer->>GPU: Upload Tier B Uniforms (modelMatrix, normalMatrix)
-        Renderer->>GPU: Upload Tier C Uniforms (material params)
+        Note over Renderer, GPU: Tier A Frame Uniforms uploaded ONCE per shader per frame via frameId stamp
+        Renderer->>GPU: Upload Tier A Uniforms (VP, V, P, cameraPos, time) [if shader.lastFrameId !== frameId]
+        Renderer->>GPU: Upload Tier B Instance Uniforms (modelMatrix, modelViewMatrix, normalMatrix)
+        Renderer->>GPU: Upload Tier C Material Uniforms (material params)
         Renderer->>GPU: geometry.bind() & gl.drawArrays / gl.drawElements
     end
 ```
 
 ### Stage Breakdown
 1. **Stage 1 (Transform Propagation):** Calls `scene.update()`. Traverses the scene graph and resolves all dirty local and world transformation matrices.
-2. **Stage 2 (Camera Synchronization):** Automatically updates the camera's aspect ratio from `dims.aspect`, inverts the camera world matrix to compute `viewMatrix` ($V$), and pre-multiplies $\mathbf{VP} = \mathbf{P} \cdot \mathbf{V}$ on the CPU.
-3. **Stage 3 (Visibility Filtering & Stable Sort):** Traverses the scene graph collecting all `ModelInstance` nodes where `computedVisible === true`. Performs a stable sort on `renderOrder` (preserving tree insertion order for ties).
+2. **Stage 2 (Camera Synchronization):** Resolves the active camera (`cameraOverride ?? scene.activeCamera`). Automatically updates the camera's aspect ratio from `dims.aspect`, inverts the camera world matrix to compute `viewMatrix` ($V$), and pre-multiplies $\mathbf{VP} = \mathbf{P} \cdot \mathbf{V}$ on the CPU.
+3. **Stage 3 (Visibility Filtering & Stable Sort):** Traverses the scene graph collecting all renderable nodes (`IRenderable`) where `computedVisible === true`. Performs a stable sort on `renderOrder` (preserving tree insertion order for ties).
 4. **Stage 4 (Pipeline State Assertion):** Passes `material.pipelineState` to `contextManager.applyPipelineState()`, deduplicating driver calls.
 5. **Stage 5 (Texture Binding, Uniform Upload & Draw Call):**
    - Synchronizes material textures via `contextManager.textures.bind(unit, texture, "white")`. Defaults unit 0 to white fallback if unassigned.
-   - Activates shader program, uploads standard (Tier A/B) and material (Tier C) uniforms, binds the geometry VAO, and issues the WebGL draw call.
+   - Activates shader program. If `shader.lastFrameId !== renderContext.frameId`, uploads Tier A Frame Uniforms once and stamps `shader.lastFrameId = renderContext.frameId`.
+   - The renderable entity (e.g. `ModelInstance`) uploads exclusively its Tier B instance transform uniforms (`u_modelMatrix`, `u_modelViewMatrix`, `u_normalMatrix`).
+   - Material domain uniforms (Tier C) are uploaded, the geometry VAO is bound, and the WebGL draw call is dispatched.
 
 ---
 
@@ -157,7 +160,7 @@ sequenceDiagram
 
 The uniform and texture distribution protocol standardizes naming and binding conventions across all shaders:
 
-### Tier A: Frame & Camera Uniforms (Uploaded Once Per Shader Per Frame)
+### Tier A: Frame & Camera Uniforms (Uploaded Once Per Shader Program Per Frame via `frameId` Stamping)
 - `uniform mat4 u_viewProjectionMatrix`: Pre-multiplied $P \times V$ matrix.
 - `uniform mat4 u_viewMatrix`: Camera world-to-view matrix (for distance attenuation and fog).
 - `uniform mat4 u_projectionMatrix`: Camera view-to-clip matrix.
@@ -276,7 +279,7 @@ export interface RenderOptions {
 
 export interface ISceneRenderer {
     readonly contextManager: IWebGLContextManager;
-    render(scene: IScene, camera: ICamera, options: RenderOptions): void;
+    render(scene: IScene, camera: ICamera | null | undefined, options: RenderOptions): void;
     reset(): void;
 }
 ```

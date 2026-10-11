@@ -112,9 +112,10 @@ export function ImperativeGalaxyScenePass({
             cloudModel.renderOrder = GALACTIC_CLOUD_RENDER_ORDER;
             cloudModel.visible = currentParams.cloudEnabled ?? true;
 
-            scene.add(camera);
-            scene.add(cloudModel);
-            scene.add(model);
+            scene.activeCamera = camera;
+            scene.addChild(camera);
+            scene.addChild(cloudModel);
+            scene.addChild(model);
 
             // 6. Scene Renderer Setup
             const renderer = new SceneRenderer(contextManager);

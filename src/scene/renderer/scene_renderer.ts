@@ -14,6 +14,7 @@ export class SceneRenderer implements ISceneRenderer {
     public readonly contextManager: IWebGLContextManager;
 
     private readonly _renderQueue: RenderQueueItem[] = [];
+    private _frameId: number = 0;
 
     constructor(contextManager: IWebGLContextManager) {
         this.contextManager = contextManager;
@@ -21,7 +22,7 @@ export class SceneRenderer implements ISceneRenderer {
 
     public render(
         scene: IScene,
-        camera: ICamera,
+        camera: ICamera | null | undefined,
         options: RenderOptions
     ): void {
         const gl = this.contextManager.getContext();
@@ -29,17 +30,24 @@ export class SceneRenderer implements ISceneRenderer {
             return;
         }
 
+        const activeCamera = camera ?? scene.activeCamera;
+        if (!activeCamera) {
+            throw new Error("[SceneRenderer] No camera provided and scene.activeCamera is null.");
+        }
+
         if (options.clearDepth) {
             this.contextManager.setDepthMask(true);
             gl.clear(WebGL2RenderingContext.DEPTH_BUFFER_BIT);
         }
 
+        this._frameId++;
+
         // Stage 1: Hierarchical transform propagation
         scene.update();
 
         // Stage 2: Camera matrix synchronization
-        camera.updateAspectRatio(options.dimensions.aspect);
-        camera.updateMatrices();
+        activeCamera.updateAspectRatio(options.dimensions.aspect);
+        activeCamera.updateMatrices();
 
         // Stage 3: Collect visible renderables & stable sort by renderOrder
         this._renderQueue.length = 0;
@@ -58,9 +66,10 @@ export class SceneRenderer implements ISceneRenderer {
         const renderContext: RenderContext = {
             contextManager: this.contextManager,
             gl,
-            camera,
+            camera: activeCamera,
             dimensions: options.dimensions,
             time: options.timeInfo.time,
+            frameId: this._frameId,
         };
 
         for (let i = 0; i < this._renderQueue.length; i++) {
