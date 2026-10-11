@@ -106,7 +106,7 @@ export class OrthographicCamera extends Camera {
     public updateProjectionMatrix(): void {
         const effectiveZoom = this._zoom > 0 ? this._zoom : 1.0;
         mat4.ortho(
-            this.projectionMatrix as unknown as mat4,
+            this.projectionMatrix,
             this._left / effectiveZoom,
             this._right / effectiveZoom,
             this._bottom / effectiveZoom,

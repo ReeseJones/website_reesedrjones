@@ -188,16 +188,16 @@ describe("ModelInstance", () => {
 
             // Attach to a Scene container
             const scene = new Scene("WorldScene");
-            const sceneChainResult = scene.add(instance);
+            const sceneChainResult = scene.addChild(instance);
             expect(sceneChainResult).toBe(scene);
-            expect(instance.parent).toBe(scene.root);
-            expect(scene.root.children).toContain(instance);
+            expect(instance.parent).toBe(scene);
+            expect(scene.children).toContain(instance);
 
             // Remove from Scene
-            const removed = scene.remove(instance);
+            const removed = scene.removeChild(instance);
             expect(removed).toBe(true);
             expect(instance.parent).toBeNull();
-            expect(scene.root.children).not.toContain(instance);
+            expect(scene.children).not.toContain(instance);
         });
 
         it("updating transform (e.g. position, rotation, scale) updates its local and world matrices", () => {
@@ -397,6 +397,7 @@ describe("ModelInstance", () => {
                 camera,
                 dimensions: { width: 800, height: 600, cssWidth: 800, cssHeight: 600, aspect: 1.5, dpr: 1 },
                 time: 5.5,
+                frameId: 1,
             };
 
             instance.render(context);
@@ -413,12 +414,12 @@ describe("ModelInstance", () => {
 
             expect(mockShader.setMat4).toHaveBeenCalledWith("u_modelMatrix", instance.worldMatrix);
 
-            const expectedMV = mat4.multiply(mat4.create(), camera.viewMatrix as unknown as mat4, instance.worldMatrix as unknown as mat4);
+            const expectedMV = mat4.multiply(mat4.create(), camera.viewMatrix, instance.worldMatrix);
             const mvCalls = (mockShader.setMat4 as any).mock.calls.filter((c: [string, Float32Array]) => c[0] === "u_modelViewMatrix");
             expect(mvCalls.length).toBe(1);
             expect(mvCalls[0][1]).toBeMatrixCloseTo(expectedMV);
 
-            const expectedNormal = mat3.normalFromMat4(mat3.create(), instance.worldMatrix as unknown as mat4);
+            const expectedNormal = mat3.normalFromMat4(mat3.create(), instance.worldMatrix);
             const normalCalls = (mockShader.setMat3 as any).mock.calls.filter((c: [string, Float32Array]) => c[0] === "u_normalMatrix");
             expect(normalCalls.length).toBe(1);
             expect(normalCalls[0][1]).toBeMatrixCloseTo(expectedNormal!);
@@ -436,6 +437,7 @@ describe("ModelInstance", () => {
                 camera,
                 dimensions: { width: 800, height: 600, cssWidth: 800, cssHeight: 600, aspect: 1, dpr: 1 },
                 time: 0,
+                frameId: 1,
             };
 
             const instance = new ModelInstance(null as any, null as any);

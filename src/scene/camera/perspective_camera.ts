@@ -57,7 +57,7 @@ export class PerspectiveCamera extends Camera {
     public updateProjectionMatrix(): void {
         const fovRadians = (this._fov * Math.PI) / 180;
         mat4.perspective(
-            this.projectionMatrix as unknown as mat4,
+            this.projectionMatrix,
             fovRadians,
             this._aspect,
             this.near,
