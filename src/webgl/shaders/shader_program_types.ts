@@ -47,6 +47,9 @@ export interface IShaderProgram<TUniforms extends object = Record<string, unknow
     readonly fragment: IFragmentShader;
     readonly isValid: boolean;
 
+    /** Frame identifier of the most recent Tier A uniform synchronization pass */
+    lastFrameId: number;
+
     /** Gets the underlying WebGLProgram GPU handle, or null if context lost or disposed */
     getProgram(): WebGLProgram | null;
 

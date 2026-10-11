@@ -231,6 +231,20 @@ describe("ShaderProgram", () => {
             const destroyedLoc = shader.getUniformLocation("u_time");
             expect(destroyedLoc).toBeNull();
         });
+
+        it("caches null for missing uniforms and avoids repeating gl.getUniformLocation", () => {
+            const shader = new ShaderProgram(cm, {
+                vertex: mockVertex,
+                fragment: mockFragment,
+            });
+
+            vi.mocked(gl.getUniformLocation).mockReturnValue(null);
+            const first = shader.getUniformLocation("u_nonExistent");
+            const second = shader.getUniformLocation("u_nonExistent");
+            expect(first).toBeNull();
+            expect(second).toBeNull();
+            expect(gl.getUniformLocation).toHaveBeenCalledTimes(1);
+        });
     });
 
     describe("individual uniform setters and redundant upload suppression", () => {
@@ -446,6 +460,28 @@ describe("ShaderProgram", () => {
                         0, 0, 0, 1,
                     ])
                 );
+            });
+
+            it("suppresses redundant uploads when matrix is unchanged", () => {
+                const mat = new Float32Array([
+                    1, 0, 0, 0,
+                    0, 1, 0, 0,
+                    0, 0, 1, 0,
+                    0, 0, 0, 1,
+                ]);
+                shader.setMat4("u_mvp", mat);
+                expect(gl.uniformMatrix4fv).toHaveBeenCalledTimes(1);
+
+                shader.setMat4("u_mvp", mat);
+                expect(gl.uniformMatrix4fv).toHaveBeenCalledTimes(1);
+            });
+        });
+
+        describe("lastFrameId", () => {
+            it("initializes lastFrameId as -1 and allows mutation", () => {
+                expect(shader.lastFrameId).toBe(-1);
+                shader.lastFrameId = 100;
+                expect(shader.lastFrameId).toBe(100);
             });
         });
     });

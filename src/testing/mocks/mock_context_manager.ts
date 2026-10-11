@@ -67,6 +67,7 @@ export function createMockShaderProgram(key: string = "unlit"): ShaderProgram<ne
         fragment: createMockFragmentShader(key),
         isValid: true,
         isDisposed: false,
+        lastFrameId: -1,
         getProgram: vi.fn(() => ({} as WebGLProgram)),
         setUniforms: vi.fn(),
         setFloat: vi.fn(),

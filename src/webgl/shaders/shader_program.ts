@@ -18,10 +18,11 @@ export class ShaderProgram<TUniforms extends object = Record<string, unknown>>
     public readonly label: string;
     public readonly vertex: IVertexShader;
     public readonly fragment: IFragmentShader;
+    public lastFrameId: number = -1;
 
     private contextManager: IWebGLContextManager;
     private program: WebGLProgram | null = null;
-    private uniformLocations = new Map<string, WebGLUniformLocation>();
+    private uniformLocations = new Map<string, WebGLUniformLocation | null>();
     private uniformCache = new Map<string, CachedUniform>();
     private optionsSamplers?: Record<string, number>;
     private _isDisposed: boolean = false;
@@ -186,11 +187,7 @@ export class ShaderProgram<TUniforms extends object = Record<string, unknown>>
             const gl = this.gl;
             if (!gl) return null;
             const loc = gl.getUniformLocation(this.program, name);
-            if (loc !== null) {
-                this.uniformLocations.set(name, loc);
-            } else {
-                return null;
-            }
+            this.uniformLocations.set(name, loc);
         }
         return this.uniformLocations.get(name) ?? null;
     }
@@ -334,11 +331,25 @@ export class ShaderProgram<TUniforms extends object = Record<string, unknown>>
      * **Context Binding:** Does NOT bind program. Caller must ensure `contextManager.useShader(this)`
      * has been called prior to invoking.
      */
-    public setMat3(name: string, data: Float32Array): void {
-        this.uniformCache.set(name, { type: "mat3", value: new Float32Array(data) });
+    public setMat3(name: string, data: Float32Array | number[]): void {
+        let cached = this.uniformCache.get(name);
+        if (!cached || cached.type !== "mat3") {
+            cached = { type: "mat3", value: new Float32Array(9) };
+            this.uniformCache.set(name, cached);
+        }
+        const cachedArr = cached.value as Float32Array;
+        let changed = false;
+        for (let i = 0; i < 9; i++) {
+            if (cachedArr[i] !== data[i]) {
+                cachedArr[i] = data[i];
+                changed = true;
+            }
+        }
+        if (!changed) return;
+
         const loc = this.getUniformLocation(name);
         if (loc) {
-            this.gl?.uniformMatrix3fv(loc, false, data);
+            this.gl?.uniformMatrix3fv(loc, false, cachedArr);
         }
     }
 
@@ -348,11 +359,25 @@ export class ShaderProgram<TUniforms extends object = Record<string, unknown>>
      * **Context Binding:** Does NOT bind program. Caller must ensure `contextManager.useShader(this)`
      * has been called prior to invoking.
      */
-    public setMat4(name: string, data: Float32Array): void {
-        this.uniformCache.set(name, { type: "mat4", value: new Float32Array(data) });
+    public setMat4(name: string, data: Float32Array | number[]): void {
+        let cached = this.uniformCache.get(name);
+        if (!cached || cached.type !== "mat4") {
+            cached = { type: "mat4", value: new Float32Array(16) };
+            this.uniformCache.set(name, cached);
+        }
+        const cachedArr = cached.value as Float32Array;
+        let changed = false;
+        for (let i = 0; i < 16; i++) {
+            if (cachedArr[i] !== data[i]) {
+                cachedArr[i] = data[i];
+                changed = true;
+            }
+        }
+        if (!changed) return;
+
         const loc = this.getUniformLocation(name);
         if (loc) {
-            this.gl?.uniformMatrix4fv(loc, false, data);
+            this.gl?.uniformMatrix4fv(loc, false, cachedArr);
         }
     }
 
