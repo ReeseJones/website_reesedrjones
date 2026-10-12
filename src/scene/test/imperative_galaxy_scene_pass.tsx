@@ -127,6 +127,7 @@ export function ImperativeGalaxyScenePass({
                     targetYawOffset.current = yaw;
                 },
             });
+            orientationController.attach();
 
             sceneRef.current = scene;
             cameraRef.current = camera;
@@ -147,12 +148,13 @@ export function ImperativeGalaxyScenePass({
 
             const p = paramsRef.current;
 
-            // Parallax interpolation
-            const factor = Math.min(1.0, timeInfo.dt * 5.0);
+            // Parallax interpolation with input damping
+            const damping = p.inputDamping ?? 5.0;
+            const decay = 1.0 - Math.exp(-damping * timeInfo.dt);
             currentPitchOffset.current +=
-                (targetPitchOffset.current - currentPitchOffset.current) * factor;
+                (targetPitchOffset.current - currentPitchOffset.current) * decay;
             currentYawOffset.current +=
-                (targetYawOffset.current - currentYawOffset.current) * factor;
+                (targetYawOffset.current - currentYawOffset.current) * decay;
 
             // Synchronize camera perspective settings
             camera.fov = p.fov;
