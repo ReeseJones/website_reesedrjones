@@ -5,9 +5,10 @@
   "source": "./src/index.html",
   "scripts": {
     "generate:shaders": "node scripts/generate_shader_types.js",
-    "start": "npm run generate:shaders && rimraf dist && parcel",
+    "generate:version": "node scripts/generate_version.js",
+    "start": "npm run generate:shaders && npm run generate:version && rimraf dist && parcel",
     "clean": "rimraf .parcel-cache dist",
-    "build": "npm run generate:shaders && parcel build src/index.html --public-url /",
+    "build": "npm run generate:shaders && npm run generate:version && parcel build src/index.html --public-url /",
     "deploy": "npm run build && wrangler deploy",
     "preview": "npm run build && wrangler dev",
     "typecheck": "tsc --noEmit",
