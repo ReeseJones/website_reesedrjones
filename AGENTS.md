@@ -3,7 +3,10 @@
 ## Context
 - **Project:** Reese Jones's personal website ([reesedrjones.com](https://reesedrjones.com/))
 - **Environment:** Browser-only Single Page Application (SPA). No Node.js runtime APIs.
-- **Hosting:** Cloudflare via GitHub push (configured in [wrangler.jsonc](wrangler.jsonc)).
+- **Hosting:** Cloudflare Workers with Assets via GitHub push (configured in [wrangler.jsonc](wrangler.jsonc)).
+  - **Cloudflare Subdomain:** `reesedrjones`
+  - **Production URL:** [reesedrjones.com](https://reesedrjones.com/) (auto-deploys from `main`)
+  - **Staging Preview URL:** [staging-website.reesedrjones.workers.dev](https://staging-website.reesedrjones.workers.dev/) (auto-deploys from `staging`)
 - **Branches:** `main` (production, auto-deploys), `staging` (pre-release testing). Check branch before editing/committing.
 - **Stack:** React 19, React Router 7, PixiJS 8, TypeScript, SCSS, Parcel 2
 
