@@ -80,7 +80,7 @@ describe("OrientationInputController", () => {
         });
     });
 
-    describe("DeviceOrientation handling", () => {
+    describe("DeviceOrientation handling & iOS Permission Gating", () => {
         it("suppresses pointermove once device orientation sensor becomes active", () => {
             const onUpdateSpy = vi.fn();
             const controller = new OrientationInputController({ onUpdate: onUpdateSpy });
@@ -112,6 +112,88 @@ describe("OrientationInputController", () => {
             expect(onUpdateSpy).not.toHaveBeenCalled();
 
             controller.detach();
+        });
+
+        it("requests iOS permission upon the first touchend user gesture", async () => {
+            const requestPermissionSpy = vi.fn().mockResolvedValue("granted");
+            const originalDeviceOrientation = (window as unknown as { DeviceOrientationEvent?: unknown }).DeviceOrientationEvent;
+
+            // Mock iOS DeviceOrientationEvent with requestPermission
+            const mockDeviceOrientation = function () {} as unknown as typeof DeviceOrientationEvent & {
+                requestPermission: () => Promise<string>;
+            };
+            mockDeviceOrientation.requestPermission = requestPermissionSpy;
+            Object.defineProperty(window, "DeviceOrientationEvent", {
+                value: mockDeviceOrientation,
+                configurable: true,
+                writable: true,
+            });
+
+            Object.defineProperty(navigator, "userAgent", {
+                value: "iPhone Mobile",
+                configurable: true,
+            });
+
+            const onUpdateSpy = vi.fn();
+            const controller = new OrientationInputController({ onUpdate: onUpdateSpy });
+
+            controller.attach();
+
+            // Dispatch touchend user gesture
+            const touchEvent = new Event("touchend");
+            window.dispatchEvent(touchEvent);
+
+            // Wait for promise resolution
+            await Promise.resolve();
+
+            expect(requestPermissionSpy).toHaveBeenCalledTimes(1);
+
+            // Simulate orientation event now that permission was granted
+            const orientationEvent = new Event("deviceorientation") as DeviceOrientationEvent;
+            Object.defineProperty(orientationEvent, "beta", { value: 80.0 });
+            Object.defineProperty(orientationEvent, "gamma", { value: 35.0 });
+            window.dispatchEvent(orientationEvent);
+
+            expect(onUpdateSpy).toHaveBeenCalled();
+
+            controller.detach();
+
+            Object.defineProperty(window, "DeviceOrientationEvent", {
+                value: originalDeviceOrientation,
+                configurable: true,
+                writable: true,
+            });
+        });
+
+        it("allows explicitly calling requestPermission() method", async () => {
+            const requestPermissionSpy = vi.fn().mockResolvedValue("granted");
+            const originalDeviceOrientation = (window as unknown as { DeviceOrientationEvent?: unknown }).DeviceOrientationEvent;
+
+            const mockDeviceOrientation = function () {} as unknown as typeof DeviceOrientationEvent & {
+                requestPermission: () => Promise<string>;
+            };
+            mockDeviceOrientation.requestPermission = requestPermissionSpy;
+            Object.defineProperty(window, "DeviceOrientationEvent", {
+                value: mockDeviceOrientation,
+                configurable: true,
+                writable: true,
+            });
+
+            const onUpdateSpy = vi.fn();
+            const controller = new OrientationInputController({ onUpdate: onUpdateSpy });
+            controller.attach();
+
+            const granted = await controller.requestPermission();
+            expect(granted).toBe(true);
+            expect(requestPermissionSpy).toHaveBeenCalledTimes(1);
+
+            controller.detach();
+
+            Object.defineProperty(window, "DeviceOrientationEvent", {
+                value: originalDeviceOrientation,
+                configurable: true,
+                writable: true,
+            });
         });
     });
 });
