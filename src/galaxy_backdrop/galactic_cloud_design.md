@@ -4,7 +4,7 @@
 
 * **Galactic Horizon Grounding:** Define an infinite celestial horizon line across deep space that tilts, rolls, and pans in sync with camera perspective and input parallax. This grounds the shifting view of the camera and prevents disorientation during mouse/device tilt interactions.
 * **Volumetric Cosmic Nebulae:** Render rich, flowing background interstellar dust clouds and cosmic gas nebulae behind the stellar population, providing depth layering between foreground stars, midground spiral arms, and deep-space background.
-* **Seamless Integration with `<WebGLCanvas />`:** Implement as a lightweight, dedicated WebGL pass ([`galactic_cloud_pass.tsx`](galactic_cloud_pass.tsx)) that executes prior to the starfield pass ([`galaxy_pass.tsx`](galaxy_pass.tsx)) at priority `-10`.
+* **Seamless Integration with `<WebGLCanvas />`:** Implement as a lightweight, dedicated WebGL pass ([`galactic_cloud_pass.tsx`](galactic_cloud_pass.tsx)) that executes prior to the scene starfield pass ([`imperative_galaxy_scene_pass.tsx`](../scene/test/imperative_galaxy_scene_pass.tsx)) at priority `-10`.
 * **Synchronized Parallax:** Synchronize camera perspective, pitch/yaw rotation matrices, aspect ratio, and mouse/device tilt offsets with the galaxy starfield renderer, but scaled with an infinity parallax factor (~0.25x) so background clouds move with realistic spatial depth.
 * **Real-Time Control & Customization:** Expose cloud density, noise scale, horizon brightness, primary/secondary cloud colors, and parallax responsiveness to [parameters/types.ts](parameters/types.ts) and a dedicated section in the interactive [galaxy_settings_dialog/](galaxy_settings_dialog/).
 * **Zero Overhead / 60+ FPS:** Executed as a single full-screen quad (2 triangles, 4 vertices) using procedural 3D noise (Simplex/fBm) and smoothstep horizon gradients in GLSL ES 3.00, running efficiently across both desktop and mobile browsers.
@@ -19,6 +19,7 @@ This feature extends the [`src/galaxy_backdrop/`](galaxy_backdrop_design.md) dir
 * [galactic_cloud_shaders.ts](galactic_cloud_shaders.ts) — GLSL ES 3.00 vertex shader (full-screen quad & view-ray reconstruction) and fragment shader (procedural 3D Simplex/fBm noise, horizon line, and color gradients).
 * [galactic_cloud_renderer.ts](galactic_cloud_renderer.ts) — Pure WebGL2 renderer class managing full-screen quad VBO/VAO setup, shader uniform updates, and background render pass execution.
 * [galactic_cloud_pass.tsx](galactic_cloud_pass.tsx) — Renderless React pass component living inside [`<WebGLCanvas />`](../components/webgl_canvas/webgl_canvas.tsx) registered at `priority = -10`.
+* [galactic_cloud_pass_types.ts](galactic_cloud_pass_types.ts) — Dedicated TypeScript interface for `GalacticCloudPassProps`.
 * [galaxy_settings_dialog/galactic_cloud_section.tsx](galaxy_settings_dialog/galactic_cloud_section.tsx) — Dedicated settings dialog UI section component for live tuning of background cloud and horizon options.
 * [parameters/types.ts](parameters/types.ts) — Extended with `GalacticCloudParameters` schema.
 * [parameters/index.ts](parameters/index.ts) — Updated presets including cloud and horizon parameters for all built-in galaxy presets.
@@ -32,21 +33,21 @@ This feature extends the [`src/galaxy_backdrop/`](galaxy_backdrop_design.md) dir
                                       │
               ┌───────────────────────┴───────────────────────┐
               ▼                                               ▼
-  <GalacticCloudPass />                              <GalaxyPass />
- (Priority: -10 - Background)                       (Priority: 0 - Starfield)
- • Full-Screen Quad Shader                          • 300,000 Point Sprites
- • Procedural Horizon & Nebulae                     • Logarithmic Spiral Arms
- • Infinity Parallax Response                       • Additive Point Sprites
+  <GalacticCloudPass />                         <ImperativeGalaxyScenePass />
+ (Priority: -10 - Background)                   (Priority: 0 - Scene Graph)
+ • Full-Screen Quad Shader                      • GalaxyGeometry + GalaxyMaterial
+ • Procedural Horizon & Nebulae                 • Logarithmic Spiral Arms
+ • Infinity Parallax Response                   • Additive Blended Point Sprites
 ```
 
 ### Execution Flow
 1. **Pass Priority `-10` (`GalacticCloudPass`):**
    * Clears canvas color buffer with deep space base color.
-   * Disables depth writing (`gl.depthMask(false)`).
+   * Asserts pipeline state via `contextManager.applyPipelineState({ depthTest: false, depthWrite: false, blendMode: "alpha", cullFace: false })`.
    * Renders full-screen quad applying view-ray direction reconstruction.
    * Computes background horizon gradient band and volumetric noise gas clouds.
-2. **Pass Priority `0` (`GalaxyPass`):**
-   * Renders existing 300,000 point sprites additively on top of the cloud/horizon background.
+2. **Pass Priority `0` (`GalaxyPass` / `ImperativeGalaxyScenePass`):**
+   * Renders 3D starfield additively (`blendMode: "additive"`) on top of the cloud/horizon background.
 
 ---
 
@@ -140,4 +141,4 @@ $$\text{noiseVal} = \sum_{i=1}^{3} w_i \cdot \text{Simplex3D}(\vec{v} \cdot \tex
 3. **Renderer Class (`galactic_cloud_renderer.ts`):** Build WebGL2 renderer for full-screen quad geometry, VAO binding, and matrix/uniform state synchronization.
 4. **Pass Component (`galactic_cloud_pass.tsx`):** Create renderless React pass component subscribed to `<WebGLCanvas />` at priority `-10`.
 5. **UI Settings Section (`galactic_cloud_section.tsx`):** Build the new dedicated section component and register it inside [`galaxy_settings_dialog.tsx`](galaxy_settings_dialog/galaxy_settings_dialog.tsx).
-6. **Layout Integration:** Add `<GalacticCloudPass controller={backdropGalaxy} />` to [`layout.tsx`](file:///d:/_/website_reesedrjones/src/layouts/layout.tsx).
+6. **Layout Integration:** Add `<GalacticCloudPass controller={backdropGalaxy} />` to [`layout.tsx`](../layouts/layout.tsx).

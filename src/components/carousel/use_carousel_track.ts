@@ -1,31 +1,13 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import type { CarouselItem } from "./carousel";
+import type {
+  CarouselItem,
+  UseCarouselTrackOptions,
+  UseCarouselTrackReturn,
+} from "./types";
 import { wrapIndex } from "../../hooks/use_wrapping_index";
 import { validateIndex } from "../../lib/helpers";
 
 export const getWrappedIndex = wrapIndex;
-
-
-export interface UseCarouselTrackOptions {
-  items: CarouselItem[];
-  selectedIndex: number;
-  animationDurationMs?: number;
-}
-
-export interface UseCarouselTrackReturn {
-  slotCount: number;
-  getSlotItemIndex: (slotIndex: number) => number;
-  currentSlot: number;
-  isTransitioning: boolean;
-  isSilentSnap: boolean;
-  trackProps: {
-    ref: React.RefObject<HTMLDivElement | null>;
-    className: string;
-    style: React.CSSProperties;
-    onTransitionEnd: (e: React.TransitionEvent<HTMLDivElement>) => void;
-  };
-  recordAction: (action: "left" | "right" | "select") => void;
-}
 
 /**
  * Manages the buffer track slot transitions, silent boundary snapping,

@@ -1,0 +1,133 @@
+@use "../../shared";
+
+.general-settings-section {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    width: 100%;
+
+    > .settings-group {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        background: rgba(32, 32, 36, 0.6);
+        border: 1px solid rgba(255, 255, 255, 0.07);
+        border-radius: 8px;
+        padding: 1rem;
+
+        > .group-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: shared.$font-highlight-color;
+            margin: 0;
+        }
+
+        > .setting-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1.25rem;
+
+            > .setting-info {
+                display: flex;
+                flex-direction: column;
+                gap: 0.25rem;
+
+                > .setting-title {
+                    font-size: 0.9rem;
+                    font-weight: 500;
+                    color: shared.$font-color;
+                    margin: 0;
+                    cursor: pointer;
+                }
+
+                > .setting-description {
+                    font-size: 0.8rem;
+                    color: shared.$light-font-color;
+                    margin: 0;
+                    line-height: 1.35;
+                }
+            }
+
+            > .toggle-switch {
+                position: relative;
+                display: inline-block;
+                width: 44px;
+                height: 24px;
+                flex-shrink: 0;
+
+                > input {
+                    opacity: 0;
+                    width: 0;
+                    height: 0;
+                    position: absolute;
+
+                    &:focus-visible + .toggle-slider {
+                        outline: 2px solid shared.$font-highlight-color;
+                        outline-offset: 2px;
+                    }
+
+                    &:checked + .toggle-slider {
+                        background-color: shared.$font-highlight-color;
+
+                        &::before {
+                            transform: translateX(20px);
+                            background-color: #fff;
+                        }
+                    }
+                }
+
+                > .toggle-slider {
+                    position: absolute;
+                    cursor: pointer;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    background-color: rgba(255, 255, 255, 0.15);
+                    border: 1px solid rgba(255, 255, 255, 0.2);
+                    transition: background-color 0.2s ease, border-color 0.2s ease;
+                    border-radius: 24px;
+
+                    &::before {
+                        position: absolute;
+                        content: "";
+                        height: 16px;
+                        width: 16px;
+                        left: 3px;
+                        bottom: 3px;
+                        background-color: #ccc;
+                        transition: transform 0.2s ease, background-color 0.2s ease;
+                        border-radius: 50%;
+                    }
+                }
+            }
+        }
+    }
+
+    > .actions-row {
+        display: flex;
+        justify-content: flex-start;
+
+        > .action-btn {
+            background: rgba(45, 45, 50, 0.9);
+            color: #dfdfdf;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 6px;
+            padding: 0.45rem 0.85rem;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: background-color 0.2s ease, color 0.2s ease;
+
+            &:hover {
+                background: rgba(60, 60, 68, 1);
+                color: #fff;
+            }
+
+            &:focus-visible {
+                outline: 2px solid shared.$font-highlight-color;
+                outline-offset: -2px;
+            }
+        }
+    }
+}

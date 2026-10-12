@@ -1,15 +1,24 @@
 import "../styles.scss";
-import { useState, ReactNode, useCallback } from "react";
+import { useState, type ReactNode, useCallback } from "react";
 import { Footer } from "../components/footer";
 import { Header } from "../components/header";
 import { useGalaxyController } from "../galaxy_backdrop/use_galaxy_controller";
 import { WebGLCanvas } from "../components/webgl_canvas/webgl_canvas";
-import { GalacticCloudPass } from "../galaxy_backdrop/galactic_cloud_pass";
-import { GalaxyPass } from "../galaxy_backdrop/galaxy_pass";
-import { GalaxySettingsDialog } from "../galaxy_backdrop/galaxy_settings_dialog/galaxy_settings_dialog";
+import { ImperativeGalaxyScenePass } from "../scene/test/imperative_galaxy_scene_pass";
+import { SettingsDialog } from "../components/settings_dialog/settings_dialog";
+import { SettingsTab } from "../components/settings_dialog/settings_tab";
+import { GeneralSettingsSection } from "../components/settings_dialog/general_settings_section";
+import { GalaxySettingsTab } from "../components/settings_dialog/galaxy_settings_tab";
 import { Outlet } from "react-router-dom";
-import { useResizeCallbackRef, Dimensions } from "../hooks/use_resize_callback_ref";
+import { useResizeCallbackRef } from "../hooks/use_resize_callback_ref";
+import type { Dimensions } from "../hooks/use_resize_callback_ref_types";
 import { classNameMap } from "../lib/classNameMap";
+import { FpsCounter } from "../components/webgl_canvas/fps_counter";
+import {
+    SiteSettingsProvider,
+    useSiteSettingsContext,
+} from "../settings/site_settings_context";
+import { DEFAULT_ACTIVE_TAB_ID } from "../components/settings_dialog/settings_dialog_types";
 
 export interface LayoutProps {
     children?: ReactNode;
@@ -17,23 +26,30 @@ export interface LayoutProps {
 
 export enum DeviceSize {
     Mobile,
-    Desktop
+    Desktop,
 }
 
-export const Layout = (props: LayoutProps) => {
+const DESKTOP_MIN_WIDTH_PX = 600;
+
+function LayoutContent(props: LayoutProps): React.JSX.Element {
     const backdropGalaxy = useGalaxyController();
+    const { settings, updateSettings, resetSettings } = useSiteSettingsContext();
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [deviceSize, setDeviceSize] = useState(DeviceSize.Mobile);
 
     const handleResize = useCallback((size: Dimensions) => {
-        setDeviceSize(size.width > 600 ? DeviceSize.Desktop : DeviceSize.Mobile);
+        setDeviceSize(
+            size.width > DESKTOP_MIN_WIDTH_PX
+                ? DeviceSize.Desktop
+                : DeviceSize.Mobile
+        );
     }, []);
 
     const setObserveTarget = useResizeCallbackRef(handleResize);
 
     const classMap = classNameMap({
         "anim-background": true,
-        "desktop": deviceSize === DeviceSize.Desktop
+        desktop: deviceSize === DeviceSize.Desktop,
     });
 
     return (
@@ -55,27 +71,44 @@ export const Layout = (props: LayoutProps) => {
                     pointerEvents: "none",
                 }}
             >
-                <GalacticCloudPass controller={backdropGalaxy} priority={-10} />
-                <GalaxyPass controller={backdropGalaxy} />
+                {/* Imperative 3D Scene Architecture Test Pass */}
+                <ImperativeGalaxyScenePass controller={backdropGalaxy} />
+                {settings.debug.showFps && <FpsCounter position="top-left" />}
             </WebGLCanvas>
 
             <Header onOpenSettings={() => setIsSettingsOpen(true)} />
             <div className="scroll-region">
                 <div className="content">
                     <Outlet />
+                    {props.children}
                 </div>
                 <Footer />
             </div>
 
-            <GalaxySettingsDialog
+            <SettingsDialog
                 isOpen={isSettingsOpen}
                 onClose={() => setIsSettingsOpen(false)}
-                params={backdropGalaxy.params}
-                currentPresetId={backdropGalaxy.currentPresetId}
-                onChange={backdropGalaxy.updateParameters}
-                onReset={backdropGalaxy.resetParameters}
-                onApplyPreset={backdropGalaxy.applyPreset}
-            />
+                defaultTabId={DEFAULT_ACTIVE_TAB_ID}
+            >
+                <SettingsTab id="general" label="General">
+                    <GeneralSettingsSection
+                        settings={settings}
+                        onChange={updateSettings}
+                        onReset={resetSettings}
+                    />
+                </SettingsTab>
+                <SettingsTab id="galaxy" label="Galaxy Backdrop">
+                    <GalaxySettingsTab controller={backdropGalaxy} />
+                </SettingsTab>
+            </SettingsDialog>
         </div>
+    );
+}
+
+export const Layout = (props: LayoutProps): React.JSX.Element => {
+    return (
+        <SiteSettingsProvider>
+            <LayoutContent {...props} />
+        </SiteSettingsProvider>
     );
 };

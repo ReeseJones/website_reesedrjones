@@ -33,9 +33,9 @@ export function CameraPerspectiveSection({ params, onChange }: SectionProps) {
                 <SliderRow
                     label="Camera Vantage Distance"
                     value={params.cameraDistance}
-                    min={5}
-                    max={40}
-                    step={0.5}
+                    min={0.25}
+                    max={80}
+                    step={0.25}
                     onChange={(val) => onChange({ cameraDistance: val })}
                 />
                 <SliderRow

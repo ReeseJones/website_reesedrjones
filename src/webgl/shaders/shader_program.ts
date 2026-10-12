@@ -1,0 +1,495 @@
+import type {
+    ShaderProgramOptions,
+    CachedUniform,
+    IShaderProgram,
+} from "./shader_program_types";
+import type { IVertexShader, IFragmentShader } from "./shader_stage_types";
+import type { IWebGLContextManager } from "../core/context_manager_types";
+import { compileShader, linkProgram } from "./shader_compiler";
+import { DEFAULT_TEXTURE_UNIT_MAP } from "../textures/texture_types";
+
+/**
+ * Robust WebGL2 Shader Program wrapper.
+ * Links reusable vertex and fragment shader stages, manages location caching,
+ * redundant upload elimination, client-side uniform memory caching, and automated context restoration.
+ */
+export class ShaderProgram<TUniforms extends object = Record<string, unknown>>
+    implements IShaderProgram<TUniforms> {
+    public readonly label: string;
+    public readonly vertex: IVertexShader;
+    public readonly fragment: IFragmentShader;
+    public lastFrameId: number = -1;
+
+    private contextManager: IWebGLContextManager;
+    private program: WebGLProgram | null = null;
+    private uniformLocations = new Map<string, WebGLUniformLocation | null>();
+    private uniformCache = new Map<string, CachedUniform>();
+    private optionsSamplers?: Record<string, number>;
+    private _isDisposed: boolean = false;
+    private readonly _onDisposeCallbacks: Set<() => void> = new Set();
+
+    private get gl(): WebGL2RenderingContext | null {
+        return this.contextManager.getContext();
+    }
+
+    constructor(
+        contextManager: IWebGLContextManager,
+        options: ShaderProgramOptions
+    ) {
+        if (options.vertex.isDisposed) {
+            throw new Error(`[${options.label ?? "ShaderProgram"}] Cannot construct ShaderProgram with disposed vertex shader stage.`);
+        }
+        if (options.fragment.isDisposed) {
+            throw new Error(`[${options.label ?? "ShaderProgram"}] Cannot construct ShaderProgram with disposed fragment shader stage.`);
+        }
+
+        this.contextManager = contextManager;
+        this.vertex = options.vertex;
+        this.fragment = options.fragment;
+        this.label = options.label ?? "ShaderProgram";
+        this.optionsSamplers = options.samplers;
+
+        this.build();
+    }
+
+    /**
+     * Batch uploads a strongly typed dictionary of uniform values.
+     *
+     * **Context Binding:** Automatically binds the program to the active context via contextManager (`contextManager.useShader(this)`) before uploading.
+     */
+    public setUniforms(uniforms: Partial<TUniforms>): void {
+        this.contextManager.useShader(this);
+        for (const [name, val] of Object.entries(uniforms)) {
+            if (val === undefined || val === null) continue;
+            if (typeof val === "number") {
+                this.setFloat(name, val);
+            } else if (typeof val === "boolean") {
+                this.setFloat(name, val ? 1.0 : 0.0);
+            } else if (Array.isArray(val) || val instanceof Float32Array) {
+                if (val.length === 2 && typeof val[0] === "number" && typeof val[1] === "number") {
+                    this.setVec2(name, val[0], val[1]);
+                } else if (
+                    val.length === 3 &&
+                    typeof val[0] === "number" &&
+                    typeof val[1] === "number" &&
+                    typeof val[2] === "number"
+                ) {
+                    this.setVec3(name, val[0], val[1], val[2]);
+                } else if (
+                    val.length === 4 &&
+                    typeof val[0] === "number" &&
+                    typeof val[1] === "number" &&
+                    typeof val[2] === "number" &&
+                    typeof val[3] === "number"
+                ) {
+                    this.setVec4(name, val[0], val[1], val[2], val[3]);
+                } else if (val.length === 9) {
+                    this.setMat3(name, val instanceof Float32Array ? val : new Float32Array(val as number[]));
+                } else if (val.length === 16) {
+                    this.setMat4(name, val instanceof Float32Array ? val : new Float32Array(val as number[]));
+                }
+            }
+        }
+    }
+
+    /**
+     * Returns true if the GPU WebGLProgram is compiled, linked, and ready.
+     */
+    public get isValid(): boolean {
+        return this.program !== null && !this._isDisposed;
+    }
+
+    /**
+     * Gets the raw WebGLProgram handle.
+     */
+    public getProgram(): WebGLProgram | null {
+        return this.program;
+    }
+
+    /**
+     * Returns true if this shader program has been disposed.
+     */
+    public get isDisposed(): boolean {
+        return this._isDisposed;
+    }
+
+    /**
+     * WebGL context lost lifecycle hook: wipes program handle and location map without deleting.
+     */
+    public onContextLost(): void {
+        this.program = null;
+        this.uniformLocations.clear();
+    }
+
+    /**
+     * WebGL context restored lifecycle hook: recompiles, relinks, and restores uniform state.
+     */
+    public onContextRestored(gl: WebGL2RenderingContext): void {
+        if (this._isDisposed) return;
+        this.onContextLost();
+        const success = this.build(gl);
+        if (success) {
+            this.restoreCachedUniforms(gl);
+        }
+    }
+
+    /**
+     * Registers a callback to be executed when dispose() is called.
+     */
+    public onDispose(callback: () => void): () => void {
+        if (this._isDisposed) {
+            callback();
+            return () => {};
+        }
+        this._onDisposeCallbacks.add(callback);
+        return () => {
+            this._onDisposeCallbacks.delete(callback);
+        };
+    }
+
+    /**
+     * Deterministic disposal: deletes WebGLProgram GPU handle, unbinds from context,
+     * marks isDisposed = true, and fires onDispose subscribers.
+     */
+    public dispose(): void {
+        if (this._isDisposed) return;
+        this._isDisposed = true;
+
+        if (this.contextManager.getCurrentProgram() === this.program || this.contextManager.getCurrentShader() === this) {
+            this.contextManager.useProgram(null);
+        }
+
+        const gl = this.gl;
+        if (gl && !gl.isContextLost() && this.program) {
+            gl.deleteProgram(this.program);
+        }
+        this.program = null;
+        this.uniformLocations.clear();
+
+        for (const callback of this._onDisposeCallbacks) {
+            try {
+                callback();
+            } catch (err) {
+                console.error(`[${this.label}] Error in onDispose callback:`, err);
+            }
+        }
+        this._onDisposeCallbacks.clear();
+    }
+
+    /**
+     * Retrieves cached WebGLUniformLocation for a symbol name.
+     *
+     * **Context Binding:** Does NOT bind program. Queries location handle independently without altering binding.
+     */
+    public getUniformLocation(name: string): WebGLUniformLocation | null {
+        if (!this.program) return null;
+        if (!this.uniformLocations.has(name)) {
+            const gl = this.gl;
+            if (!gl) return null;
+            const loc = gl.getUniformLocation(this.program, name);
+            this.uniformLocations.set(name, loc);
+        }
+        return this.uniformLocations.get(name) ?? null;
+    }
+
+    // --- Uniform Setters with Client-Side Caching & Redundant Upload Guard ---
+
+    /**
+     * Uploads a float uniform value if changed.
+     *
+     * **Context Binding:** Does NOT bind program. Caller must ensure `contextManager.useShader(this)`
+     * has been called prior to invoking.
+     */
+    public setFloat(name: string, value: number): void {
+        const cached = this.uniformCache.get(name);
+        if (cached && cached.value === value) return; // Skip redundant upload
+
+        this.uniformCache.set(name, { type: "float", value });
+        const loc = this.getUniformLocation(name);
+        if (loc) {
+            this.gl?.uniform1f(loc, value);
+        }
+    }
+
+    /**
+     * Uploads an integer uniform value if changed.
+     *
+     * **Context Binding:** Does NOT bind program. Caller must ensure `contextManager.useShader(this)`
+     * has been called prior to invoking.
+     */
+    public setInt(name: string, value: number): void {
+        const cached = this.uniformCache.get(name);
+        if (cached && cached.value === value) return;
+
+        this.uniformCache.set(name, { type: "int", value });
+        const loc = this.getUniformLocation(name);
+        if (loc) {
+            this.gl?.uniform1i(loc, value);
+        }
+    }
+
+    /**
+     * Uploads a 2-component float vector uniform value if changed.
+     *
+     * **Context Binding:** Does NOT bind program. Caller must ensure `contextManager.useShader(this)`
+     * has been called prior to invoking.
+     */
+    public setVec2(name: string, x: number, y: number): void {
+        const value: [number, number] = [x, y];
+        const cached = this.uniformCache.get(name);
+        if (
+            cached &&
+            Array.isArray(cached.value) &&
+            cached.value[0] === x &&
+            cached.value[1] === y
+        ) {
+            return;
+        }
+
+        this.uniformCache.set(name, { type: "vec2", value });
+        const loc = this.getUniformLocation(name);
+        if (loc) {
+            this.gl?.uniform2f(loc, x, y);
+        }
+    }
+
+    /**
+     * Uploads a 3-component float vector uniform value if changed.
+     *
+     * **Context Binding:** Does NOT bind program. Caller must ensure `contextManager.useShader(this)`
+     * has been called prior to invoking.
+     */
+    public setVec3(
+        name: string,
+        xOrArray: number | [number, number, number] | Float32Array,
+        y?: number,
+        z?: number
+    ): void {
+        let val: [number, number, number];
+        if (typeof xOrArray === "number") {
+            val = [xOrArray, y ?? 0, z ?? 0];
+        } else if (Array.isArray(xOrArray)) {
+            val = [xOrArray[0], xOrArray[1], xOrArray[2]];
+        } else {
+            val = [xOrArray[0], xOrArray[1], xOrArray[2]];
+        }
+
+        const cached = this.uniformCache.get(name);
+        if (
+            cached &&
+            Array.isArray(cached.value) &&
+            cached.value[0] === val[0] &&
+            cached.value[1] === val[1] &&
+            cached.value[2] === val[2]
+        ) {
+            return;
+        }
+
+        this.uniformCache.set(name, { type: "vec3", value: val });
+        const loc = this.getUniformLocation(name);
+        if (loc) {
+            this.gl?.uniform3fv(loc, val);
+        }
+    }
+
+    /**
+     * Uploads a 4-component float vector uniform value if changed.
+     *
+     * **Context Binding:** Does NOT bind program. Caller must ensure `contextManager.useShader(this)`
+     * has been called prior to invoking.
+     */
+    public setVec4(
+        name: string,
+        x: number,
+        y: number,
+        z: number,
+        w: number
+    ): void {
+        const val: [number, number, number, number] = [x, y, z, w];
+        const cached = this.uniformCache.get(name);
+        if (
+            cached &&
+            Array.isArray(cached.value) &&
+            cached.value[0] === x &&
+            cached.value[1] === y &&
+            cached.value[2] === z &&
+            cached.value[3] === w
+        ) {
+            return;
+        }
+
+        this.uniformCache.set(name, { type: "vec4", value: val });
+        const loc = this.getUniformLocation(name);
+        if (loc) {
+            this.gl?.uniform4f(loc, x, y, z, w);
+        }
+    }
+
+    /**
+     * Uploads a 3x3 matrix uniform value.
+     *
+     * **Context Binding:** Does NOT bind program. Caller must ensure `contextManager.useShader(this)`
+     * has been called prior to invoking.
+     */
+    public setMat3(name: string, data: Float32Array | number[]): void {
+        let cached = this.uniformCache.get(name);
+        if (!cached || cached.type !== "mat3") {
+            cached = { type: "mat3", value: new Float32Array(9) };
+            this.uniformCache.set(name, cached);
+        }
+        const cachedArr = cached.value as Float32Array;
+        let changed = false;
+        for (let i = 0; i < 9; i++) {
+            if (cachedArr[i] !== data[i]) {
+                cachedArr[i] = data[i];
+                changed = true;
+            }
+        }
+        if (!changed) return;
+
+        const loc = this.getUniformLocation(name);
+        if (loc) {
+            this.gl?.uniformMatrix3fv(loc, false, cachedArr);
+        }
+    }
+
+    /**
+     * Uploads a 4x4 matrix uniform value.
+     *
+     * **Context Binding:** Does NOT bind program. Caller must ensure `contextManager.useShader(this)`
+     * has been called prior to invoking.
+     */
+    public setMat4(name: string, data: Float32Array | number[]): void {
+        let cached = this.uniformCache.get(name);
+        if (!cached || cached.type !== "mat4") {
+            cached = { type: "mat4", value: new Float32Array(16) };
+            this.uniformCache.set(name, cached);
+        }
+        const cachedArr = cached.value as Float32Array;
+        let changed = false;
+        for (let i = 0; i < 16; i++) {
+            if (cachedArr[i] !== data[i]) {
+                cachedArr[i] = data[i];
+                changed = true;
+            }
+        }
+        if (!changed) return;
+
+        const loc = this.getUniformLocation(name);
+        if (loc) {
+            this.gl?.uniformMatrix4fv(loc, false, cachedArr);
+        }
+    }
+
+    // --- Private Build & Recovery Helpers ---
+
+    private build(glContext?: WebGL2RenderingContext): boolean {
+        const gl = glContext ?? this.gl;
+        if (!gl || gl.isContextLost()) return false;
+
+        let vsHandle = this.vertex.getShader();
+        let fsHandle = this.fragment.getShader();
+        let transientVs: WebGLShader | null = null;
+        let transientFs: WebGLShader | null = null;
+
+        // If vertex shader was disposed, compile a transient handle from preserved source
+        if (!vsHandle && this.vertex.isDisposed) {
+            transientVs = compileShader(gl, gl.VERTEX_SHADER, this.vertex.source, `${this.label}_transient_vs`);
+            vsHandle = transientVs;
+        }
+
+        // If fragment shader was disposed, compile a transient handle from preserved source
+        if (!fsHandle && this.fragment.isDisposed) {
+            transientFs = compileShader(gl, gl.FRAGMENT_SHADER, this.fragment.source, `${this.label}_transient_fs`);
+            fsHandle = transientFs;
+        }
+
+        if (!vsHandle || !fsHandle) {
+            console.error(`[${this.label}] Cannot link program: vertex or fragment stage handle is null/invalid.`);
+            if (transientVs) gl.deleteShader(transientVs);
+            if (transientFs) gl.deleteShader(transientFs);
+            return false;
+        }
+
+        const program = linkProgram(gl, vsHandle, fsHandle, this.label);
+
+        // Always clean up transient shaders immediately after linking
+        if (transientVs) gl.deleteShader(transientVs);
+        if (transientFs) gl.deleteShader(transientFs);
+
+        if (!program) {
+            return false;
+        }
+
+        this.program = program;
+
+        // Auto-reflect and cache all active GLSL uniform locations directly from the GPU handle
+        this.reflectActiveUniforms(gl);
+
+        return true;
+    }
+
+    private reflectActiveUniforms(gl: WebGL2RenderingContext): void {
+        if (!this.program) return;
+        const count = gl.getProgramParameter(this.program, gl.ACTIVE_UNIFORMS);
+        this.contextManager.useShader(this);
+        for (let i = 0; i < count; i++) {
+            const info = gl.getActiveUniform(this.program, i);
+            if (info) {
+                const cleanName = info.name.replace(/\[0\]$/, "");
+                const loc = this.getUniformLocation(cleanName);
+                if (
+                    loc &&
+                    (info.type === gl.SAMPLER_2D ||
+                        info.type === gl.SAMPLER_CUBE ||
+                        info.type === gl.SAMPLER_2D_SHADOW ||
+                        info.type === gl.SAMPLER_2D_ARRAY ||
+                        info.type === gl.SAMPLER_3D)
+                ) {
+                    const unit = this.optionsSamplers?.[cleanName] ?? DEFAULT_TEXTURE_UNIT_MAP[cleanName];
+                    if (unit !== undefined) {
+                        gl.uniform1i(loc, unit);
+                        this.uniformCache.set(cleanName, { type: "int", value: unit });
+                    }
+                }
+            }
+        }
+    }
+
+    private restoreCachedUniforms(glContext?: WebGL2RenderingContext): void {
+        if (!this.program) return;
+        const gl = glContext ?? this.gl;
+        if (!gl) return;
+        this.contextManager.useShader(this);
+        for (const [name, cached] of this.uniformCache.entries()) {
+            const loc = this.getUniformLocation(name);
+            if (!loc) continue;
+
+            switch (cached.type) {
+                case "float":
+                    gl.uniform1f(loc, cached.value as number);
+                    break;
+                case "int":
+                    gl.uniform1i(loc, cached.value as number);
+                    break;
+                case "vec2":
+                    const v2 = cached.value as [number, number];
+                    gl.uniform2f(loc, v2[0], v2[1]);
+                    break;
+                case "vec3":
+                    gl.uniform3fv(loc, cached.value as number[]);
+                    break;
+                case "vec4":
+                    const v4 = cached.value as [number, number, number, number];
+                    gl.uniform4f(loc, v4[0], v4[1], v4[2], v4[3]);
+                    break;
+                case "mat3":
+                    gl.uniformMatrix3fv(loc, false, cached.value as Float32Array);
+                    break;
+                case "mat4":
+                    gl.uniformMatrix4fv(loc, false, cached.value as Float32Array);
+                    break;
+            }
+        }
+    }
+}

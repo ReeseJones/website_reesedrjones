@@ -1,22 +1,17 @@
 /**
  * Centralized orientation & pointer/touch input manager for 3D galaxy backdrop passes.
- * Handles device tilt via DeviceOrientationEvent with iOS requestPermission gating and touch/pointer fallbacks.
- *
- * Scoped behavior:
- * - On desktop devices, device orientation listeners are bypassed completely, preventing Chromium deprecation warnings.
- * - On mobile devices, device orientation sensor data (or touch gesture fallbacks) are used for camera parallax.
+ * Handles device tilt via standard DeviceOrientationEvent with iOS 13+ requestPermission gating
+ * on first user gesture (touchend / click) and touch/pointer fallbacks.
  */
 
-export interface OrientationInputOptions {
-    onUpdate: (pitchOffset: number, yawOffset: number) => void;
-}
+import type { OrientationInputOptions } from "./orientation_types";
 
 export class OrientationInputController {
     private onUpdate: (pitchOffset: number, yawOffset: number) => void;
-    private relativeSensor: any = null;
     private isSensorActive = false;
     private isMobile = false;
     private permissionRequested = false;
+    private gestureHandler: (() => void) | null = null;
 
     constructor(options: OrientationInputOptions) {
         this.onUpdate = options.onUpdate;
@@ -26,7 +21,8 @@ export class OrientationInputController {
     private detectMobile(): boolean {
         if (typeof window === "undefined") return false;
         const ua = navigator.userAgent || "";
-        this.isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(ua);
+        const hasTouch = typeof navigator.maxTouchPoints === "number" && navigator.maxTouchPoints > 0;
+        this.isMobile = hasTouch || /Android|iPhone|iPad|iPod|Mobile/i.test(ua);
         return this.isMobile;
     }
 
@@ -35,75 +31,81 @@ export class OrientationInputController {
 
         this.detectMobile();
 
-        // Only register orientation sensors on mobile devices to avoid desktop Chrome deprecation logs
+        // Register orientation sensors on mobile/touch devices
         if (this.isMobile) {
             this.setupDeviceOrientation();
             window.addEventListener("touchmove", this.onTouchMove, { passive: true });
         }
 
-        // Pointermove for mouse tracking on desktop (or fallback when gyro is inactive)
+        // Pointermove for mouse tracking on desktop or fallback when gyro is inactive
         window.addEventListener("pointermove", this.onPointerMove, { passive: true });
     }
 
     private setupDeviceOrientation(): void {
         if (typeof window === "undefined") return;
 
-        const win = window as any;
+        const DeviceOrientation = (window as unknown as {
+            DeviceOrientationEvent?: typeof DeviceOrientationEvent & {
+                requestPermission?: () => Promise<string>;
+            };
+        }).DeviceOrientationEvent;
 
-        // Try Generic Sensor API first on modern mobile browsers
-        if ("RelativeOrientationSensor" in win || "AbsoluteOrientationSensor" in win) {
-            try {
-                const SensorClass = win.RelativeOrientationSensor || win.AbsoluteOrientationSensor;
-                this.relativeSensor = new SensorClass({ frequency: 60 });
-                this.relativeSensor.addEventListener("reading", this.onSensorReading);
-                this.relativeSensor.addEventListener("error", this.onSensorError);
-                this.relativeSensor.start();
-                return;
-            } catch {}
+        if (!DeviceOrientation) return;
+
+        if (typeof DeviceOrientation.requestPermission === "function") {
+            // iOS 13+ requires requestPermission() inside a transient user activation (touchend or click)
+            this.gestureHandler = () => {
+                void this.requestPermission();
+            };
+            this.addGestureListeners(this.gestureHandler);
+        } else {
+            // Android / Standard mobile browsers without permission gating
+            window.addEventListener("deviceorientation", this.onDeviceOrientation, { passive: true });
+        }
+    }
+
+    /**
+     * Explicitly requests device orientation permission on iOS.
+     * Must be invoked during a user activation gesture (click or touchend).
+     */
+    public async requestPermission(): Promise<boolean> {
+        if (this.permissionRequested) return false;
+        this.permissionRequested = true;
+
+        if (this.gestureHandler) {
+            this.removeGestureListeners(this.gestureHandler);
+            this.gestureHandler = null;
         }
 
-        // Fallback to DeviceOrientationEvent
-        const DeviceOrientation = win.DeviceOrientationEvent;
-        if (DeviceOrientation) {
-            if (typeof DeviceOrientation.requestPermission === "function") {
-                // iOS 13+ requires DeviceOrientationEvent.requestPermission() inside a user gesture
-                const handleUserGesture = () => {
-                    if (this.permissionRequested) return;
-                    this.permissionRequested = true;
+        const DeviceOrientation = (window as unknown as {
+            DeviceOrientationEvent?: typeof DeviceOrientationEvent & {
+                requestPermission?: () => Promise<string>;
+            };
+        }).DeviceOrientationEvent;
 
-                    DeviceOrientation.requestPermission()
-                        .then((permissionState: string) => {
-                            if (permissionState === "granted") {
-                                window.addEventListener("deviceorientation", this.onDeviceOrientation, { passive: true });
-                            }
-                        })
-                        .catch(() => {})
-                        .finally(() => {
-                            this.removeGestureListeners(handleUserGesture);
-                        });
-                };
-
-                this.addGestureListeners(handleUserGesture);
-            } else {
-                // Android / Standard mobile browsers without permission gating
-                try {
+        if (DeviceOrientation && typeof DeviceOrientation.requestPermission === "function") {
+            try {
+                const permissionState = await DeviceOrientation.requestPermission();
+                if (permissionState === "granted") {
                     window.addEventListener("deviceorientation", this.onDeviceOrientation, { passive: true });
-                    window.addEventListener("deviceorientationabsolute" as any, this.onDeviceOrientation, { passive: true });
-                } catch {}
+                    return true;
+                }
+            } catch (err) {
+                console.warn("[OrientationInputController] Permission request error:", err);
             }
         }
+        return false;
     }
 
     private addGestureListeners(handler: () => void): void {
-        window.addEventListener("touchstart", handler, { passive: true, once: true });
-        window.addEventListener("pointerdown", handler, { passive: true, once: true });
-        window.addEventListener("click", handler, { passive: true, once: true });
+        // Capture phase ensures we receive the user activation even if children stop propagation
+        window.addEventListener("touchend", handler, { capture: true, passive: true });
+        window.addEventListener("click", handler, { capture: true, passive: true });
     }
 
     private removeGestureListeners(handler: () => void): void {
-        window.removeEventListener("touchstart", handler);
-        window.removeEventListener("pointerdown", handler);
-        window.removeEventListener("click", handler);
+        window.removeEventListener("touchend", handler, { capture: true });
+        window.removeEventListener("click", handler, { capture: true });
     }
 
     private onDeviceOrientation = (e: DeviceOrientationEvent): void => {
@@ -121,35 +123,6 @@ export class OrientationInputController {
         const normalizedGamma = Math.max(-1.0, Math.min(1.0, e.gamma / 35.0));
 
         this.onUpdate(-normalizedBeta * 0.45, normalizedGamma * 0.55);
-    };
-
-    private onSensorReading = (): void => {
-        if (!this.relativeSensor || !this.relativeSensor.quaternion) return;
-        const [x, y, z, w] = this.relativeSensor.quaternion;
-
-        if (Number.isNaN(x) || Number.isNaN(y) || Number.isNaN(z) || Number.isNaN(w)) return;
-
-        const sinPitch = 2 * (w * x - y * z);
-        const pitch = Math.asin(Math.max(-1.0, Math.min(1.0, sinPitch)));
-        const yaw = Math.atan2(2 * (w * y + z * x), 1 - 2 * (x * x + y * y));
-
-        const normalizedPitch = Math.max(-1.0, Math.min(1.0, pitch / (Math.PI / 4)));
-        const normalizedYaw = Math.max(-1.0, Math.min(1.0, yaw / (Math.PI / 4)));
-
-        this.isSensorActive = true;
-        this.onUpdate(-normalizedPitch * 0.45, normalizedYaw * 0.55);
-    };
-
-    private onSensorError = (): void => {
-        this.isSensorActive = false;
-        if (this.relativeSensor) {
-            try {
-                this.relativeSensor.removeEventListener("reading", this.onSensorReading);
-                this.relativeSensor.removeEventListener("error", this.onSensorError);
-                this.relativeSensor.stop();
-            } catch {}
-            this.relativeSensor = null;
-        }
     };
 
     private onPointerMove = (e: PointerEvent): void => {
@@ -178,21 +151,15 @@ export class OrientationInputController {
     public detach(): void {
         if (typeof window === "undefined") return;
 
-        if (this.relativeSensor) {
-            try {
-                this.relativeSensor.removeEventListener("reading", this.onSensorReading);
-                this.relativeSensor.removeEventListener("error", this.onSensorError);
-                this.relativeSensor.stop();
-            } catch {}
-            this.relativeSensor = null;
+        if (this.gestureHandler) {
+            this.removeGestureListeners(this.gestureHandler);
+            this.gestureHandler = null;
         }
 
         window.removeEventListener("deviceorientation", this.onDeviceOrientation);
-        window.removeEventListener("deviceorientationabsolute" as any, this.onDeviceOrientation);
         window.removeEventListener("pointermove", this.onPointerMove);
         window.removeEventListener("touchmove", this.onTouchMove);
         this.isSensorActive = false;
         this.permissionRequested = false;
     }
 }
-

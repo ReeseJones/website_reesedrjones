@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { ArticleDetails } from "../../article_details";
 import { ArticlePageLayout } from "../../article_page_layout";
-import { Carousel, CarouselItem } from "../../../../components/carousel/carousel";
+import { Carousel } from "../../../../components/carousel/carousel";
+import type { CarouselItem } from "../../../../components/carousel/types";
 import { CarouselDialog } from "../../../../components/carousel/carousel_dialog";
 import { useCarouselController } from "../../../../components/carousel/use_carousel_controller";
 import { useCarouselAutoScroll } from "../../../../components/carousel/use_carousel_auto_scroll";

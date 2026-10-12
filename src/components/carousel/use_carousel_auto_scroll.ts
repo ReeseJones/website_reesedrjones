@@ -1,24 +1,9 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
-
-export interface CarouselPauseProps {
-  onMouseEnter: () => void;
-  onMouseLeave: () => void;
-  onFocus: () => void;
-  onBlur: (e: React.FocusEvent<any>) => void;
-}
-
-export interface UseCarouselAutoScrollOptions {
-  onAdvance: () => void;
-  intervalMs?: number;
-  paused?: boolean;
-}
-
-export interface UseCarouselAutoScrollReturn {
-  isPaused: boolean;
-  pause: () => void;
-  resume: () => void;
-  pauseProps: CarouselPauseProps;
-}
+import { useCallback, useEffect, useRef, useState } from "react";
+import type {
+  CarouselPauseProps,
+  UseCarouselAutoScrollOptions,
+  UseCarouselAutoScrollReturn,
+} from "./types";
 
 /**
  * Automatically triggers carousel slide advance on a recurring timer,
@@ -56,7 +41,7 @@ export function useCarouselAutoScroll({
     setIsInternalPaused(true);
   }, []);
 
-  const handleBlur = useCallback((e: React.FocusEvent<any>) => {
+  const handleBlur = useCallback((e: React.FocusEvent<HTMLElement>) => {
     // Only resume if focus leaves the container entirely
     if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
       setIsInternalPaused(false);

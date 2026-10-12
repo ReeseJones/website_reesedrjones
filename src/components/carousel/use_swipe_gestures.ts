@@ -1,17 +1,8 @@
 import { useRef } from "react";
-
-export interface UseSwipeGesturesOptions {
-  onSwipeLeft?: () => void;
-  onSwipeRight?: () => void;
-  minDistance?: number; // default: 50px
-}
-
-export interface SwipeGestureHandlers {
-  onTouchStart: (e: React.TouchEvent<HTMLElement>) => void;
-  onTouchMove: (e: React.TouchEvent<HTMLElement>) => void;
-  onTouchEnd: () => void;
-  onTouchCancel: () => void;
-}
+import type {
+  UseSwipeGesturesOptions,
+  SwipeGestureHandlers,
+} from "./types";
 
 /**
  * Tracks touch gestures without triggering component re-renders,

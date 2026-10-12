@@ -2,6 +2,32 @@ import { GalaxyParameters } from "./parameters/types";
 import { randomGaussian } from "../maths/random";
 
 /**
+ * Extra safety margin added beyond (cameraDistance + diskRadius) to ensure
+ * outer stellar flares, spiral arm spurs, and drift displacement never
+ * intersect or exceed the perspective frustum far clipping plane.
+ */
+export const DEFAULT_FAR_PLANE_PADDING = 50.0;
+
+/**
+ * Calculates an adaptive camera far clipping plane ensuring all stars remain
+ * fully visible within the view frustum regardless of camera vantage distance.
+ *
+ * @param cameraDistance Vantage distance of the camera from the galactic core.
+ * @param diskRadius Outer radius of the galactic disk.
+ * @param minFarPlane Minimum far clipping threshold (serves as the lower bound).
+ * @param padding Clearance margin past the furthest possible stellar excursion.
+ * @returns The adaptive far clipping plane distance.
+ */
+export function calculateAutoFarPlane(
+    cameraDistance: number,
+    diskRadius: number,
+    minFarPlane: number = 75.0,
+    padding: number = DEFAULT_FAR_PLANE_PADDING
+): number {
+    return Math.max(minFarPlane, cameraDistance + diskRadius + padding);
+}
+
+/**
  * Populates a single contiguous Float32Array with 6 attributes per star:
  * [radius, baseAngle, zOffset, size, spectralType, driftPhase]
  */

@@ -9,29 +9,17 @@ import { NotFoundPage } from './pages/404';
 import { Main } from './pages/main';
 import { ArticlesIndexPage } from './pages/articles/articles_index_page';
 import { ARTICLE_PAGES } from "./pages/articles/index_instance";
+import { APP_VERSION, GIT_COMMIT, GIT_BRANCH, BUILD_TIMESTAMP } from "./version";
 
-/*
-function Index() {
-  return (
-    <StrictMode>
-      <BrowserRouter>
-        <Routes>
-          <Route element={<Layout />}>
-            <Route path="/" element={<Main />} />
-            <Route path="/about-me" element={<AboutMePage />} />
-            <Route path="/articles" element={<ArticlesIndexPage />}></Route>
-            {ARTICLE_PAGES.map((pageDetails) => {
-              const ArticleComponent = pageDetails.articleComponent;
-              return <Route path={`/articles/${pageDetails.path}`} element={<ArticleComponent/>}></Route>;
-            })}
-            <Route path="*" element={<NotFoundPage />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>,
-    </StrictMode>
-  );
-}
-  */
+console.log(
+  `%c[website_reesedrjones]%c v${APP_VERSION} (%c${GIT_COMMIT}%c on %c${GIT_BRANCH}%c) • Built ${BUILD_TIMESTAMP}`,
+  "color: #4fc3f7; font-weight: bold;",
+  "color: #ffffff; font-weight: bold;",
+  "color: #81c784; font-weight: bold;",
+  "color: #ffffff;",
+  "color: #ffb74d; font-weight: bold;",
+  "color: #888888;"
+);
 
 const router = createBrowserRouter([
   {
