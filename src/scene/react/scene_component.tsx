@@ -4,12 +4,13 @@ import { ScenePass } from "../renderer/scene_pass";
 import { SceneContext, ParentNodeContext } from "./scene_context";
 import { DEFAULT_SCENE_PASS_PRIORITY } from "./scene_react_constants";
 import type { ICamera } from "../camera/camera_types";
+import type { SceneFrameCallback } from "../core/scene_types";
 import type { ISceneContextValue, IParentNodeContextValue, SceneProps } from "./scene_react_types";
 
 /**
  * Declarative root <Scene /> component hosting the programmatic 3D scene graph,
- * managing registered cameras and active camera appointment, and bridging to
- * the canvas compositor via <ScenePass />.
+ * delegating camera registration and the demand-driven simulation loop to
+ * ProgrammaticScene, and bridging to the canvas compositor via <ScenePass />.
  */
 export function Scene({
     priority = DEFAULT_SCENE_PASS_PRIORITY,
@@ -26,45 +27,35 @@ export function Scene({
     // React 19 ref assignment
     useImperativeHandle(ref, () => scene, [scene, ref]);
 
-    const camerasRef = useRef<ICamera[]>([]);
     const [activeCamera, setActiveCamera] = useState<ICamera | null>(null);
 
-    const registerCamera = useCallback((camera: ICamera, makeDefault?: boolean) => {
-        if (!camerasRef.current.includes(camera)) {
-            camerasRef.current.push(camera);
-        }
+    const registerCamera = useCallback(
+        (camera: ICamera, makeDefault?: boolean) => {
+            const unregister = scene.registerCamera(camera, makeDefault);
+            setActiveCamera(scene.activeCamera);
 
-        setActiveCamera((current) => {
-            if (makeDefault || current === null) {
-                return camera;
-            }
-            return current;
-        });
+            return () => {
+                unregister();
+                setActiveCamera(scene.activeCamera);
+            };
+        },
+        [scene]
+    );
 
-        return () => {
-            const index = camerasRef.current.indexOf(camera);
-            if (index !== -1) {
-                camerasRef.current.splice(index, 1);
-            }
+    const handleSetActiveCamera = useCallback(
+        (camera: ICamera | null) => {
+            scene.activeCamera = camera;
+            setActiveCamera(camera);
+        },
+        [scene]
+    );
 
-            setActiveCamera((current) => {
-                if (current === camera) {
-                    return camerasRef.current.length > 0
-                        ? camerasRef.current[camerasRef.current.length - 1]
-                        : null;
-                }
-                return current;
-            });
-        };
-    }, []);
-
-    const handleSetActiveCamera = useCallback((camera: ICamera | null) => {
-        setActiveCamera(camera);
-    }, []);
-
-    useEffect(() => {
-        scene.activeCamera = activeCamera;
-    }, [scene, activeCamera]);
+    const subscribeFrame = useCallback(
+        (callback: SceneFrameCallback, subscriberPriority?: number) => {
+            return scene.subscribeFrame(callback, subscriberPriority);
+        },
+        [scene]
+    );
 
     useEffect(() => {
         return () => {
@@ -78,7 +69,8 @@ export function Scene({
         activeCamera,
         setActiveCamera: handleSetActiveCamera,
         registerCamera,
-    }), [scene, activeCamera, handleSetActiveCamera, registerCamera]);
+        subscribeFrame,
+    }), [scene, activeCamera, handleSetActiveCamera, registerCamera, subscribeFrame]);
 
     const parentContextValue = useMemo<IParentNodeContextValue>(() => ({
         parent: scene,
@@ -100,3 +92,4 @@ export function Scene({
         </SceneContext.Provider>
     );
 }
+

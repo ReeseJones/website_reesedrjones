@@ -1,5 +1,5 @@
 import type React from "react";
-import type { IScene } from "../core/scene_types";
+import type { IScene, SceneFrameCallback } from "../core/scene_types";
 import type { ISceneNode } from "../core/scene_node_types";
 import type { ICamera } from "../camera/camera_types";
 import type { IMeshGeometry } from "../models/mesh_geometry_types";
@@ -37,7 +37,8 @@ export interface SceneNodeProps {
 }
 
 /**
- * Root scene context providing the active scene, active camera, and camera registration.
+ * Root scene context providing the active scene, active camera, camera registration,
+ * and independent simulation frame subscription.
  */
 export interface ISceneContextValue {
     /** Underlying programmatic scene instance */
@@ -48,6 +49,8 @@ export interface ISceneContextValue {
     setActiveCamera: (camera: ICamera | null) => void;
     /** Registers a camera with the scene. Returns unregister cleanup closure. */
     registerCamera: (camera: ICamera, makeDefault?: boolean) => () => void;
+    /** Subscribes a simulation/behavior callback to the scene's independent RAF loop. */
+    subscribeFrame: (callback: SceneFrameCallback, priority?: number) => () => void;
 }
 
 /**

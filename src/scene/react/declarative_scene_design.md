@@ -8,8 +8,9 @@ This document specifies the architectural design for declarative React bindings 
 ### Key Architectural Principles
 - **Thin Declarative Wrapper over Programmatic Core:** Declarative JSX components do not implement rendering or GPU operations. They serve as lifecycle controllers that instantiate, configure, and synchronize programmatic [`ISceneNode`](../core/scene_node_types.ts), [`IScene`](../core/scene_types.ts), [`ICamera`](../camera/camera_types.ts), and [`IModelInstance`](../models/model_instance_types.ts) instances.
 - **Zero Render-Loop Overhead:** React re-renders must never drive the WebGL render loop or trigger GPU buffer reallocations. Transform updates (such as translation or rotation) mutate the underlying programmatic transform directly inside lifecycle effects without triggering React reconciliation across children.
+- **Separation of Simulation Behavior from WebGL Rendering:** `<Scene />` hosts its own independent, demand-driven `requestAnimationFrame` simulation loop via `SceneContext` and `useSceneFrame`. Scene behavior (camera rigs, parallax damping, tour trajectories, and node kinematics) advances continuously without freezing when [`<WebGLCanvas />`](../../components/webgl_canvas/webgl_canvas.tsx) pauses GPU draw calls (such as when scrolled offscreen or during WebGL context loss).
 - **Two-Tier Context Architecture:**
-  - **Root Scene Context (`SceneContext`):** Delivers the active root [`IScene`](../core/scene_types.ts) instance, camera registration mechanics, and orchestration with the enclosing [`ScenePass`](../renderer/scene_pass.tsx).
+  - **Root Scene Context (`SceneContext`):** Delivers the active root [`IScene`](../core/scene_types.ts) instance, camera registration mechanics, simulation frame subscription (`subscribeFrame`), and orchestration with the enclosing [`ScenePass`](../renderer/scene_pass.tsx).
   - **Polymorphic Parent Context (`ParentNodeContext`):** Provides the immediate parent [`ISceneNode`](../core/scene_node_types.ts). Because [`IScene`](../core/scene_types.ts), [`SceneNode`](../core/scene_node.ts), [`Camera`](../camera/camera.ts), and [`ModelInstance`](../models/model_instance.ts) all implement [`ISceneNode`](../core/scene_node_types.ts), any component in the tree can act as a parent simply by re-providing its node instance.
 - **First-Class React 19 Conventions:** Uses function components only, direct `ref` props (no `forwardRef`), and returns cleanup closures from lifecycle effects.
 - **Strict Separation of Types:** All prop contracts, context signatures, and tuple types reside in dedicated type definition files (`scene_react_types.ts`) away from component implementations.
@@ -20,8 +21,8 @@ This document specifies the architectural design for declarative React bindings 
 
 ```mermaid
 flowchart TD
-    Canvas["<WebGLCanvas /> (Render Loop Host)"]
-    Scene["<Scene /> (Provides SceneContext + Root ParentNodeContext)"]
+    Canvas["<WebGLCanvas /> (GPU Render Loop Host)"]
+    Scene["<Scene /> (Simulation RAF Host + SceneContext + Root ParentNodeContext)"]
     Pass["<ScenePass /> (Pass bridge to SceneRenderer)"]
     Camera["<PerspectiveCamera makeDefault /> (Registers as active camera)"]
     Group["<Group /> (Provides child ParentNodeContext)"]
@@ -39,7 +40,7 @@ flowchart TD
 ```
 
 ### Context Distribution Flow
-- **`<Scene>`:** Initializes programmatic `Scene`, mounts `<ScenePass>`, provides `SceneContext` (scene + camera registrar) and `ParentNodeContext` (root `scene`).
+- **`<Scene>`:** Initializes programmatic `Scene`, hosts the independent simulation `requestAnimationFrame` ticker, mounts `<ScenePass>`, and provides `SceneContext` (scene + camera registrar + frame subscriber) and `ParentNodeContext` (root `scene`).
 - **`<Group>`:** Instantiates `SceneNode`, mounts to enclosing `ParentNodeContext`, and re-provides itself as `ParentNodeContext` for all nested children.
 - **`<PerspectiveCamera>`:** Instantiates `PerspectiveCamera`, attaches to enclosing `ParentNodeContext`, and registers with `SceneContext.registerCamera()`.
 - **`<ModelInstance>`:** Instantiates `ModelInstance`, attaches to enclosing `ParentNodeContext`, and re-provides itself as `ParentNodeContext` (allowing nested child nodes or accessories).
@@ -51,12 +52,13 @@ flowchart TD
 All declarative React bindings reside in `src/scene/react/`:
 
 - **Type Contracts:**
-  - [`src/scene/react/scene_react_types.ts`](scene_react_types.ts): TypeScript interfaces for component props, tuple aliases, and React context contracts.
+  - [`src/scene/react/scene_react_types.ts`](scene_react_types.ts): TypeScript interfaces for component props, frame callback state, tuple aliases, and React context contracts.
 - **Context & Hooks:**
   - [`src/scene/react/scene_context.ts`](scene_context.ts): `SceneContext`, `ParentNodeContext`, and consumer hooks (`useScene`, `useParentNode`).
   - [`src/scene/react/use_scene_node.ts`](use_scene_node.ts): Core lifecycle hook managing node attachment, cleanup, and transform reconciliation.
+  - [`src/scene/react/use_scene_frame.ts`](use_scene_frame.ts): Hook subscribing behavior and simulation callbacks to the `<Scene />` simulation loop.
 - **Declarative Components:**
-  - [`src/scene/react/scene_component.tsx`](scene_component.tsx): Declarative `<Scene />` root component wrapping [`<ScenePass />`](../renderer/scene_pass.tsx).
+  - [`src/scene/react/scene_component.tsx`](scene_component.tsx): Declarative `<Scene />` root component hosting the simulation loop and wrapping [`<ScenePass />`](../renderer/scene_pass.tsx).
   - [`src/scene/react/group_component.tsx`](group_component.tsx): Declarative `<Group />` mapping to programmatic `SceneNode`.
   - [`src/scene/react/camera_component.tsx`](camera_component.tsx): Declarative `<PerspectiveCamera />` component mapping to `PerspectiveCamera`.
   - [`src/scene/react/model_instance_component.tsx`](model_instance_component.tsx): Declarative `<ModelInstance />` component mapping to `ModelInstance`.
@@ -73,6 +75,7 @@ import type { ISceneNode } from "../core/scene_node_types";
 import type { ICamera } from "../camera/camera_types";
 import type { IMeshGeometry } from "../models/mesh_geometry_types";
 import type { IMaterial } from "../materials/material_types";
+import type { TimeInfo } from "../../components/webgl_canvas/types";
 
 export type Vector3Tuple = [x: number, y: number, z: number];
 export type EulerTuple = [pitch: number, yaw: number, roll: number];
@@ -95,8 +98,29 @@ export interface SceneNodeProps {
 }
 ```
 
-### Context Signatures
+### Simulation Frame Callback & Context Signatures
 ```typescript
+/**
+ * Execution state delivered to every registered useSceneFrame callback on each simulation tick.
+ * Decoupled from WebGL2RenderingContext so behavior continues even when GPU rendering is paused.
+ */
+export interface SceneFrameState {
+    /** Underlying programmatic scene instance */
+    readonly scene: IScene;
+    /** Current active camera appointed to the scene */
+    readonly activeCamera: ICamera | null;
+    /** Simulation timing metrics (elapsed seconds, clamped delta seconds, tick count) */
+    readonly timeInfo: TimeInfo;
+}
+
+export type SceneFrameCallback = (state: SceneFrameState) => void;
+
+export interface SceneFrameSubscriber {
+    readonly id: string;
+    readonly priority: number;
+    readonly callback: SceneFrameCallback;
+}
+
 export interface ISceneContextValue {
     /** Underlying programmatic scene instance */
     readonly scene: IScene;
@@ -106,6 +130,8 @@ export interface ISceneContextValue {
     setActiveCamera: (camera: ICamera | null) => void;
     /** Registers a camera with the scene. Returns unregister cleanup closure. */
     registerCamera: (camera: ICamera, makeDefault?: boolean) => () => void;
+    /** Subscribes a simulation/behavior callback to the scene's independent RAF loop. */
+    subscribeFrame: (callback: SceneFrameCallback, priority?: number) => () => void;
 }
 
 export interface IParentNodeContextValue {
@@ -121,7 +147,7 @@ export interface SceneProps {
     priority?: number;
     /** Whether to clear the depth buffer prior to rendering (default: true) */
     clearDepth?: boolean;
-    /** Scene graph children (cameras, groups, model instances) */
+    /** Scene graph children (cameras, groups, model instances, behavior controllers) */
     children?: React.ReactNode;
     /** Direct ref to underlying programmatic Scene */
     ref?: React.Ref<IScene>;
@@ -179,12 +205,53 @@ To prevent re-rendering the entire React subtree when spatial properties change:
    - If `visible` changed: updates `node.visible = visible`.
 3. The transform changes mark the node's world matrix dirty, seamlessly propagating down the tree during the engine's render cycle with zero React reconciliation overhead.
 
-### Camera Registration Procedure
+###Camera Registration Procedure
 1. When `<PerspectiveCamera>` mounts, it checks the `makeDefault` prop.
-2. It calls `registerCamera(camera, makeDefault)`.
-3. If `makeDefault` is true (or if no active camera is currently set), `SceneContext` appoints this camera as `activeCamera`.
-4. When `activeCamera` changes, `<Scene>` passes the camera to `<ScenePass camera={activeCamera} />`.
-5. On unmount, the unregister closure removes the camera from the scene registry and falls back to a remaining camera if applicable.
+2. It calls `registerCamera(camera, makeDefault)` from `SceneContext`, which delegates to `scene.registerCamera(camera, makeDefault)` and syncs React's `activeCamera` state with `scene.activeCamera`.
+3. If `makeDefault` is true (or if `scene.activeCamera` is currently `null`), `scene.registerCamera` appoints this camera as `scene.activeCamera`.
+4. When `activeCamera` changes, `<Scene>` passes the active camera to `<ScenePass camera={activeCamera} />`.
+5. On unmount, the unregister closure returned by `scene.registerCamera` removes the camera from `Scene`'s internal camera list and falls back to the last remaining registered camera (or `null`), syncing React state accordingly.
+
+### Decoupled Scene Simulation Loop (`Scene.subscribeFrame` & `useSceneFrame`)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Browser as window.requestAnimationFrame
+    participant SceneLoop as Programmatic Scene Simulation Ticker
+    participant Behavior as useSceneFrame / subscribeFrame Subscribers
+    participant CanvasLoop as <WebGLCanvas /> Render Loop
+    participant Renderer as <ScenePass /> / SceneRenderer
+
+    Note over Browser, Behavior: Independent Simulation Loop (Runs even if Canvas is offscreen)
+    Browser->>SceneLoop: tick(now)
+    SceneLoop->>SceneLoop: Compute clamped dt & elapsed time
+    loop For each subscriber sorted by priority
+        SceneLoop->>Behavior: callback({ scene, activeCamera, timeInfo })
+        Behavior->>Behavior: Mutate node/camera transforms & material params
+    end
+
+    Note over Browser, Renderer: GPU Rendering Loop (Pauses when Canvas is offscreen/lost)
+    Browser->>CanvasLoop: executeFrame(now) [Only if visible & context valid]
+    CanvasLoop->>Renderer: render(gl, timeInfo, dims)
+    Renderer->>Renderer: scene.update() -> camera.updateMatrices() -> draw()
+```
+
+1. **Programmatic Scene Ownership & Demand-Driven Activation:**
+   - The programmatic [`Scene`](../core/scene.ts) class maintains the internal `Map<string, SceneFrameSubscriber>` and cached priority-sorted subscriber array via `scene.subscribeFrame(callback, priority)`.
+   - `<Scene />` exposes `subscribeFrame` on `SceneContext` by delegating directly to `scene.subscribeFrame`, and `useSceneFrame` subscribes to it.
+   - When the subscriber count is `0`, no `requestAnimationFrame` loop is scheduled (zero idle overhead for static scenes).
+   - As soon as the first subscriber registers (`subscribers.size === 1`), `Scene` starts its `requestAnimationFrame` simulation loop.
+2. **Delta-Time Clamping & Monotonic Clock:**
+   - On each tick, raw delta time `rawDt = (now - lastTime) / 1000` is clamped to `[0.0001, 0.1]` seconds to prevent physics or damping explosions after tab switches.
+   - `elapsedTime` accumulates clamped `dt` and `frameCount` increments monotonically.
+3. **Priority-Ordered Execution:**
+   - Subscribers are sorted in ascending `priority` order (`default: 0`) whenever the subscriber set changes.
+   - Each subscriber receives `{ scene, activeCamera: scene.activeCamera, timeInfo }`.
+4. **Decoupling from WebGL Visibility:**
+   - Because `Scene` manages its own simulation `requestAnimationFrame` handle independently of `<WebGLCanvas />`, scrolling the canvas out of view pauses WebGL draw calls in `<WebGLCanvas />` while `Scene` behavior controllers continue updating cleanly.
+5. **Deterministic Teardown:**
+   - When the last subscriber unsubscribes (or when `scene.destroy()` is called on `<Scene />` unmount), `cancelAnimationFrame` is called immediately and all subscribers/cameras are cleared.
 
 ---
 
@@ -276,6 +343,30 @@ export function InteractiveProbe({ probeGeo, probeMat }) {
 }
 ```
 
+### Example 4: Continuous Simulation & Camera Rig Behavior via `useSceneFrame`
+```tsx
+import { useRef } from "react";
+import { ModelInstance } from "./model_instance_component";
+import { useSceneFrame } from "./use_scene_frame";
+import type { IModelInstance } from "../models/model_instance_types";
+
+export function SpinningAsteroid({ geo, mat }) {
+    const asteroidRef = useRef<IModelInstance>(null);
+
+    useSceneFrame(({ timeInfo }) => {
+        if (asteroidRef.current) {
+            asteroidRef.current.transform.setRotationEuler(
+                timeInfo.time * 0.2,
+                timeInfo.time * 0.5,
+                0
+            );
+        }
+    });
+
+    return <ModelInstance ref={asteroidRef} geometry={geo} material={mat} />;
+}
+```
+
 ---
 
 ## 7. Phased Implementation Plan
@@ -283,17 +374,18 @@ export function InteractiveProbe({ probeGeo, probeMat }) {
 Implementation will proceed following the phased subagent design protocol:
 
 - **Phase 1: Types & Context Contracts**
-  - Author [`scene_react_types.ts`](scene_react_types.ts) with full type separation.
+  - Author [`scene_react_types.ts`](scene_react_types.ts) with full type separation (including `SceneFrameState`, `SceneFrameCallback`, `SceneFrameSubscriber`).
   - Implement [`scene_context.ts`](scene_context.ts) establishing `SceneContext`, `ParentNodeContext`, `useScene`, and `useParentNode`.
-- **Phase 2: Core Lifecycle Hook**
+- **Phase 2: Core Lifecycle & Simulation Frame Hooks**
   - Author [`use_scene_node.ts`](use_scene_node.ts) implementing mount attachment, cleanup detachment, resource destruction, and prop-diffing transform updates.
+  - Author [`use_scene_frame.ts`](use_scene_frame.ts) subscribing behavior callbacks to the scene simulation loop.
 - **Phase 3: Declarative Component Implementations**
-  - Implement [`scene_component.tsx`](scene_component.tsx) integrating with [`ScenePass`](../renderer/scene_pass.tsx).
+  - Implement [`scene_component.tsx`](scene_component.tsx) hosting the demand-driven simulation `requestAnimationFrame` loop and integrating with [`ScenePass`](../renderer/scene_pass.tsx).
   - Implement [`group_component.tsx`](group_component.tsx) for hierarchical groupings.
   - Implement [`camera_component.tsx`](camera_component.tsx) with camera registration and aspect synchronization.
   - Implement [`model_instance_component.tsx`](model_instance_component.tsx) with renderable geometry and material bindings.
 - **Phase 4: Independent Unit Test Authoring**
-  - Delegate comprehensive unit test suite authoring covering node mounting, hierarchy nesting, camera registration, unmount detachment, and prop transform reconciliation.
+  - Delegate comprehensive unit test suite authoring covering node mounting, hierarchy nesting, camera registration, simulation frame loop execution, unmount detachment, and prop transform reconciliation.
 - **Phase 5: Quality Gate & Verification**
   - Verify full test suite passes (`npm test`).
   - Verify production build completes cleanly (`npm run build`).

@@ -1,5 +1,5 @@
-import { describe, it, expect, vi } from "vitest";
-import React, { createRef, useState } from "react";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import React, { createRef } from "react";
 import { render, renderHook } from "@testing-library/react";
 import { SceneContext, ParentNodeContext, useScene, useParentNode } from "./scene_context";
 import { Scene } from "./scene_component";
@@ -7,8 +7,18 @@ import { Group } from "./group_component";
 import { PerspectiveCamera } from "./camera_component";
 import { ModelInstance } from "./model_instance_component";
 import { useSceneNode } from "./use_scene_node";
-import { DEFAULT_SCENE_PASS_PRIORITY, DEFAULT_TRANSFORM_ORIGIN, DEFAULT_TRANSFORM_UNIT_SCALE } from "./scene_react_constants";
+import { useSceneFrame } from "./use_scene_frame";
+import {
+    DEFAULT_TRANSFORM_ORIGIN,
+    DEFAULT_TRANSFORM_UNIT_SCALE,
+} from "./scene_react_constants";
+import {
+    DEFAULT_FRAME_SUBSCRIBER_PRIORITY,
+    MAX_SIMULATION_DT_SEC,
+    MIN_SIMULATION_DT_SEC,
+} from "../core/animation_frame_manager_constants";
 import type { ISceneContextValue, Vector3Tuple, EulerTuple } from "./scene_react_types";
+import type { SceneFrameState } from "../core/scene_types";
 import { Scene as ProgrammaticScene } from "../core/scene";
 import { SceneNode } from "../core/scene_node";
 import { PerspectiveCamera as ProgrammaticCamera } from "../camera/perspective_camera";
@@ -19,6 +29,8 @@ import { ModelInstance as ProgrammaticModelInstance } from "../models/model_inst
 import { WebGLCanvasContext } from "../../components/webgl_canvas/webgl_context";
 import type { WebGLCanvasContextValue, WebGLSubscriber, CanvasDimensions } from "../../components/webgl_canvas/types";
 import { createMockContextManager } from "../../testing/mocks/mock_context_manager";
+import { createMockAnimationFrameScheduler } from "../../testing/mocks/mock_animation_frame";
+import type { IMockAnimationFrameScheduler } from "../../testing/mocks/mock_animation_frame_types";
 
 /**
  * Creates a spy-wrapped WebGLCanvasContextValue fixture for pure CPU component testing.
@@ -78,6 +90,7 @@ describe("Declarative Scene Architecture", () => {
                     activeCamera: null,
                     setActiveCamera: vi.fn(),
                     registerCamera: vi.fn(() => vi.fn()),
+                    subscribeFrame: vi.fn(() => vi.fn()),
                 };
 
                 const wrapper = ({ children }: { children: React.ReactNode }) => (
@@ -91,6 +104,7 @@ describe("Declarative Scene Architecture", () => {
                 expect(result.current.activeCamera).toBeNull();
                 expect(typeof result.current.setActiveCamera).toBe("function");
                 expect(typeof result.current.registerCamera).toBe("function");
+                expect(typeof result.current.subscribeFrame).toBe("function");
             });
         });
 
@@ -933,6 +947,465 @@ describe("Declarative Scene Architecture", () => {
             rerender(<NodeConsumer visible={true} name="FinalName" />);
             expect(child.visible).toBe(true);
             expect(child.name).toBe("FinalName");
+        });
+    });
+
+    describe("<Scene /> simulation loop & subscribeFrame", () => {
+        let scheduler: IMockAnimationFrameScheduler;
+        let restoreGlobal: () => void;
+
+        beforeEach(() => {
+            scheduler = createMockAnimationFrameScheduler(1000);
+            restoreGlobal = scheduler.installGlobal();
+        });
+
+        afterEach(() => {
+            restoreGlobal();
+        });
+
+        it("does not schedule requestAnimationFrame on <Scene /> mount when zero frame subscribers are registered", () => {
+            const { contextValue } = createMockCanvasContext();
+
+            render(
+                <WebGLCanvasContext.Provider value={contextValue}>
+                    <Scene>
+                        <Group name="StaticGroup" />
+                    </Scene>
+                </WebGLCanvasContext.Provider>
+            );
+
+            expect(scheduler.requestAnimationFrame).not.toHaveBeenCalled();
+            expect(scheduler.pendingCount).toBe(0);
+        });
+
+        it("starts the requestAnimationFrame loop when the first subscriber registers and cancels it immediately when the last subscriber unsubscribes", () => {
+            const { contextValue } = createMockCanvasContext();
+            let subscribeFrameFn: ISceneContextValue["subscribeFrame"] | null = null;
+
+            function Probe() {
+                subscribeFrameFn = useScene().subscribeFrame;
+                return null;
+            }
+
+            render(
+                <WebGLCanvasContext.Provider value={contextValue}>
+                    <Scene>
+                        <Probe />
+                    </Scene>
+                </WebGLCanvasContext.Provider>
+            );
+
+            expect(subscribeFrameFn).not.toBeNull();
+            expect(scheduler.requestAnimationFrame).not.toHaveBeenCalled();
+
+            const sub1 = vi.fn();
+            const sub2 = vi.fn();
+
+            const unsub1 = subscribeFrameFn!(sub1);
+            expect(typeof unsub1).toBe("function");
+            expect(scheduler.requestAnimationFrame).toHaveBeenCalledTimes(1);
+            expect(scheduler.pendingCount).toBe(1);
+
+            // Second subscriber reuses the existing scheduled RAF
+            const unsub2 = subscribeFrameFn!(sub2);
+            expect(typeof unsub2).toBe("function");
+            expect(scheduler.requestAnimationFrame).toHaveBeenCalledTimes(1);
+
+            // Unsubscribing first subscriber leaves 1 active, so RAF is not cancelled
+            unsub1();
+            expect(scheduler.cancelAnimationFrame).not.toHaveBeenCalled();
+            expect(scheduler.pendingCount).toBe(1);
+
+            // Unsubscribing last subscriber immediately cancels pending RAF
+            unsub2();
+            expect(scheduler.cancelAnimationFrame).toHaveBeenCalledTimes(1);
+            expect(scheduler.cancelAnimationFrame).toHaveBeenCalledWith(1);
+            expect(scheduler.pendingCount).toBe(0);
+        });
+
+        it("cancels any active requestAnimationFrame when <Scene /> unmounts while subscribers are still active", () => {
+            const { contextValue } = createMockCanvasContext();
+            const frameSpy = vi.fn();
+
+            function ActiveBehavior() {
+                useSceneFrame(frameSpy);
+                return null;
+            }
+
+            const { unmount } = render(
+                <WebGLCanvasContext.Provider value={contextValue}>
+                    <Scene>
+                        <ActiveBehavior />
+                    </Scene>
+                </WebGLCanvasContext.Provider>
+            );
+
+            expect(scheduler.requestAnimationFrame).toHaveBeenCalledTimes(1);
+            expect(scheduler.pendingCount).toBe(1);
+
+            scheduler.stepFrame(16);
+            expect(frameSpy).toHaveBeenCalledTimes(1);
+            expect(scheduler.requestAnimationFrame).toHaveBeenCalledTimes(2);
+            expect(scheduler.pendingCount).toBe(1);
+
+            unmount();
+            expect(scheduler.cancelAnimationFrame).toHaveBeenCalledWith(2);
+            expect(scheduler.pendingCount).toBe(0);
+        });
+
+        it("executes subscribers in ascending priority order (a.priority - b.priority), defaulting to DEFAULT_FRAME_SUBSCRIBER_PRIORITY (0)", () => {
+            const { contextValue } = createMockCanvasContext();
+            let subscribeFrameFn: ISceneContextValue["subscribeFrame"] | null = null;
+
+            function Probe() {
+                subscribeFrameFn = useScene().subscribeFrame;
+                return null;
+            }
+
+            render(
+                <WebGLCanvasContext.Provider value={contextValue}>
+                    <Scene>
+                        <Probe />
+                    </Scene>
+                </WebGLCanvasContext.Provider>
+            );
+
+            const executionOrder: string[] = [];
+
+            subscribeFrameFn!(() => {
+                executionOrder.push("priority_10");
+            }, 10);
+
+            subscribeFrameFn!(() => {
+                executionOrder.push(`default_${DEFAULT_FRAME_SUBSCRIBER_PRIORITY}`);
+            });
+
+            subscribeFrameFn!(() => {
+                executionOrder.push("priority_-5");
+            }, -5);
+
+            subscribeFrameFn!(() => {
+                executionOrder.push("priority_2");
+            }, 2);
+
+            scheduler.stepFrame(16);
+
+            expect(executionOrder).toEqual([
+                "priority_-5",
+                "default_0",
+                "priority_2",
+                "priority_10",
+            ]);
+        });
+
+        it("passes SceneFrameState with { scene, activeCamera, timeInfo } reflecting the latest appointed activeCamera as cameras mount and switch", () => {
+            const { contextValue } = createMockCanvasContext();
+            const cam1Ref = createRef<ICamera>();
+            const cam2Ref = createRef<ICamera>();
+            const sceneRef = createRef<ProgrammaticScene>();
+            const receivedStates: SceneFrameState[] = [];
+
+            function FrameRecorder() {
+                useSceneFrame((state) => {
+                    receivedStates.push(state);
+                });
+                return null;
+            }
+
+            function App({ showCam1, showCam2Default }: { showCam1: boolean; showCam2Default: boolean }) {
+                return (
+                    <Scene ref={sceneRef}>
+                        <FrameRecorder />
+                        {showCam1 && <PerspectiveCamera ref={cam1Ref} name="Cam1" makeDefault />}
+                        {showCam2Default && <PerspectiveCamera ref={cam2Ref} name="Cam2" makeDefault />}
+                    </Scene>
+                );
+            }
+
+            const { rerender } = render(
+                <WebGLCanvasContext.Provider value={contextValue}>
+                    <App showCam1={false} showCam2Default={false} />
+                </WebGLCanvasContext.Provider>
+            );
+
+            // Tick 1: No camera mounted
+            scheduler.stepFrame(20);
+            expect(receivedStates).toHaveLength(1);
+            expect(receivedStates[0].scene).toBe(sceneRef.current);
+            expect(receivedStates[0].activeCamera).toBeNull();
+            expect(receivedStates[0].timeInfo.frameCount).toBe(1);
+            expect(receivedStates[0].timeInfo.dt).toBeCloseTo(0.02, 5);
+            expect(receivedStates[0].timeInfo.time).toBeCloseTo(0.02, 5);
+
+            // Mount Cam1
+            rerender(
+                <WebGLCanvasContext.Provider value={contextValue}>
+                    <App showCam1={true} showCam2Default={false} />
+                </WebGLCanvasContext.Provider>
+            );
+
+            scheduler.stepFrame(30);
+            expect(receivedStates).toHaveLength(2);
+            expect(receivedStates[1].scene).toBe(sceneRef.current);
+            expect(receivedStates[1].activeCamera).toBe(cam1Ref.current);
+            expect(receivedStates[1].timeInfo.frameCount).toBe(2);
+            expect(receivedStates[1].timeInfo.dt).toBeCloseTo(0.03, 5);
+            expect(receivedStates[1].timeInfo.time).toBeCloseTo(0.05, 5);
+
+            // Mount Cam2 with makeDefault
+            rerender(
+                <WebGLCanvasContext.Provider value={contextValue}>
+                    <App showCam1={true} showCam2Default={true} />
+                </WebGLCanvasContext.Provider>
+            );
+
+            scheduler.stepFrame(25);
+            expect(receivedStates).toHaveLength(3);
+            expect(receivedStates[2].activeCamera).toBe(cam2Ref.current);
+            expect(receivedStates[2].timeInfo.frameCount).toBe(3);
+        });
+
+        it("clamps simulation dt between MIN_SIMULATION_DT_SEC (0.0001) and MAX_SIMULATION_DT_SEC (0.1) and accumulates time and frameCount", () => {
+            const { contextValue } = createMockCanvasContext();
+            const receivedStates: SceneFrameState[] = [];
+
+            function FrameRecorder() {
+                useSceneFrame((state) => {
+                    receivedStates.push(state);
+                });
+                return null;
+            }
+
+            render(
+                <WebGLCanvasContext.Provider value={contextValue}>
+                    <Scene>
+                        <FrameRecorder />
+                    </Scene>
+                </WebGLCanvasContext.Provider>
+            );
+
+            // Frame 1: Zero elapsed ms -> clamps to MIN_SIMULATION_DT_SEC (0.0001)
+            scheduler.stepFrame(0);
+            expect(receivedStates[0].timeInfo.dt).toBe(MIN_SIMULATION_DT_SEC);
+            expect(receivedStates[0].timeInfo.time).toBeCloseTo(MIN_SIMULATION_DT_SEC, 6);
+            expect(receivedStates[0].timeInfo.frameCount).toBe(1);
+
+            // Frame 2: Negative elapsed ms -> clamps to MIN_SIMULATION_DT_SEC (0.0001)
+            scheduler.stepFrame(-50);
+            expect(receivedStates[1].timeInfo.dt).toBe(MIN_SIMULATION_DT_SEC);
+            expect(receivedStates[1].timeInfo.time).toBeCloseTo(MIN_SIMULATION_DT_SEC * 2, 6);
+            expect(receivedStates[1].timeInfo.frameCount).toBe(2);
+
+            // Frame 3: Huge elapsed ms (5000ms = 5s) -> clamps to MAX_SIMULATION_DT_SEC (0.1)
+            scheduler.stepFrame(5000);
+            expect(receivedStates[2].timeInfo.dt).toBe(MAX_SIMULATION_DT_SEC);
+            expect(receivedStates[2].timeInfo.time).toBeCloseTo(MIN_SIMULATION_DT_SEC * 2 + MAX_SIMULATION_DT_SEC, 6);
+            expect(receivedStates[2].timeInfo.frameCount).toBe(3);
+
+            // Frame 4: Nominal 50ms (0.05s) -> unclamped
+            scheduler.stepFrame(50);
+            expect(receivedStates[3].timeInfo.dt).toBeCloseTo(0.05, 6);
+            expect(receivedStates[3].timeInfo.time).toBeCloseTo(
+                MIN_SIMULATION_DT_SEC * 2 + MAX_SIMULATION_DT_SEC + 0.05,
+                6
+            );
+            expect(receivedStates[3].timeInfo.frameCount).toBe(4);
+        });
+
+        it("handles a subscriber unsubscribing during a tick without throwing or scheduling another RAF when the subscriber map becomes empty", () => {
+            const { contextValue } = createMockCanvasContext();
+            let subscribeFrameFn: ISceneContextValue["subscribeFrame"] | null = null;
+
+            function Probe() {
+                subscribeFrameFn = useScene().subscribeFrame;
+                return null;
+            }
+
+            render(
+                <WebGLCanvasContext.Provider value={contextValue}>
+                    <Scene>
+                        <Probe />
+                    </Scene>
+                </WebGLCanvasContext.Provider>
+            );
+
+            let unsub1: (() => void) | null = null;
+            let unsub2: (() => void) | null = null;
+
+            const sub2Spy = vi.fn();
+            const sub1Spy = vi.fn(() => {
+                // Unsubscribe both self and downstream subscriber during tick
+                unsub1?.();
+                unsub2?.();
+            });
+
+            unsub1 = subscribeFrameFn!(sub1Spy, 1);
+            unsub2 = subscribeFrameFn!(sub2Spy, 2);
+
+            expect(scheduler.requestAnimationFrame).toHaveBeenCalledTimes(1);
+            expect(scheduler.pendingCount).toBe(1);
+
+            expect(() => {
+                scheduler.stepFrame(16);
+            }).not.toThrow();
+
+            expect(sub1Spy).toHaveBeenCalledTimes(1);
+            // Downstream subscriber was unsubscribed mid-tick, so it must be skipped
+            expect(sub2Spy).not.toHaveBeenCalled();
+            // Because subscribersMap became empty during the tick, no follow-up RAF is scheduled
+            expect(scheduler.requestAnimationFrame).toHaveBeenCalledTimes(1);
+            expect(scheduler.pendingCount).toBe(0);
+        });
+    });
+
+    describe("useSceneFrame()", () => {
+        it("throws a descriptive error when invoked outside <Scene />", () => {
+            expect(() => {
+                renderHook(() => useSceneFrame(vi.fn()));
+            }).toThrowError("useScene must be used within a <Scene> component.");
+        });
+
+        it("subscribes on mount and unsubscribes on unmount", () => {
+            const mockScene = new ProgrammaticScene();
+            const unsubscribeSpy = vi.fn();
+            const subscribeFrameSpy = vi.fn(() => unsubscribeSpy);
+
+            const mockContextValue: ISceneContextValue = {
+                scene: mockScene,
+                activeCamera: null,
+                setActiveCamera: vi.fn(),
+                registerCamera: vi.fn(() => vi.fn()),
+                subscribeFrame: subscribeFrameSpy,
+            };
+
+            const wrapper = ({ children }: { children: React.ReactNode }) => (
+                <SceneContext.Provider value={mockContextValue}>
+                    {children}
+                </SceneContext.Provider>
+            );
+
+            const callback = vi.fn();
+            const { result, unmount } = renderHook(() => useSceneFrame(callback), { wrapper });
+
+            expect(result.current).toBeUndefined();
+            expect(subscribeFrameSpy).toHaveBeenCalledTimes(1);
+            expect(subscribeFrameSpy).toHaveBeenCalledWith(
+                expect.any(Function),
+                DEFAULT_FRAME_SUBSCRIBER_PRIORITY
+            );
+            expect(unsubscribeSpy).not.toHaveBeenCalled();
+
+            unmount();
+            expect(unsubscribeSpy).toHaveBeenCalledTimes(1);
+        });
+
+        it("always invokes the latest inline callback closure across component re-renders without unsubscribing or re-subscribing when priority is unchanged", () => {
+            const mockScene = new ProgrammaticScene();
+            let registeredCallback: ((state: SceneFrameState) => void) | null = null;
+            const unsubscribeSpy = vi.fn();
+            const subscribeFrameSpy = vi.fn((cb: (state: SceneFrameState) => void) => {
+                registeredCallback = cb;
+                return unsubscribeSpy;
+            });
+
+            const mockContextValue: ISceneContextValue = {
+                scene: mockScene,
+                activeCamera: null,
+                setActiveCamera: vi.fn(),
+                registerCamera: vi.fn(() => vi.fn()),
+                subscribeFrame: subscribeFrameSpy,
+            };
+
+            const wrapper = ({ children }: { children: React.ReactNode }) => (
+                <SceneContext.Provider value={mockContextValue}>
+                    {children}
+                </SceneContext.Provider>
+            );
+
+            const firstCallback = vi.fn();
+            const secondCallback = vi.fn();
+
+            const { rerender } = renderHook(
+                ({ cb, priority }) => useSceneFrame(cb, priority),
+                {
+                    wrapper,
+                    initialProps: { cb: firstCallback, priority: 5 },
+                }
+            );
+
+            expect(subscribeFrameSpy).toHaveBeenCalledTimes(1);
+            expect(unsubscribeSpy).not.toHaveBeenCalled();
+
+            // Re-render with a fresh inline callback closure but identical priority
+            rerender({ cb: secondCallback, priority: 5 });
+
+            expect(subscribeFrameSpy).toHaveBeenCalledTimes(1);
+            expect(unsubscribeSpy).not.toHaveBeenCalled();
+
+            // Triggering the registered callback should invoke the latest closure (secondCallback)
+            const sampleState: SceneFrameState = {
+                scene: mockScene,
+                activeCamera: null,
+                timeInfo: { time: 1.0, dt: 0.016, frameCount: 60 },
+            };
+            registeredCallback!(sampleState);
+
+            expect(firstCallback).not.toHaveBeenCalled();
+            expect(secondCallback).toHaveBeenCalledTimes(1);
+            expect(secondCallback).toHaveBeenCalledWith(sampleState);
+        });
+
+        it("re-subscribes with new ordering when priority prop changes", () => {
+            const { contextValue } = createMockCanvasContext();
+            const scheduler = createMockAnimationFrameScheduler(1000);
+            const restoreGlobal = scheduler.installGlobal();
+
+            try {
+                const executionOrder: string[] = [];
+
+                function DynamicSubscriber({ dynamicPriority }: { dynamicPriority: number }) {
+                    useSceneFrame(() => {
+                        executionOrder.push("dynamic");
+                    }, dynamicPriority);
+                    return null;
+                }
+
+                function FixedSubscriber() {
+                    useSceneFrame(() => {
+                        executionOrder.push("fixed_0");
+                    }, 0);
+                    return null;
+                }
+
+                const { rerender } = render(
+                    <WebGLCanvasContext.Provider value={contextValue}>
+                        <Scene>
+                            <DynamicSubscriber dynamicPriority={10} />
+                            <FixedSubscriber />
+                        </Scene>
+                    </WebGLCanvasContext.Provider>
+                );
+
+                // First frame: dynamicPriority = 10 runs after fixed_0 (priority 0)
+                scheduler.stepFrame(16);
+                expect(executionOrder).toEqual(["fixed_0", "dynamic"]);
+
+                // Update dynamicPriority to -10 so it runs before fixed_0
+                executionOrder.length = 0;
+                rerender(
+                    <WebGLCanvasContext.Provider value={contextValue}>
+                        <Scene>
+                            <DynamicSubscriber dynamicPriority={-10} />
+                            <FixedSubscriber />
+                        </Scene>
+                    </WebGLCanvasContext.Provider>
+                );
+
+                scheduler.stepFrame(16);
+                expect(executionOrder).toEqual(["dynamic", "fixed_0"]);
+            } finally {
+                restoreGlobal();
+            }
         });
     });
 });
