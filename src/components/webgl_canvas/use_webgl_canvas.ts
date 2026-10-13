@@ -66,6 +66,8 @@ export function useWebGLCanvas(config?: UseWebGLCanvasOptions) {
     dimensionsRef.current = dimensions;
 
     const subscribersRef = useRef<Map<string, WebGLSubscriber>>(new Map());
+    const optionsRef = useRef(options);
+    optionsRef.current = options;
 
     // Loop & timing references
     const rafIdRef = useRef<number | null>(null);
@@ -132,8 +134,8 @@ export function useWebGLCanvas(config?: UseWebGLCanvasOptions) {
             frameCount: frameCountRef.current,
         };
 
-        if (options.autoClear) {
-            const cc = options.clearColor;
+        if (optionsRef.current.autoClear) {
+            const cc = optionsRef.current.clearColor;
             gl.clearColor(cc[0], cc[1], cc[2], cc[3]);
             gl.clear(gl.COLOR_BUFFER_BIT);
         }
@@ -174,10 +176,13 @@ export function useWebGLCanvas(config?: UseWebGLCanvasOptions) {
     useEffect(() => {
         if (!canvasNode) return;
 
+        const subscribers = subscribersRef.current;
+        const contextManager = contextManagerRef.current;
+
         // 1. Context Acquisition
         const gl = canvasNode.getContext(
             options.version,
-            options.attributes
+            optionsRef.current.attributes
         ) as WebGL2RenderingContext | null;
 
         if (!gl) {
@@ -358,12 +363,12 @@ export function useWebGLCanvas(config?: UseWebGLCanvasOptions) {
             intersectionObserver?.disconnect();
 
             // Destroy all subscribers
-            for (const sub of subscribersRef.current.values()) {
+            for (const sub of subscribers.values()) {
                 sub.destroy?.();
             }
 
             // Destroy context manager resources
-            contextManagerRef.current.destroy();
+            contextManager.destroy();
 
             // Explicitly force context loss on unmount to free the browser's context quota slot immediately
             if (glRef.current) {

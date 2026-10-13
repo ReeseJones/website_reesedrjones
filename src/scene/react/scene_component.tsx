@@ -25,7 +25,7 @@ export function Scene({
     const scene = sceneRef.current;
 
     // React 19 ref assignment
-    useImperativeHandle(ref, () => scene, [scene, ref]);
+    useImperativeHandle(ref, () => scene, [scene]);
 
     const [activeCamera, setActiveCamera] = useState<ICamera | null>(null);
 

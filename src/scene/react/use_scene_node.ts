@@ -21,7 +21,7 @@ export function useSceneNode<TNode extends ISceneNode = ISceneNode>(
     const { parent } = useParentNode();
 
     // 1. React 19 ref forwarding / imperative assignment
-    useImperativeHandle(props.ref, () => node, [node, props.ref]);
+    useImperativeHandle(props.ref, () => node, [node]);
 
     // 2. Scene graph hierarchy attachment and deterministic unmount cleanup
     useEffect(() => {
