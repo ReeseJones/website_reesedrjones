@@ -1,8 +1,15 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Scene } from "./scene";
 import { SceneNode } from "./scene_node";
-import type { ISceneNode } from "./scene_node_types";
-import type { ICamera } from "../camera/camera_types";
+import {
+    DEFAULT_FRAME_SUBSCRIBER_PRIORITY,
+    MAX_SIMULATION_DT_SEC,
+    MIN_SIMULATION_DT_SEC,
+} from "./animation_frame_manager_constants";
+import type { SceneFrameState } from "./scene_types";
+import { PerspectiveCamera } from "../camera/perspective_camera";
+import { createMockAnimationFrameScheduler } from "../../testing/mocks/mock_animation_frame";
+import type { IMockAnimationFrameScheduler } from "../../testing/mocks/mock_animation_frame_types";
 
 /** Matrix index of the X translation component in a column-major 4x4 matrix. */
 const TX = 12;
@@ -47,9 +54,80 @@ describe("Scene", () => {
     describe("activeCamera", () => {
         it("should allow assigning and retrieving an active camera", () => {
             const scene = new Scene();
-            const mockCamera = { name: "TestCamera" } as unknown as ICamera;
-            scene.activeCamera = mockCamera;
-            expect(scene.activeCamera).toBe(mockCamera);
+            const camera = new PerspectiveCamera({}, "TestCamera");
+            scene.activeCamera = camera;
+            expect(scene.activeCamera).toBe(camera);
+        });
+    });
+
+    describe("registerCamera()", () => {
+        it("should automatically appoint the first registered camera as activeCamera and return an unregister closure", () => {
+            const scene = new Scene();
+            const cam1 = new PerspectiveCamera({}, "Cam1");
+
+            const unregister = scene.registerCamera(cam1);
+            expect(typeof unregister).toBe("function");
+            expect(scene.activeCamera).toBe(cam1);
+        });
+
+        it("should preserve existing activeCamera when a secondary camera registers without makeDefault, and switch when makeDefault is true", () => {
+            const scene = new Scene();
+            const cam1 = new PerspectiveCamera({}, "Cam1");
+            const cam2 = new PerspectiveCamera({}, "Cam2");
+            const cam3 = new PerspectiveCamera({}, "Cam3");
+
+            scene.registerCamera(cam1);
+            expect(scene.activeCamera).toBe(cam1);
+
+            scene.registerCamera(cam2, false);
+            expect(scene.activeCamera).toBe(cam1);
+
+            scene.registerCamera(cam3, true);
+            expect(scene.activeCamera).toBe(cam3);
+        });
+
+        it("should deduplicate when the same camera instance is registered multiple times", () => {
+            const scene = new Scene();
+            const cam1 = new PerspectiveCamera({}, "Cam1");
+            const cam2 = new PerspectiveCamera({}, "Cam2");
+
+            const unreg1A = scene.registerCamera(cam1);
+            scene.registerCamera(cam1, true);
+            scene.registerCamera(cam2, true);
+            expect(scene.activeCamera).toBe(cam2);
+
+            // Unregistering cam1 once removes it from the registry completely
+            unreg1A();
+
+            // When cam2 unregisters, activeCamera becomes null rather than falling back to a duplicate cam1
+            const unreg2 = scene.registerCamera(cam2, true);
+            unreg2();
+            expect(scene.activeCamera).toBeNull();
+        });
+
+        it("should fall back to the most recently registered remaining camera when activeCamera unregisters, or null when none remain", () => {
+            const scene = new Scene();
+            const cam1 = new PerspectiveCamera({}, "Cam1");
+            const cam2 = new PerspectiveCamera({}, "Cam2");
+            const cam3 = new PerspectiveCamera({}, "Cam3");
+
+            const unreg1 = scene.registerCamera(cam1);
+            const unreg2 = scene.registerCamera(cam2);
+            const unreg3 = scene.registerCamera(cam3, true);
+
+            expect(scene.activeCamera).toBe(cam3);
+
+            // Unregistering active cam3 falls back to most recently registered remaining camera (cam2)
+            unreg3();
+            expect(scene.activeCamera).toBe(cam2);
+
+            // Unregistering non-active cam1 keeps cam2 as activeCamera
+            unreg1();
+            expect(scene.activeCamera).toBe(cam2);
+
+            // Unregistering last remaining camera resets activeCamera to null
+            unreg2();
+            expect(scene.activeCamera).toBeNull();
         });
     });
 
@@ -314,6 +392,147 @@ describe("Scene", () => {
         });
     });
 
+    describe("subscribeFrame()", () => {
+        let scheduler: IMockAnimationFrameScheduler;
+
+        beforeEach(() => {
+            scheduler = createMockAnimationFrameScheduler(1000);
+        });
+
+        it("should not call requestAnimationFrame on new Scene() until the first subscriber registers, and should cancel RAF immediately when the last subscriber unsubscribes", () => {
+            const scene = new Scene("SceneRoot", undefined, scheduler);
+            expect(scheduler.requestAnimationFrame).not.toHaveBeenCalled();
+
+            const sub1 = vi.fn();
+            const sub2 = vi.fn();
+
+            const unsub1 = scene.subscribeFrame(sub1);
+            expect(typeof unsub1).toBe("function");
+            expect(scheduler.requestAnimationFrame).toHaveBeenCalledTimes(1);
+            expect(scheduler.pendingCount).toBe(1);
+
+            // Second subscriber reuses the existing scheduled RAF
+            const unsub2 = scene.subscribeFrame(sub2);
+            expect(typeof unsub2).toBe("function");
+            expect(scheduler.requestAnimationFrame).toHaveBeenCalledTimes(1);
+
+            // Unsubscribing first subscriber leaves 1 active, so RAF is not cancelled
+            unsub1();
+            expect(scheduler.cancelAnimationFrame).not.toHaveBeenCalled();
+            expect(scheduler.pendingCount).toBe(1);
+
+            // Unsubscribing last subscriber immediately cancels pending RAF
+            unsub2();
+            expect(scheduler.cancelAnimationFrame).toHaveBeenCalledTimes(1);
+            expect(scheduler.cancelAnimationFrame).toHaveBeenCalledWith(1);
+            expect(scheduler.pendingCount).toBe(0);
+        });
+
+        it("should execute subscribers in ascending priority order (a.priority - b.priority), defaulting to DEFAULT_FRAME_SUBSCRIBER_PRIORITY (0)", () => {
+            const scene = new Scene("SceneRoot", undefined, scheduler);
+            const executionOrder: string[] = [];
+
+            scene.subscribeFrame(() => {
+                executionOrder.push("priority_10");
+            }, 10);
+
+            scene.subscribeFrame(() => {
+                executionOrder.push(`default_${DEFAULT_FRAME_SUBSCRIBER_PRIORITY}`);
+            });
+
+            scene.subscribeFrame(() => {
+                executionOrder.push("priority_-5");
+            }, -5);
+
+            scene.subscribeFrame(() => {
+                executionOrder.push("priority_2");
+            }, 2);
+
+            scheduler.stepFrame(16);
+
+            expect(executionOrder).toEqual([
+                "priority_-5",
+                "default_0",
+                "priority_2",
+                "priority_10",
+            ]);
+        });
+
+        it("should pass SceneFrameState ({ scene, activeCamera, timeInfo }) with clamped dt, accumulated time, and incremented frameCount", () => {
+            const scene = new Scene("SceneRoot", undefined, scheduler);
+            const cam1 = new PerspectiveCamera({}, "Cam1");
+            const cam2 = new PerspectiveCamera({}, "Cam2");
+            const receivedStates: SceneFrameState[] = [];
+
+            scene.subscribeFrame((state) => {
+                receivedStates.push(state);
+            });
+
+            // Frame 1: Zero elapsed ms -> clamps to MIN_SIMULATION_DT_SEC (0.0001), activeCamera is null
+            scheduler.stepFrame(0);
+            expect(receivedStates[0].scene).toBe(scene);
+            expect(receivedStates[0].activeCamera).toBeNull();
+            expect(receivedStates[0].timeInfo.dt).toBe(MIN_SIMULATION_DT_SEC);
+            expect(receivedStates[0].timeInfo.time).toBeCloseTo(MIN_SIMULATION_DT_SEC, 6);
+            expect(receivedStates[0].timeInfo.frameCount).toBe(1);
+
+            // Frame 2: Negative elapsed ms -> clamps to MIN_SIMULATION_DT_SEC, activeCamera appointed to cam1
+            scene.registerCamera(cam1);
+            scheduler.stepFrame(-50);
+            expect(receivedStates[1].activeCamera).toBe(cam1);
+            expect(receivedStates[1].timeInfo.dt).toBe(MIN_SIMULATION_DT_SEC);
+            expect(receivedStates[1].timeInfo.time).toBeCloseTo(MIN_SIMULATION_DT_SEC * 2, 6);
+            expect(receivedStates[1].timeInfo.frameCount).toBe(2);
+
+            // Frame 3: Huge elapsed ms (5000ms) -> clamps to MAX_SIMULATION_DT_SEC (0.1), activeCamera switched to cam2
+            scene.registerCamera(cam2, true);
+            scheduler.stepFrame(5000);
+            expect(receivedStates[2].activeCamera).toBe(cam2);
+            expect(receivedStates[2].timeInfo.dt).toBe(MAX_SIMULATION_DT_SEC);
+            expect(receivedStates[2].timeInfo.time).toBeCloseTo(
+                MIN_SIMULATION_DT_SEC * 2 + MAX_SIMULATION_DT_SEC,
+                6
+            );
+            expect(receivedStates[2].timeInfo.frameCount).toBe(3);
+
+            // Frame 4: Nominal 50ms (0.05s) -> unclamped
+            scheduler.stepFrame(50);
+            expect(receivedStates[3].timeInfo.dt).toBeCloseTo(0.05, 6);
+            expect(receivedStates[3].timeInfo.time).toBeCloseTo(
+                MIN_SIMULATION_DT_SEC * 2 + MAX_SIMULATION_DT_SEC + 0.05,
+                6
+            );
+            expect(receivedStates[3].timeInfo.frameCount).toBe(4);
+        });
+
+        it("should handle safe mid-tick unsubscription without throwing or scheduling another RAF when the subscriber map becomes empty", () => {
+            const scene = new Scene("SceneRoot", undefined, scheduler);
+            let unsub1: (() => void) | null = null;
+            let unsub2: (() => void) | null = null;
+
+            const sub2Spy = vi.fn();
+            const sub1Spy = vi.fn(() => {
+                unsub1?.();
+                unsub2?.();
+            });
+
+            unsub1 = scene.subscribeFrame(sub1Spy, 1);
+            unsub2 = scene.subscribeFrame(sub2Spy, 2);
+
+            expect(scheduler.requestAnimationFrame).toHaveBeenCalledTimes(1);
+            expect(scheduler.pendingCount).toBe(1);
+
+            expect(() => {
+                scheduler.stepFrame(16);
+            }).not.toThrow();
+
+            expect(sub1Spy).toHaveBeenCalledTimes(1);
+            expect(sub2Spy).not.toHaveBeenCalled();
+            expect(scheduler.requestAnimationFrame).toHaveBeenCalledTimes(1);
+            expect(scheduler.pendingCount).toBe(0);
+        });
+    });
+
     describe(".destroy()", () => {
         it("should clear all children and destroy the scene node", () => {
             const scene = new Scene();
@@ -325,6 +544,26 @@ describe("Scene", () => {
             expect(clearSpy).toHaveBeenCalledTimes(1);
             expect(scene.children.length).toBe(0);
             expect(a.parent).toBeNull();
+        });
+
+        it("should cancel any pending requestAnimationFrame, clear subscribers, and reset activeCamera to null", () => {
+            const scheduler = createMockAnimationFrameScheduler(1000);
+            const scene = new Scene("SceneRoot", undefined, scheduler);
+            const cam = new PerspectiveCamera({}, "MainCam");
+            scene.registerCamera(cam, true);
+            expect(scene.activeCamera).toBe(cam);
+
+            const frameSpy = vi.fn();
+            scene.subscribeFrame(frameSpy);
+            expect(scheduler.requestAnimationFrame).toHaveBeenCalledTimes(1);
+            expect(scheduler.pendingCount).toBe(1);
+
+            scene.destroy();
+
+            expect(scheduler.cancelAnimationFrame).toHaveBeenCalledTimes(1);
+            expect(scheduler.cancelAnimationFrame).toHaveBeenCalledWith(1);
+            expect(scheduler.pendingCount).toBe(0);
+            expect(scene.activeCamera).toBeNull();
         });
     });
 });

@@ -83,9 +83,12 @@ All transform and scene graph code resides in `src/maths/` and `src/scene/core/`
 - **Scene Node Hierarchy Layer:**
   - [`src/scene/core/scene_node_types.ts`](core/scene_node_types.ts): Contracts for node hierarchy, traversal callbacks, and options.
   - [`src/scene/core/scene_node.ts`](core/scene_node.ts): Base `SceneNode` class implementing parent-child relationships, world matrix caching, visibility cascading, and group organization.
-- **Scene Container Layer:**
-  - [`src/scene/core/scene_types.ts`](core/scene_types.ts): Contracts for the root `Scene` container and active camera registry.
-  - [`src/scene/core/scene.ts`](core/scene.ts): The top-level `Scene` container managing root nodes and frame update passes.
+- **Scene Container & Frame Loop Layer:**
+  - [`src/scene/core/animation_frame_manager_constants.ts`](core/animation_frame_manager_constants.ts): Constants for the demand-driven simulation loop (`DEFAULT_FRAME_SUBSCRIBER_PRIORITY`, `MS_PER_SECOND`, `MIN_SIMULATION_DT_SEC`, `MAX_SIMULATION_DT_SEC`).
+  - [`src/scene/core/animation_frame_manager_types.ts`](core/animation_frame_manager_types.ts): Generic contracts for `AnimationFrameManager<TState = TimeInfo>` (`AnimationFrameCallback`, `AnimationFrameStateFactory`, `AnimationFrameSubscriber`, `IAnimationFrameManager`).
+  - [`src/scene/core/animation_frame_manager.ts`](core/animation_frame_manager.ts): Demand-driven `requestAnimationFrame` scheduler and simulation clock (see [`animation_frame_manager_design.md`](core/animation_frame_manager_design.md)).
+  - [`src/scene/core/scene_types.ts`](core/scene_types.ts): Contracts for the root `Scene` container, active camera registry, and specialized `SceneFrameState` / `SceneFrameCallback`.
+  - [`src/scene/core/scene.ts`](core/scene.ts): The top-level `Scene` container managing root nodes, registered cameras, active camera appointment, and delegating frame subscriptions to an internal `AnimationFrameManager<SceneFrameState>`.
 
 ---
 
@@ -215,10 +218,26 @@ export interface ISceneNode {
 ```typescript
 import type { ISceneNode } from "./scene_node_types";
 import type { ICamera } from "../camera/camera_types";
+import type { AnimationFrameCallback, AnimationFrameState } from "./animation_frame_manager_types";
+
+export interface SceneFrameState extends AnimationFrameState {
+    /** Underlying programmatic scene instance */
+    readonly scene: IScene;
+    /** Current active camera appointed to the scene */
+    readonly activeCamera: ICamera | null;
+}
+
+export type SceneFrameCallback = AnimationFrameCallback<SceneFrameState>;
 
 export interface IScene extends ISceneNode {
     /** Appointed active camera for the scene */
     activeCamera: ICamera | null;
+
+    /** Registers a camera with the scene and optionally appoints it as activeCamera. Returns unregister cleanup closure. */
+    registerCamera(camera: ICamera, makeDefault?: boolean): () => void;
+
+    /** Subscribes a simulation/behavior callback to the scene's demand-driven RAF loop. Returns unsubscribe cleanup closure. */
+    subscribeFrame(callback: SceneFrameCallback, priority?: number): () => void;
     
     /** Synchronizes transforms throughout the entire scene graph */
     update(): void;
