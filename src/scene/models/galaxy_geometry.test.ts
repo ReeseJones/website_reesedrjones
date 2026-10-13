@@ -279,6 +279,23 @@ describe("GalaxyGeometry", () => {
             expect(geometry.vertexCount).toBe(5);
             expect(geometry.version).toBe(2);
         });
+
+        it("updateParameters updates galaxyParams, regenerates attributes, updates vertexCount, and increments version without disposing", () => {
+            const geometry = new GalaxyGeometry({ starCount: 10, armCount: 2 });
+            const initialVersion = geometry.version;
+            const disposeSpy = vi.fn();
+            geometry.onDispose(disposeSpy);
+
+            geometry.updateParameters({ starCount: 35, armCount: 4 });
+
+            expect(geometry.galaxyParams.starCount).toBe(35);
+            expect(geometry.galaxyParams.armCount).toBe(4);
+            expect(geometry.vertexCount).toBe(35);
+            expect(geometry.bufferData.attributes.length).toBe(35 * GALAXY_STRIDE_FLOATS);
+            expect(geometry.version).toBe(initialVersion + 1);
+            expect(geometry.isDisposed).toBe(false);
+            expect(disposeSpy).not.toHaveBeenCalled();
+        });
     });
 
     describe("IDisposable lifecycle", () => {

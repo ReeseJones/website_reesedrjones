@@ -62,11 +62,8 @@ export function GalaxyStarsModel({
             (params.coreDensityRatio !== undefined &&
                 params.coreDensityRatio !== currentGeoParams.coreDensityRatio);
 
-        if (needsGeometryRebuild && modelRef.current) {
-            currentGeo.dispose();
-            const newGeo = new GalaxyGeometry({ params });
-            modelRef.current.geometry = newGeo;
-            geometryRef.current = newGeo;
+        if (needsGeometryRebuild) {
+            currentGeo.updateParameters(params);
         }
 
         currentMat.updateParameters(params);

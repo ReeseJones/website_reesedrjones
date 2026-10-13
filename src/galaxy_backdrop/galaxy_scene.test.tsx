@@ -470,7 +470,7 @@ describe("Declarative Galaxy Backdrop Components", () => {
             });
         });
 
-        it("rebuilds GalaxyGeometry and disposes old geometry when structural morphology parameters change, but only updates material when non-structural parameters change", () => {
+        it("updates GalaxyGeometry in-place without disposing geometry when structural morphology parameters change, and updates material", () => {
             const { contextValue } = createMockCanvasContext();
             const sceneRef = createRef<ProgrammaticScene>();
             const updateMatSpy = vi.spyOn(GalaxyMaterial.prototype, "updateParameters");
@@ -540,8 +540,8 @@ describe("Declarative Galaxy Backdrop Components", () => {
                     </WebGLCanvasContext.Provider>
                 );
 
-                expect(initialGeoDisposeSpy).toHaveBeenCalledTimes(1);
-                expect(starsNode.geometry).not.toBe(initialGeometry);
+                expect(initialGeoDisposeSpy).not.toHaveBeenCalled();
+                expect(starsNode.geometry).toBe(initialGeometry);
                 expect(starsNode.geometry).toBeInstanceOf(GalaxyGeometry);
                 expect((starsNode.geometry as GalaxyGeometry).galaxyParams.starCount).toBe(128);
                 expect((starsNode.geometry as GalaxyGeometry).galaxyParams.armCount).toBe(2);

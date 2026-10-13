@@ -12,7 +12,7 @@ import { GLPrimitive } from "../../webgl/core/webgl_constants_types";
  * and configures primitive drawing as WebGL POINTS.
  */
 export class GalaxyGeometry extends MeshGeometry {
-    public readonly galaxyParams: GalaxyParameters;
+    private _galaxyParams: GalaxyParameters;
 
     /**
      * @param options Partial galaxy simulation parameters or options object.
@@ -44,6 +44,26 @@ export class GalaxyGeometry extends MeshGeometry {
             id
         );
 
-        this.galaxyParams = resolvedParams;
+        this._galaxyParams = resolvedParams;
+    }
+
+    public get galaxyParams(): GalaxyParameters {
+        return this._galaxyParams;
+    }
+
+    /**
+     * Updates galaxy morphology parameters and regenerates the vertex buffer in-place,
+     * incrementing the geometry version without disposing GPU handles or tearing down the VAO.
+     *
+     * @param partial Partial configuration overrides.
+     */
+    public updateParameters(partial: Partial<GalaxyParameters>): void {
+        this._galaxyParams = {
+            ...this._galaxyParams,
+            ...partial,
+        };
+
+        const attributes = generateStarBuffer(this._galaxyParams);
+        this.setAttributes(attributes, this._galaxyParams.starCount);
     }
 }
