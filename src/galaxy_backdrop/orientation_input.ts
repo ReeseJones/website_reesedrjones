@@ -1,13 +1,22 @@
 /**
  * Centralized orientation & pointer/touch input manager for 3D galaxy backdrop passes.
- * Handles device tilt via standard DeviceOrientationEvent with iOS 13+ requestPermission gating
- * on first user gesture (touchend / click) and touch/pointer fallbacks.
+ * Uses a 3-tier mobile orientation pipeline:
+ * 1. iOS 13+ DeviceOrientationEvent.requestPermission() on first user gesture (touchend / click)
+ * 2. Modern W3C Generic Sensor API (RelativeOrientationSensor / AbsoluteOrientationSensor)
+ * 3. Standard DeviceOrientationEvent fallback (if Generic Sensor API is unavailable or errors out)
+ *
+ * On desktop browsers, orientation listeners are bypassed completely to prevent deprecation warnings.
  */
 
-import type { OrientationInputOptions } from "./orientation_types";
+import type {
+    OrientationSensorLike,
+    SensorWindow,
+    OrientationInputOptions,
+} from "./orientation_types";
 
 export class OrientationInputController {
     private onUpdate: (pitchOffset: number, yawOffset: number) => void;
+    private relativeSensor: OrientationSensorLike | null = null;
     private isSensorActive = false;
     private isMobile = false;
     private permissionRequested = false;
@@ -21,8 +30,12 @@ export class OrientationInputController {
     private detectMobile(): boolean {
         if (typeof window === "undefined") return false;
         const ua = navigator.userAgent || "";
-        const hasTouch = typeof navigator.maxTouchPoints === "number" && navigator.maxTouchPoints > 0;
-        this.isMobile = hasTouch || /Android|iPhone|iPad|iPod|Mobile/i.test(ua);
+        // Modern iPadOS reports Macintosh userAgent with multi-touch (> 1 touch points)
+        const isIpadOS =
+            /Macintosh/i.test(ua) &&
+            typeof navigator.maxTouchPoints === "number" &&
+            navigator.maxTouchPoints > 1;
+        this.isMobile = isIpadOS || /Android|iPhone|iPad|iPod|Mobile/i.test(ua);
         return this.isMobile;
     }
 
@@ -31,7 +44,7 @@ export class OrientationInputController {
 
         this.detectMobile();
 
-        // Register orientation sensors on mobile/touch devices
+        // Only register orientation sensors on mobile/tablet devices to avoid desktop Chrome warnings
         if (this.isMobile) {
             this.setupDeviceOrientation();
             window.addEventListener("touchmove", this.onTouchMove, { passive: true });
@@ -44,24 +57,57 @@ export class OrientationInputController {
     private setupDeviceOrientation(): void {
         if (typeof window === "undefined") return;
 
-        const DeviceOrientation = (window as unknown as {
-            DeviceOrientationEvent?: typeof DeviceOrientationEvent & {
-                requestPermission?: () => Promise<string>;
-            };
-        }).DeviceOrientationEvent;
+        const win = window as unknown as SensorWindow;
+        const DeviceOrientation = win.DeviceOrientationEvent;
 
-        if (!DeviceOrientation) return;
-
-        if (typeof DeviceOrientation.requestPermission === "function") {
-            // iOS 13+ requires requestPermission() inside a transient user activation (touchend or click)
+        // Tier 1: iOS 13+ Explicit Permission API (must be triggered by user activation gesture)
+        if (DeviceOrientation && typeof DeviceOrientation.requestPermission === "function") {
             this.gestureHandler = () => {
                 void this.requestPermission();
             };
             this.addGestureListeners(this.gestureHandler);
-        } else {
-            // Android / Standard mobile browsers without permission gating
-            window.addEventListener("deviceorientation", this.onDeviceOrientation, { passive: true });
+            return;
         }
+
+        // Tier 2: Modern W3C Generic Sensor API (RelativeOrientationSensor / AbsoluteOrientationSensor)
+        if ("RelativeOrientationSensor" in win || "AbsoluteOrientationSensor" in win) {
+            try {
+                const SensorClass = win.RelativeOrientationSensor || win.AbsoluteOrientationSensor;
+                if (SensorClass) {
+                    this.relativeSensor = new SensorClass({ frequency: 60 });
+                    this.relativeSensor.addEventListener("reading", this.onSensorReading);
+                    this.relativeSensor.addEventListener("error", this.onSensorError);
+                    this.relativeSensor.start();
+                    return;
+                }
+            } catch {
+                this.cleanupRelativeSensor();
+            }
+        }
+
+        // Tier 3: Standard DeviceOrientationEvent fallback
+        this.attachFallbackDeviceOrientation();
+    }
+
+    private attachFallbackDeviceOrientation(): void {
+        if (typeof window === "undefined") return;
+        const win = window as unknown as SensorWindow;
+        if (!win.DeviceOrientationEvent) return;
+
+        try {
+            window.addEventListener("deviceorientation", this.onDeviceOrientation, { passive: true });
+            window.addEventListener("deviceorientationabsolute", this.onDeviceOrientation, { passive: true });
+        } catch {}
+    }
+
+    private cleanupRelativeSensor(): void {
+        if (!this.relativeSensor) return;
+        try {
+            this.relativeSensor.removeEventListener("reading", this.onSensorReading);
+            this.relativeSensor.removeEventListener("error", this.onSensorError);
+            this.relativeSensor.stop();
+        } catch {}
+        this.relativeSensor = null;
     }
 
     /**
@@ -77,11 +123,8 @@ export class OrientationInputController {
             this.gestureHandler = null;
         }
 
-        const DeviceOrientation = (window as unknown as {
-            DeviceOrientationEvent?: typeof DeviceOrientationEvent & {
-                requestPermission?: () => Promise<string>;
-            };
-        }).DeviceOrientationEvent;
+        const win = window as unknown as SensorWindow;
+        const DeviceOrientation = win.DeviceOrientationEvent;
 
         if (DeviceOrientation && typeof DeviceOrientation.requestPermission === "function") {
             try {
@@ -107,6 +150,29 @@ export class OrientationInputController {
         window.removeEventListener("touchend", handler, { capture: true });
         window.removeEventListener("click", handler, { capture: true });
     }
+
+    private onSensorReading = (): void => {
+        if (!this.relativeSensor || !this.relativeSensor.quaternion) return;
+        const [x, y, z, w] = this.relativeSensor.quaternion;
+
+        if (Number.isNaN(x) || Number.isNaN(y) || Number.isNaN(z) || Number.isNaN(w)) return;
+
+        const sinPitch = 2 * (w * x - y * z);
+        const pitch = Math.asin(Math.max(-1.0, Math.min(1.0, sinPitch)));
+        const yaw = Math.atan2(2 * (w * y + z * x), 1 - 2 * (x * x + y * y));
+
+        const normalizedPitch = Math.max(-1.0, Math.min(1.0, pitch / (Math.PI / 4)));
+        const normalizedYaw = Math.max(-1.0, Math.min(1.0, yaw / (Math.PI / 4)));
+
+        this.isSensorActive = true;
+        this.onUpdate(-normalizedPitch * 0.45, normalizedYaw * 0.55);
+    };
+
+    private onSensorError = (): void => {
+        this.isSensorActive = false;
+        this.cleanupRelativeSensor();
+        this.attachFallbackDeviceOrientation();
+    };
 
     private onDeviceOrientation = (e: DeviceOrientationEvent): void => {
         if (
@@ -156,7 +222,10 @@ export class OrientationInputController {
             this.gestureHandler = null;
         }
 
+        this.cleanupRelativeSensor();
+
         window.removeEventListener("deviceorientation", this.onDeviceOrientation);
+        window.removeEventListener("deviceorientationabsolute", this.onDeviceOrientation);
         window.removeEventListener("pointermove", this.onPointerMove);
         window.removeEventListener("touchmove", this.onTouchMove);
         this.isSensorActive = false;
