@@ -4,7 +4,7 @@ import { Footer } from "../components/footer";
 import { Header } from "../components/header";
 import { useGalaxyController } from "../galaxy_backdrop/use_galaxy_controller";
 import { WebGLCanvas } from "../components/webgl_canvas/webgl_canvas";
-import { ImperativeGalaxyScenePass } from "../scene/test/imperative_galaxy_scene_pass";
+import { GalaxyScene } from "../galaxy_backdrop/galaxy_scene";
 import { SettingsDialog } from "../components/settings_dialog/settings_dialog";
 import { SettingsTab } from "../components/settings_dialog/settings_tab";
 import { GeneralSettingsSection } from "../components/settings_dialog/general_settings_section";
@@ -71,8 +71,7 @@ function LayoutContent(props: LayoutProps): React.JSX.Element {
                     pointerEvents: "none",
                 }}
             >
-                {/* Imperative 3D Scene Architecture Test Pass */}
-                <ImperativeGalaxyScenePass controller={backdropGalaxy} />
+                <GalaxyScene controller={backdropGalaxy} />
                 {settings.debug.showFps && <FpsCounter position="top-left" />}
             </WebGLCanvas>
 

@@ -45,6 +45,9 @@ export interface ICamera extends ISceneNode {
     /** Far clipping distance */
     far: number;
 
+    /** Current viewport aspect ratio (width / height), if applicable */
+    readonly aspect?: number;
+
     /** Points the camera toward target coordinates in world space */
     lookAt(target: Vector3Like, worldUp?: Vector3Like): this;
 
