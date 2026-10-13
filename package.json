@@ -6,6 +6,7 @@
   "scripts": {
     "generate:shaders": "node scripts/generate_shader_types.js",
     "generate:version": "node scripts/generate_version.js",
+    "prepare": "npm run generate:shaders && npm run generate:version",
     "start": "npm run generate:shaders && npm run generate:version && rimraf dist && parcel",
     "clean": "rimraf .parcel-cache dist",
     "build": "npm run generate:shaders && npm run generate:version && parcel build src/index.html --public-url /",
