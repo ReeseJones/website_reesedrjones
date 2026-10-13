@@ -5,6 +5,8 @@ export interface GalaxyControllerOptions {
     initialParams?: Partial<GalaxyParameters>;
     /** Optional localStorage key for parameter persistence. Set to null for ephemeral instances. */
     storageKey?: string | null;
+    /** Debounce interval in milliseconds for localStorage persistence (defaults to 300ms). */
+    storageDebounceMs?: number;
 }
 
 export interface GalaxyController {

@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from "react";
+import { useDebouncedCallback } from "../hooks/use_debounced_callback";
 import {
     DEFAULT_GALAXY_PARAMETERS,
     GALAXY_PRESETS,
@@ -12,6 +13,7 @@ import type {
 } from "./galaxy_controller_types";
 
 export const DEFAULT_STORAGE_KEY = "galaxy_backdrop_parameters";
+export const DEFAULT_STORAGE_DEBOUNCE_MS = 300;
 
 function getInitialParameters(
     storageKey?: string | null,
@@ -49,7 +51,11 @@ function getInitialParameters(
 export function useGalaxyController(
     options: GalaxyControllerOptions = {}
 ): GalaxyController {
-    const { storageKey = DEFAULT_STORAGE_KEY, initialParams } = options;
+    const {
+        storageKey = DEFAULT_STORAGE_KEY,
+        initialParams,
+        storageDebounceMs = DEFAULT_STORAGE_DEBOUNCE_MS,
+    } = options;
 
     const [params, setParams] = useState<GalaxyParameters>(() =>
         getInitialParameters(storageKey, initialParams)
@@ -57,26 +63,35 @@ export function useGalaxyController(
     const paramsRef = useRef<GalaxyParameters>(params);
     paramsRef.current = params;
 
+    const debouncedSave = useDebouncedCallback(
+        (data: GalaxyParameters) => {
+            if (typeof window !== "undefined" && storageKey) {
+                try {
+                    localStorage.setItem(storageKey, JSON.stringify(data));
+                } catch (e) {
+                    console.warn("Could not save galaxy parameters", e);
+                }
+            }
+        },
+        storageDebounceMs,
+        { flushOnUnmount: true }
+    );
+
     const updateParameters = useCallback(
         (partial: Partial<GalaxyParameters>) => {
             setParams((prev) => {
                 const next = { ...prev, ...partial };
                 paramsRef.current = next;
-
-                if (typeof window !== "undefined" && storageKey) {
-                    try {
-                        localStorage.setItem(storageKey, JSON.stringify(next));
-                    } catch (e) {
-                        console.warn("Could not save galaxy parameters", e);
-                    }
-                }
+                debouncedSave(next);
                 return next;
             });
         },
-        [storageKey]
+        [debouncedSave]
     );
 
     const resetParameters = useCallback(() => {
+        debouncedSave.cancel();
+
         const isMobile =
             typeof window !== "undefined" &&
             (window.innerWidth < 768 ||
@@ -98,7 +113,7 @@ export function useGalaxyController(
                 console.warn("Could not remove stored galaxy parameters", e);
             }
         }
-    }, [storageKey, initialParams]);
+    }, [debouncedSave, storageKey, initialParams]);
 
     const applyPreset = useCallback(
         (presetId: string) => {
