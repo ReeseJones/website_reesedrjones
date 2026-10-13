@@ -41,13 +41,21 @@ This document details test execution workflows, token-efficiency standards for A
 - **Command:** `npx vitest run --changed`
 - **Output Characteristics:** Skips untouched modules, focusing feedback on recent edits.
 
+### Hook & Code Quality Verification (Targeted & Full)
+- **Purpose:** Verifying React Hook rules (`rules-of-hooks`, `exhaustive-deps`) without burning unnecessary tokens.
+- **Commands:**
+  - `npx eslint <path/to/file.tsx>`: Targeted single-file lint check for agents modifying components or hooks.
+  - `npm run lint`: Repository-wide lint check (`eslint src`).
+  - `npm run lint:fix`: Auto-fixes fixable lint issues across `src`.
+
 ### Full Repository Verification (Human & Release Gate)
 - **Purpose:** Full build and test verification before staging merges or releases.
 - **Commands:**
-  - `npm test`: Runs `tsc --noEmit` followed by full-verbosity `vitest run` across all test files.
+  - `npm test`: Runs `npm run lint`, `tsc --noEmit`, followed by full-verbosity `vitest run` across all test files.
   - `npm run test:watch`: Interactive watch mode for local human development (re-runs on save).
   - `npm run test:coverage`: Generates full V8 code coverage reports.
   - `npm run typecheck`: Pure TypeScript type verification (`tsc --noEmit`).
+  - `npm run lint`: Pure React Hooks and ESLint verification (`eslint src`).
 
 ---
 

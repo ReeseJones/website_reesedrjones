@@ -47,22 +47,27 @@ Before writing any test code:
 
 ## 4. Verification Quality Gate
 
-Before reporting completion to the orchestrating agent, execute and verify all three commands:
+Before reporting completion to the orchestrating agent, execute and verify:
 1. **Targeted Unit Test:**
    ```bash
    npx vitest run <path-to-test-file>
    ```
    *Must pass 100% of authored specs.*
-2. **TypeScript Typecheck:**
+2. **React Hooks & Lint Check (for component & hook authors):**
+   ```bash
+   npx eslint <path-to-target-file>
+   ```
+   *Must pass with 0 errors (`rules-of-hooks`, `exhaustive-deps`).*
+3. **TypeScript Typecheck:**
    ```bash
    npm run typecheck
    ```
    *Must complete with 0 errors across the entire project (`tsc --noEmit`).*
-3. **Full Suite Regression Check:**
+4. **Full Suite Regression Check:**
    ```bash
    npm test
    ```
-   *Must execute type checking and all unit tests cleanly. (Tip: during intermediate development iterations, run `npm run test:smoke` to check for regressions without burning context tokens).*
+   *Must execute linting (`eslint src`), type checking, and all unit tests cleanly. (Tip: during intermediate development iterations, run `npm run test:smoke` to check for regressions without burning context tokens).*
 
 ---
 

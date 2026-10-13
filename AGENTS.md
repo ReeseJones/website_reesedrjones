@@ -16,8 +16,10 @@
 - `npm run build` — Production build to `./dist`
 - `npm run preview` — Build and run local Cloudflare preview (`wrangler dev`) (Not for agents)
 - `npm run deploy` — Build and deploy directly to Cloudflare (`wrangler deploy`) (Not for agents)
+- `npm run lint` — Run ESLint with React Hooks rules across source code (`eslint src`)
+- `npm run lint:fix` — Run ESLint and automatically fix fixable issues (`eslint src --fix`)
 - `npm run typecheck` — Run TypeScript type-checker without emitting code (`tsc --noEmit`)
-- `npm test` — Run TypeScript type checking (`tsc --noEmit`) and all unit tests with Vitest
+- `npm test` — Run ESLint (`eslint src`), TypeScript type checking (`tsc --noEmit`), and all unit tests with Vitest
 - `npm run test:smoke` — Fast token-efficient regression smoke test for agents (`tsc --noEmit` + `vitest run --reporter=dot --bail 1`)
 - `npm run test:watch` — Incremental targeted test runner in watch mode (Not for agents)
 - `npm run test:coverage` — Run unit tests with V8 code coverage report
@@ -75,17 +77,18 @@ When instructed to implement a feature or design document, the main agent must a
   - Verify public methods and properties conform to the design document's explicit interface.
   - Ensure zero magic numbers.
   - Verify clean separation of types from implementations and no direct Node runtime imports.
+  - Verify React components and custom hooks comply with React Hooks rules (`npx eslint <path>` or `npm run lint`).
 
 ### Phase 3: Independent Unit Test Delegation (Subagent 2)
 - The main agent spawns a second, independent test authoring subagent:
   - Instruct the subagent to read [agent_test_implementor_guidelines.md](src/project_guidelines/agent_test_implementor_guidelines.md) and [unit_testing_guidelines.md](src/project_guidelines/unit_testing_guidelines.md).
   - Subagent maps every explicit public interface method/property into `describe` blocks.
   - Subagent uses real domain classes + `vi.spyOn()` rather than synthetic mocks; reserves mocks strictly for hardware boundaries (`createMockWebGL2Context()`, `createMockContextManager()`).
-  - Subagent verifies tests pass (`npx vitest run <path>`) and types pass (`npm run typecheck`), then reports back without committing.
+  - Subagent verifies tests pass (`npx vitest run <path>`), types pass (`npm run typecheck`), and hook lint rules pass (`npx eslint <path>`), then reports back without committing.
 
 ### Phase 4: Test Verification & Quality Gate (Main Agent)
 - The main agent reviews the test suite:
   - Verify that tests assert return values and contracts rather than just testing internal side-effects.
-  - Run the full test and type suite: `npm test` (which runs `tsc --noEmit` followed by Vitest).
+  - Run the full test and verification suite: `npm test` (which runs `npm run lint`, `tsc --noEmit`, followed by Vitest).
   - Verify the production build: `npm run build`.
   - Report the results back to the user with a concise summary.

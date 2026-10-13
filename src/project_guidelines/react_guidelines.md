@@ -62,6 +62,9 @@ Design principles, architecture standards, and authoring conventions for React c
 - **Referential Stability:**
   - When passing event callbacks to child components or custom hooks that manage observers, ensure function identity is stable using `useCallback` with complete dependency arrays.
   - If a callback is passed to an observer hook where consumers might omit `useCallback`, the hook should store the callback in `useRef` to prevent observer recreation thrashing.
+- **Hook Rules & Dependency Verification:**
+  - All components and hooks must strictly comply with React Hooks rules (`rules-of-hooks` and `exhaustive-deps`).
+  - Verify changes via `npx eslint <path-to-file.tsx>` or `npm run lint`. Ensure all hook dependency arrays are exhaustive and free of unnecessary dependencies.
 
 ---
 
