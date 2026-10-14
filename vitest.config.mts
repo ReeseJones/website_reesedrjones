@@ -50,6 +50,7 @@ export default defineConfig({
                     name: "node",
                     environment: "node",
                     include: ["src/**/*.{test,spec}.ts"],
+                    exclude: ["src/**/*element*.{test,spec}.ts"],
                     setupFiles: ["src/testing/setup.ts"],
                 },
             },
@@ -57,7 +58,10 @@ export default defineConfig({
                 test: {
                     name: "dom",
                     environment: "happy-dom",
-                    include: ["src/**/*.{test,spec}.tsx"],
+                    include: [
+                        "src/**/*.{test,spec}.tsx",
+                        "src/**/*element*.{test,spec}.ts",
+                    ],
                     setupFiles: ["src/testing/setup.ts"],
                 },
             },
