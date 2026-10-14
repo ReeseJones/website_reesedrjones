@@ -67,4 +67,32 @@ Principles, standards, and typing patterns for TypeScript code in this repositor
   - Virtual lifecycle hooks or extension callbacks (e.g., `protected onBeforeRender(): void`).
   - Controlled base mutators that enforce invariants and manage dirty flags.
 
+---
+
+## 8. DOM Event Architecture: Custom `Event` Subclasses (Prohibition of `CustomEvent`)
+- **Subclass `Event` Directly:** Never dispatch generic `CustomEvent<T>` or rely on `.detail` property bags for custom application or component events. Create dedicated classes extending the browser's native `Event`.
+- **Encapsulated Event Defaults:** Custom event classes must define a `public static readonly TYPE = "event-name"` constant and encapsulate default dispatch configurations (`bubbles: true`, `composed: true`) in their constructor:
+  ```ts
+  export class SceneCameraChangedEvent extends Event {
+      public static readonly TYPE = "scene-camera-changed";
+      public readonly camera: ICamera | null;
+
+      public constructor(camera: ICamera | null) {
+          super(SceneCameraChangedEvent.TYPE, { bubbles: true, composed: true });
+          this.camera = camera;
+      }
+  }
+  ```
+- **Direct First-Class Properties:** Payload data must be exposed as strongly-typed, `readonly` direct properties on the event instance (`event.camera`) rather than wrapped inside `.detail.camera`.
+- **Global `HTMLElementEventMap` Augmentation:** Augment `HTMLElementEventMap` using the static `TYPE` constant to ensure `addEventListener` and `removeEventListener` are strictly type-safe without manual event casting:
+  ```ts
+  declare global {
+      interface HTMLElementEventMap {
+          [SceneCameraChangedEvent.TYPE]: SceneCameraChangedEvent;
+      }
+  }
+  ```
+- **Runtime `instanceof` Narrowing:** Custom event classes provide clean runtime type guards (`if (event instanceof SceneCameraChangedEvent)`) without unsafe type assertions.
+
+
 

@@ -44,12 +44,14 @@
   - HTML & layout: [html_layout_guidelines.md](src/project_guidelines/html_layout_guidelines.md)
   - TypeScript & typing standards: [typescript_guidelines.md](src/project_guidelines/typescript_guidelines.md)
   - Parcel imports & asset indexing: [using_parcel_guideline.md](src/project_guidelines/using_parcel_guideline.md)
+  - Lit & Web Components: [lit_guidelines.md](src/project_guidelines/lit_guidelines.md)
   - Unit testing standards & mocking: [unit_testing_guidelines.md](src/project_guidelines/unit_testing_guidelines.md)
   - Running tests & token-efficient debugging: [running_tests_guidelines.md](src/project_guidelines/running_tests_guidelines.md)
   - Agent test authoring & subagent protocol: [agent_test_implementor_guidelines.md](src/project_guidelines/agent_test_implementor_guidelines.md)
 
 ## Rules
 - **Unit Testing Benchmark:** Agents must create, use, and run unit tests as the benchmark for compiling code and asserting behavior and returns. Adhere to [unit_testing_guidelines.md](src/project_guidelines/unit_testing_guidelines.md): map each explicit public interface method/property to a `describe` block, test input code paths and edge conditions in `it` specs, assert return values and chaining contracts, verify domain requirements (math invariants, matrix ordering, dirty-flag cascading, deterministic resource disposal), and mock dependencies with test fixtures rather than instantiating real WebGL contexts.
+- **Test File Naming:** All unit test files must use the `.test.ts` (for pure TypeScript and Lit elements) or `.test.tsx` (for React components and hooks) extension.
 - **Verify builds:** The main agent does not need to run `npm run build` after every step. This work will typically be delegated to subagents and instructed to do so as part of making their design.
 - **Client-only:** Never import Node built-in modules (`fs`, `path`, `process`) in app code.
 - **Asset imports:** Use relative ESM imports for images/assets (e.g., `import heroImg from "./hero.jpg"`).
@@ -82,6 +84,7 @@ When instructed to implement a feature or design document, the main agent must a
 ### Phase 3: Independent Unit Test Delegation (Subagent 2)
 - The main agent spawns a second, independent test authoring subagent:
   - Instruct the subagent to read [agent_test_implementor_guidelines.md](src/project_guidelines/agent_test_implementor_guidelines.md) and [unit_testing_guidelines.md](src/project_guidelines/unit_testing_guidelines.md).
+  - Subagent names the test file with `.test.ts` (or `.test.tsx`).
   - Subagent maps every explicit public interface method/property into `describe` blocks.
   - Subagent uses real domain classes + `vi.spyOn()` rather than synthetic mocks; reserves mocks strictly for hardware boundaries (`createMockWebGL2Context()`, `createMockContextManager()`).
   - Subagent verifies tests pass (`npx vitest run <path>`), types pass (`npm run typecheck`), and hook lint rules pass (`npx eslint <path>`), then reports back without committing.

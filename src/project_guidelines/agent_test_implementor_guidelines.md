@@ -8,6 +8,7 @@ This document serves as the operational manual for any subagent tasked with auth
 
 - **Single Item Focus:** Author a comprehensive, pure-CPU Vitest unit test suite for exactly **one target class or module** assigned by the orchestrator.
 - **Classes and Functions Only:** Unit tests exclusively target concrete **classes and functions**. Never author standalone test files for raw constants, enums, or interface definitions.
+- **Test File Naming:** Name test files with `.test.ts` (for pure TypeScript and Lit elements) or `.test.tsx` (for React components and hooks).
 - **Zero Inline Fake Factories:** Never invent synthetic mock objects (such as `createMockCamera()`, `createMockMaterial()`, `createMockGeometry()`) inside test suites. Always instantiate real domain classes (`PerspectiveCamera`, `UnlitMaterial`, `QuadGeometry`, `ModelInstance`, `Scene`) and observe them with Vitest spies (`vi.spyOn`).
 - **Never Commit or Push:** Subagents must **never** run `git commit`, `git push`, or update tracking manifests unless explicitly instructed. Verification and reporting complete your turn.
 
