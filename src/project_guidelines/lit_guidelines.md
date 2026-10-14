@@ -197,3 +197,22 @@ Design principles, architecture standards, and authoring conventions for Lit Web
   - Instantiate elements via `document.createElement("rj-*")` and mount to `document.body` in `beforeEach()`.
   - Always clean up fixtures in `afterEach()` via `element.remove()` to prevent DOM leaking across tests.
   - Mock hardware WebGL contexts (`createMockWebGL2Context()`) at boundary lines. Adhere to [unit_testing_guidelines.md](unit_testing_guidelines.md) and [agent_test_implementor_guidelines.md](agent_test_implementor_guidelines.md).
+
+---
+
+## 9. Reference Documentation & Tutorial Series
+
+For comprehensive deep-dives, concept indexes, and advanced architectural guides, refer to the following companion documents:
+
+- **Quick Reference & Concept Index:**
+  - [Lit Architectural Cheat Sheet & Concept Index](lit_cheat_sheet.md): Fast index for properties, state, reactive lifecycle hooks, data flow, and DOM access.
+- **Deep-Dive Tutorial Guides:**
+  - [Lit Reactive Controllers Guide](lit_controllers_guide.md): Encapsulating non-rendered logic, lifecycle hooks, and controllers for animation loops, resize observation, orbit controls, and input.
+  - [Reactive Properties, State & Custom Converters Guide](lit_properties_and_converters_guide.md): `@property()` vs. `@state()`, reflection patterns, in-place mutation dirty-checking, and `ComplexAttributeConverter` (vectors, arrays, colors, JSON).
+  - [Lit Context Architecture & Hierarchical State Guide](lit_context_guide.md): W3C Context Community Protocol, symbol-keyed context tokens in `*_types.ts`, context shadowing, and multi-tier state stacks.
+  - [Working with Lists, Iterables & Virtualization Guide](lit_lists_and_iteration_guide.md): `Array.map()`, built-in iteration directives, differential keyed updates with `repeat()`, and `@lit-labs/virtualizer`.
+  - [Async Directives & Streaming Data Guide](lit_async_directives_guide.md): `AsyncDirective` lifecycle, micro-DOM updates via `this.setValue()`, `until()`, suspense patterns, observable streams, and GPU readbacks.
+  - [DOM Access, Shadow Roots & Light DOM Guide](lit_dom_access_guide.md): `@query`, `@queryAll`, `@queryAsync`, slotted content access, template `ref()` directives, and Light DOM scene graph architecture.
+- **Curriculum Roadmap & Task List:**
+  - [Lit Guidelines Task List](lit_guidelines_tasklist.md): Master checklist and progress tracking for the Lit documentation curriculum.
+

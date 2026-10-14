@@ -44,7 +44,7 @@
   - HTML & layout: [html_layout_guidelines.md](src/project_guidelines/html_layout_guidelines.md)
   - TypeScript & typing standards: [typescript_guidelines.md](src/project_guidelines/typescript_guidelines.md)
   - Parcel imports & asset indexing: [using_parcel_guideline.md](src/project_guidelines/using_parcel_guideline.md)
-  - Lit & Web Components: [lit_guidelines.md](src/project_guidelines/lit_guidelines.md)
+  - Lit & Web Components: [lit_guidelines.md](src/project_guidelines/lit_guidelines.md) (and [Lit Cheat Sheet](src/project_guidelines/lit_cheat_sheet.md), [Tutorial Series](src/project_guidelines/lit_guidelines_tasklist.md))
   - Unit testing standards & mocking: [unit_testing_guidelines.md](src/project_guidelines/unit_testing_guidelines.md)
   - Running tests & token-efficient debugging: [running_tests_guidelines.md](src/project_guidelines/running_tests_guidelines.md)
   - Agent test authoring & subagent protocol: [agent_test_implementor_guidelines.md](src/project_guidelines/agent_test_implementor_guidelines.md)
