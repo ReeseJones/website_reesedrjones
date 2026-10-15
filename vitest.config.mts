@@ -2,10 +2,13 @@ import { defineConfig } from "vitest/config";
 import fs from "node:fs";
 import path from "node:path";
 
+import swc from "@swc/core";
+
 /**
  * Custom Vite plugin to emulate Parcel 2 asset import behaviors:
  * 1. Shaders (.vert, .frag, .glsl) export raw GLSL string content.
  * 2. Prefixes like "bundle-text:" and "url:" resolve cleanly to underlying files.
+ * 3. Transpiles Stage 3 TC39 decorators & auto-accessors using SWC for Lit elements.
  */
 function parcelCompatibilityPlugin() {
     return {
@@ -32,6 +35,31 @@ function parcelCompatibilityPlugin() {
                 if (fs.existsSync(cleanId)) {
                     const content = fs.readFileSync(cleanId, "utf-8");
                     return `export default ${JSON.stringify(content)};`;
+                }
+            }
+            return null;
+        },
+        transform(code: string, id: string) {
+            const cleanId = id.split("?")[0];
+            if (cleanId.endsWith(".ts") || cleanId.endsWith(".tsx")) {
+                if (code.includes("@property") || code.includes("@state") || code.includes("accessor ")) {
+                    const result = swc.transformSync(code, {
+                        filename: cleanId,
+                        jsc: {
+                            parser: {
+                                syntax: "typescript",
+                                tsx: cleanId.endsWith(".tsx"),
+                                decorators: true,
+                            },
+                            transform: {
+                                decoratorVersion: "2022-03",
+                            },
+                        },
+                    });
+                    return {
+                        code: result.code,
+                        map: result.map,
+                    };
                 }
             }
             return null;

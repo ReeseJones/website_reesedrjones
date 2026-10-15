@@ -13,7 +13,12 @@ export default [
                 babelOptions: {
                     presets: ["@babel/preset-typescript"],
                     parserOpts: {
-                        plugins: ["jsx", "typescript"],
+                        plugins: [
+                            "jsx",
+                            "typescript",
+                            ["decorators", { version: "2023-11" }],
+                            "decoratorAutoAccessors",
+                        ],
                     },
                 },
             },

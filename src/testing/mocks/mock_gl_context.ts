@@ -6,6 +6,11 @@ import { vi } from "vitest";
 export function createMockWebGL2Context(): WebGL2RenderingContext {
     let handleId = 0;
 
+    const loseContextExtension = {
+        loseContext: vi.fn(),
+        restoreContext: vi.fn(),
+    };
+
     const mock = {
         // Context State
         isContextLost: vi.fn(() => false),
@@ -23,6 +28,12 @@ export function createMockWebGL2Context(): WebGL2RenderingContext {
             if (pname === WebGL2RenderingContext.MAX_TEXTURE_IMAGE_UNITS) return 16;
             if (pname === WebGL2RenderingContext.MAX_COMBINED_TEXTURE_IMAGE_UNITS) return 32;
             return 0;
+        }),
+        getExtension: vi.fn((name: string) => {
+            if (name === "WEBGL_lose_context") {
+                return loseContextExtension;
+            }
+            return null;
         }),
 
         // Buffers & VAOs
