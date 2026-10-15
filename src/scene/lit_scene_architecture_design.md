@@ -306,6 +306,10 @@ export function GalaxySceneView() {
 
 ## 6. Selected Binding Location: `src/scene/elements/`
 
+- `src/scene/elements/webgl_canvas_element_constants.ts`: Tag name (`rj-webgl-canvas`), event names, default DPR cap, and attribute constants.
+- `src/scene/elements/webgl_canvas_element_types.ts`: Props interface, subscriber types, and `HTMLElementTagNameMap` augmentation.
+- `src/scene/elements/webgl_canvas_element_events.ts`: Strongly-typed native `Event` subclasses (`WebGLContextCreatedEvent`, `WebGLContextLostEvent`, `WebGLContextRestoredEvent`, `WebGLResizeEvent`).
+- `src/scene/elements/webgl_canvas_element.ts`: `<rj-webgl-canvas>` implementation (`WebGLCanvasElement`) and `setupWebGLCanvasElement()`.
 - `src/scene/elements/scene_element_constants.ts`: Tag names (`rj-scene`, `rj-perspective-camera`, etc.), event names, default priorities, and camera defaults (zero magic numbers).
 - `src/scene/elements/scene_element_types.ts`: TypeScript contracts, property interfaces, Symbol-keyed Lit Context tokens (`webglCanvasContext`, `sceneContext`, `parentNodeContext`), and native element map augmentations.
 - `src/scene/elements/scene_element_events.ts`: Strongly-typed native `Event` subclasses (`SceneCameraChangedEvent`, `SceneNodeAttachedEvent`, `SceneNodeDetachedEvent`) and `HTMLElementEventMap` augmentation.

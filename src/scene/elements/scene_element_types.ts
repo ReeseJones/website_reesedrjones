@@ -2,6 +2,8 @@ import { createContext } from "@lit/context";
 import type { IScene, SceneFrameCallback } from "../core/scene_types";
 import type { ISceneNode } from "../core/scene_node_types";
 import type { ICamera } from "../camera/camera_types";
+import type { IWebGLContextManager } from "../../webgl/core/context_manager_types";
+import type { CanvasDimensions, WebGLSubscriber } from "../../components/webgl_canvas/types";
 import type { SceneElement } from "./scene_element";
 
 /**
@@ -39,14 +41,17 @@ export interface PerspectiveCameraElementProps extends SceneNodeElementProps {
     makeDefault?: boolean;
 }
 
+
 /**
  * Context provided by an enclosing WebGL canvas host element.
  */
 export interface IWebGLCanvasContext {
-    readonly gl: WebGL2RenderingContext;
-    readonly width: number;
-    readonly height: number;
-    readonly dpr: number;
+    readonly gl: WebGL2RenderingContext | null;
+    readonly contextManager: IWebGLContextManager;
+    readonly dimensions: CanvasDimensions;
+    readonly isContextLost: boolean;
+    subscribe(subscriber: WebGLSubscriber): () => void;
+    requestRender(): void;
 }
 
 /**
