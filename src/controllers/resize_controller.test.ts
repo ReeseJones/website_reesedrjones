@@ -10,23 +10,6 @@ import {
     MIN_VIEWPORT_DIMENSION,
 } from "./resize_controller_constants";
 
-class MockHost implements ReactiveControllerHost {
-    public updateComplete = Promise.resolve(true);
-    public readonly controllers: unknown[] = [];
-    public requestUpdate = vi.fn();
-
-    public addController(controller: unknown): void {
-        this.controllers.push(controller);
-    }
-
-    public removeController(controller: unknown): void {
-        const index = this.controllers.indexOf(controller);
-        if (index !== -1) {
-            this.controllers.splice(index, 1);
-        }
-    }
-}
-
 class MockElementHost extends HTMLElement implements ReactiveControllerHost {
     public updateComplete = Promise.resolve(true);
     public readonly controllers: unknown[] = [];
@@ -44,8 +27,12 @@ class MockElementHost extends HTMLElement implements ReactiveControllerHost {
     }
 }
 
+if (!customElements.get("mock-resize-element-host")) {
+    customElements.define("mock-resize-element-host", MockElementHost);
+}
+
 describe("ResizeController", () => {
-    let host: MockHost;
+    let host: MockElementHost;
     let targetElement: HTMLDivElement;
     let originalResizeObserver: typeof ResizeObserver | undefined;
     let originalDevicePixelRatio: number | undefined;
@@ -58,7 +45,8 @@ describe("ResizeController", () => {
     }> = [];
 
     beforeEach(() => {
-        host = new MockHost();
+        host = new MockElementHost();
+        document.body.appendChild(host);
         targetElement = document.createElement("div");
         document.body.appendChild(targetElement);
 
@@ -83,6 +71,7 @@ describe("ResizeController", () => {
     });
 
     afterEach(() => {
+        host.remove();
         targetElement.remove();
         document.body.innerHTML = "";
         globalThis.ResizeObserver = originalResizeObserver as typeof ResizeObserver;
@@ -122,6 +111,14 @@ describe("ResizeController", () => {
 
             expect(observerInstances).toHaveLength(1);
             expect(observerInstances[0].observe).toHaveBeenCalledWith(targetElement);
+        });
+
+        it("should observe host element upon connection when options.target is omitted", () => {
+            const controller = new ResizeController(host);
+            controller.hostConnected();
+
+            expect(observerInstances).toHaveLength(1);
+            expect(observerInstances[0].observe).toHaveBeenCalledWith(host);
         });
 
         it("should measure immediate dimensions upon connection", () => {
@@ -189,23 +186,8 @@ describe("ResizeController", () => {
     });
 
     describe("measureImmediate()", () => {
-        it("should return existing dimensions without change when no target is resolvable", () => {
-            const controller = new ResizeController(host); // host is MockHost (no getBoundingClientRect)
-            const initialDims = controller.dimensions;
-
-            const returned = controller.measureImmediate();
-            expect(returned).toBe(initialDims);
-            expect(host.requestUpdate).not.toHaveBeenCalled();
-        });
-
-        it("should fallback to host element when options.target is omitted and host is HTMLElement", () => {
-            if (!customElements.get("mock-element-host")) {
-                customElements.define("mock-element-host", MockElementHost);
-            }
-            const elHost = document.createElement("mock-element-host") as MockElementHost;
-            document.body.appendChild(elHost);
-
-            vi.spyOn(elHost, "getBoundingClientRect").mockReturnValue({
+        it("should fallback to host element when options.target is omitted", () => {
+            vi.spyOn(host, "getBoundingClientRect").mockReturnValue({
                 width: 500,
                 height: 250,
                 top: 0,
@@ -217,14 +199,33 @@ describe("ResizeController", () => {
                 toJSON: () => ({}),
             });
 
-            const controller = new ResizeController(elHost);
+            const controller = new ResizeController(host);
             const dims = controller.measureImmediate();
 
             expect(dims.cssWidth).toBe(500);
             expect(dims.cssHeight).toBe(250);
             expect(dims.aspect).toBe(2);
+        });
 
-            elHost.remove();
+        it("should measure explicit options.target when provided", () => {
+            vi.spyOn(targetElement, "getBoundingClientRect").mockReturnValue({
+                width: 600,
+                height: 300,
+                top: 0,
+                left: 0,
+                bottom: 300,
+                right: 600,
+                x: 0,
+                y: 0,
+                toJSON: () => ({}),
+            });
+
+            const controller = new ResizeController(host, { target: targetElement });
+            const dims = controller.measureImmediate();
+
+            expect(dims.cssWidth).toBe(600);
+            expect(dims.cssHeight).toBe(300);
+            expect(dims.aspect).toBe(2);
         });
 
         it("should calculate backing-store width, height, and aspect with devicePixelRatio", () => {

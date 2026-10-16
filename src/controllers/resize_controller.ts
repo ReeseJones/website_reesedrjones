@@ -1,5 +1,6 @@
-import type { ReactiveController, ReactiveControllerHost } from "lit";
+import type { ReactiveController } from "lit";
 import type {
+    ElementControllerHost,
     IResizeController,
     ResizeControllerOptions,
     ViewportDimensions,
@@ -18,7 +19,8 @@ import {
  * applying DPR scaling, and notifying host elements and subscribers.
  */
 export class ResizeController implements ReactiveController, IResizeController {
-    private readonly host: ReactiveControllerHost;
+    private readonly host: ElementControllerHost;
+    private readonly target: HTMLElement;
     private readonly options: ResizeControllerOptions;
     private observer: ResizeObserver | null = null;
     private debounceTimerId: ReturnType<typeof setTimeout> | null = null;
@@ -33,9 +35,10 @@ export class ResizeController implements ReactiveController, IResizeController {
         aspect: DEFAULT_ASPECT_RATIO,
     };
 
-    public constructor(host: ReactiveControllerHost, options: ResizeControllerOptions = {}) {
+    public constructor(host: ElementControllerHost, options: ResizeControllerOptions = {}) {
         this.host = host;
         this.options = options;
+        this.target = options.target ?? host;
         this.host.addController(this);
     }
 
@@ -44,10 +47,9 @@ export class ResizeController implements ReactiveController, IResizeController {
     }
 
     public hostConnected(): void {
-        const target = this.targetElement;
-        if (typeof ResizeObserver !== "undefined" && target) {
+        if (typeof ResizeObserver !== "undefined") {
             this.observer = new ResizeObserver(this.handleResize);
-            this.observer.observe(target);
+            this.observer.observe(this.target);
         }
         this.measureImmediate();
     }
@@ -70,12 +72,7 @@ export class ResizeController implements ReactiveController, IResizeController {
             this.debounceTimerId = null;
         }
 
-        const target = this.targetElement;
-        if (!target) {
-            return this.currentDimensions;
-        }
-
-        const rect = target.getBoundingClientRect();
+        const rect = this.target.getBoundingClientRect();
         const rawDpr =
             typeof window !== "undefined" &&
             typeof window.devicePixelRatio === "number" &&
@@ -140,16 +137,4 @@ export class ResizeController implements ReactiveController, IResizeController {
         }
     };
 
-    private get targetElement(): HTMLElement | null {
-        if (this.options.target) {
-            return this.options.target;
-        }
-        if (
-            this.host &&
-            typeof (this.host as unknown as HTMLElement).getBoundingClientRect === "function"
-        ) {
-            return this.host as unknown as HTMLElement;
-        }
-        return null;
-    }
 }

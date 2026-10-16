@@ -1,5 +1,6 @@
-import type { ReactiveController, ReactiveControllerHost } from "lit";
+import type { ReactiveController } from "lit";
 import type {
+    ElementControllerHost,
     IVisibilityController,
     VisibilityControllerOptions,
 } from "./visibility_controller_types";
@@ -15,16 +16,18 @@ import {
  * computing aggregate visibility state to throttle or pause expensive animation and WebGL render loops.
  */
 export class VisibilityController implements ReactiveController, IVisibilityController {
-    private readonly host: ReactiveControllerHost;
+    private readonly host: ElementControllerHost;
+    private readonly target: HTMLElement;
     private readonly options: VisibilityControllerOptions;
     private intersectionObserver: IntersectionObserver | null = null;
     private _isOffscreen: boolean = false;
     private _isHidden: boolean = false;
     private _isVisible: boolean = true;
 
-    public constructor(host: ReactiveControllerHost, options: VisibilityControllerOptions = {}) {
+    public constructor(host: ElementControllerHost, options: VisibilityControllerOptions = {}) {
         this.host = host;
         this.options = options;
+        this.target = options.target ?? host;
         this.host.addController(this);
 
         const pauseHidden = this.options.pauseWhenHidden ?? DEFAULT_PAUSE_WHEN_HIDDEN;
@@ -55,10 +58,9 @@ export class VisibilityController implements ReactiveController, IVisibilityCont
             this._isHidden = false;
         }
 
-        const target = this.targetElement;
-        if (pauseOffscreen && typeof IntersectionObserver !== "undefined" && target) {
+        if (pauseOffscreen && typeof IntersectionObserver !== "undefined") {
             this.intersectionObserver = new IntersectionObserver(this.handleIntersection);
-            this.intersectionObserver.observe(target);
+            this.intersectionObserver.observe(this.target);
         } else {
             this._isOffscreen = false;
         }
@@ -117,18 +119,5 @@ export class VisibilityController implements ReactiveController, IVisibilityCont
             this.host.requestUpdate();
             this.options.onChange?.(nextVisible);
         }
-    }
-
-    private get targetElement(): HTMLElement | null {
-        if (this.options.target) {
-            return this.options.target;
-        }
-        if (
-            this.host &&
-            typeof (this.host as unknown as HTMLElement).getBoundingClientRect === "function"
-        ) {
-            return this.host as unknown as HTMLElement;
-        }
-        return null;
     }
 }

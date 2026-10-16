@@ -8,23 +8,6 @@ import {
     EVENT_VISIBILITY_CHANGE,
 } from "./visibility_controller_constants";
 
-class MockHost implements ReactiveControllerHost {
-    public updateComplete = Promise.resolve(true);
-    public readonly controllers: unknown[] = [];
-    public requestUpdate = vi.fn();
-
-    public addController(controller: unknown): void {
-        this.controllers.push(controller);
-    }
-
-    public removeController(controller: unknown): void {
-        const index = this.controllers.indexOf(controller);
-        if (index !== -1) {
-            this.controllers.splice(index, 1);
-        }
-    }
-}
-
 class MockElementHost extends HTMLElement implements ReactiveControllerHost {
     public updateComplete = Promise.resolve(true);
     public readonly controllers: unknown[] = [];
@@ -42,8 +25,12 @@ class MockElementHost extends HTMLElement implements ReactiveControllerHost {
     }
 }
 
+if (!customElements.get("mock-visibility-element-host")) {
+    customElements.define("mock-visibility-element-host", MockElementHost);
+}
+
 describe("VisibilityController", () => {
-    let host: MockHost;
+    let host: MockElementHost;
     let targetElement: HTMLDivElement;
     let originalIntersectionObserver: typeof IntersectionObserver | undefined;
     let observerInstances: Array<{
@@ -54,7 +41,8 @@ describe("VisibilityController", () => {
     }> = [];
 
     beforeEach(() => {
-        host = new MockHost();
+        host = new MockElementHost();
+        document.body.appendChild(host);
         targetElement = document.createElement("div");
         document.body.appendChild(targetElement);
 
@@ -89,6 +77,7 @@ describe("VisibilityController", () => {
     });
 
     afterEach(() => {
+        host.remove();
         targetElement.remove();
         document.body.innerHTML = "";
         globalThis.IntersectionObserver = originalIntersectionObserver as typeof IntersectionObserver;
@@ -142,20 +131,12 @@ describe("VisibilityController", () => {
             expect(observerInstances[0].observe).toHaveBeenCalledWith(targetElement);
         });
 
-        it("should fallback to host when options.target is omitted and host is HTMLElement", () => {
-            if (!customElements.get("mock-visibility-element-host")) {
-                customElements.define("mock-visibility-element-host", MockElementHost);
-            }
-            const elHost = document.createElement("mock-visibility-element-host") as MockElementHost;
-            document.body.appendChild(elHost);
-
-            const controller = new VisibilityController(elHost);
+        it("should fallback to host when options.target is omitted", () => {
+            const controller = new VisibilityController(host);
             controller.hostConnected();
 
             expect(observerInstances).toHaveLength(1);
-            expect(observerInstances[0].observe).toHaveBeenCalledWith(elHost);
-
-            elHost.remove();
+            expect(observerInstances[0].observe).toHaveBeenCalledWith(host);
         });
 
         it("should listen to visibilitychange on document upon connection", () => {

@@ -1,3 +1,7 @@
+import type { ReactiveControllerHost } from "lit";
+
+export type ElementControllerHost = ReactiveControllerHost & HTMLElement;
+
 export interface VisibilityControllerOptions {
     readonly target?: HTMLElement;
     readonly pauseWhenOffscreen?: boolean;
