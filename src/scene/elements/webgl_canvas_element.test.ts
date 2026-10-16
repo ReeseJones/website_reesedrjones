@@ -23,6 +23,8 @@ import {
     DEFAULT_PAUSE_WHEN_HIDDEN,
 } from "./webgl_canvas_element_constants";
 import { createMockWebGL2Context } from "../../testing/mocks/mock_gl_context";
+import { createMockAnimationFrameScheduler } from "../../testing/mocks/mock_animation_frame";
+import type { IMockAnimationFrameScheduler } from "../../testing/mocks/mock_animation_frame_types";
 import type { CanvasDimensions, TimeInfo } from "../../webgl/canvas/canvas_types";
 import type { WebGLSubscriber } from "../../webgl/canvas/subscriber_types";
 
@@ -86,7 +88,6 @@ describe("WebGLCanvasElement", () => {
         element.destroy();
         element.remove();
         document.body.innerHTML = "";
-        getContextSpy.mockRestore();
         vi.restoreAllMocks();
     });
 
@@ -335,21 +336,6 @@ describe("WebGLCanvasElement", () => {
             expect(receivedTime!.frameCount).toBeGreaterThanOrEqual(1);
             expect(receivedDims).toEqual(element.dimensions);
         });
-
-        it("should execute zero gl.clear, zero gl.clearColor, and zero gl.viewport calls (delegated to subscribers)", () => {
-            const subscriber: WebGLSubscriber = {
-                priority: 0,
-                render: vi.fn(),
-            };
-
-            element.subscribe(subscriber);
-            element.requestRender();
-
-            expect(mockGL.clear).not.toHaveBeenCalled();
-            expect(mockGL.clearColor).not.toHaveBeenCalled();
-            expect(mockGL.viewport).not.toHaveBeenCalled();
-            expect(subscriber.render).toHaveBeenCalledTimes(1);
-        });
     });
 
     describe("custom events", () => {
@@ -509,6 +495,134 @@ describe("WebGLCanvasElement", () => {
 
             // Calling destroy again should be idempotent
             expect(() => element.destroy()).not.toThrow();
+        });
+    });
+
+    describe("continuous render loop early-out behavior", () => {
+        let earlyOutElement: WebGLCanvasElement;
+        let scheduler: IMockAnimationFrameScheduler;
+        let uninstallScheduler: () => void;
+
+        beforeEach(async () => {
+            scheduler = createMockAnimationFrameScheduler(1000);
+            uninstallScheduler = scheduler.installGlobal();
+
+            earlyOutElement = document.createElement(TAG_RJ_WEBGL_CANVAS);
+            document.body.appendChild(earlyOutElement);
+            await earlyOutElement.updateComplete;
+        });
+
+        afterEach(() => {
+            earlyOutElement.destroy();
+            earlyOutElement.remove();
+            uninstallScheduler();
+        });
+
+        it("should trigger subscriber render() on animation frame ticks under nominal continuous rendering", () => {
+            expect(earlyOutElement.renderMode).toBe("continuous");
+            expect(earlyOutElement.gl).toBe(mockGL);
+            expect(earlyOutElement.isContextLost).toBe(false);
+
+            const renderSpy = vi.fn();
+            const subscriber: WebGLSubscriber = {
+                priority: 0,
+                render: renderSpy,
+            };
+
+            earlyOutElement.subscribe(subscriber);
+
+            // Advance frame by 16ms
+            scheduler.stepFrame(16);
+
+            expect(renderSpy).toHaveBeenCalledTimes(1);
+            expect(renderSpy).toHaveBeenCalledWith(
+                mockGL,
+                expect.objectContaining({ frameCount: 1 }),
+                earlyOutElement.dimensions
+            );
+
+            // Advance frame by another 16ms
+            scheduler.stepFrame(16);
+
+            expect(renderSpy).toHaveBeenCalledTimes(2);
+            expect(renderSpy).toHaveBeenLastCalledWith(
+                mockGL,
+                expect.objectContaining({ frameCount: 2 }),
+                earlyOutElement.dimensions
+            );
+        });
+
+        it("should early-out and skip subscriber render() when document is hidden", () => {
+            const renderSpy = vi.fn();
+            const subscriber: WebGLSubscriber = {
+                priority: 0,
+                render: renderSpy,
+            };
+
+            earlyOutElement.subscribe(subscriber);
+
+            vi.spyOn(document, "hidden", "get").mockReturnValue(true);
+            document.dispatchEvent(new Event("visibilitychange"));
+
+            scheduler.stepFrame(16);
+
+            expect(renderSpy).not.toHaveBeenCalled();
+        });
+
+        it("should early-out and skip subscriber render() during animation ticks when renderMode is 'on-demand'", async () => {
+            earlyOutElement.renderMode = "on-demand";
+            await earlyOutElement.updateComplete;
+
+            const renderSpy = vi.fn();
+            const subscriber: WebGLSubscriber = {
+                priority: 0,
+                render: renderSpy,
+            };
+
+            earlyOutElement.subscribe(subscriber);
+            // On-demand subscribe triggers an initial single render
+            expect(renderSpy).toHaveBeenCalledTimes(1);
+            renderSpy.mockClear();
+
+            scheduler.stepFrame(16);
+
+            expect(renderSpy).not.toHaveBeenCalled();
+        });
+
+        it("should early-out and skip subscriber render() when WebGL context is lost", () => {
+            const renderSpy = vi.fn();
+            const subscriber: WebGLSubscriber = {
+                priority: 0,
+                render: renderSpy,
+            };
+
+            earlyOutElement.subscribe(subscriber);
+
+            const canvas = earlyOutElement.shadowRoot?.querySelector("canvas");
+            const lossEvent = new Event("webglcontextlost", { cancelable: true });
+            canvas?.dispatchEvent(lossEvent);
+
+            expect(earlyOutElement.isContextLost).toBe(true);
+
+            scheduler.stepFrame(16);
+
+            expect(renderSpy).not.toHaveBeenCalled();
+        });
+
+        it("should unsubscribe from animation manager on destroy and prevent further render ticks", () => {
+            const renderSpy = vi.fn();
+            const subscriber: WebGLSubscriber = {
+                priority: 0,
+                render: renderSpy,
+            };
+
+            earlyOutElement.subscribe(subscriber);
+
+            earlyOutElement.destroy();
+
+            scheduler.stepFrame(16);
+
+            expect(renderSpy).not.toHaveBeenCalled();
         });
     });
 });

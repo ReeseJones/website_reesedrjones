@@ -136,10 +136,14 @@ export class WebGLCanvasElement extends LitElement implements IWebGLCanvasContex
             get pauseWhenHidden(): boolean {
                 return self.pauseWhenHidden;
             },
-            onChange: () => this._syncLoop(),
         });
 
         this._animManager = new AnimationFrameManager((timeInfo) => ({ timeInfo }));
+        this._frameUnsubscribe = this._animManager.subscribe((frameState) => {
+            if (this.renderMode === "continuous" && this._visibilityController.isVisible) {
+                this._renderFrame(frameState.timeInfo);
+            }
+        });
     }
 
     public override render(): TemplateResult {
@@ -157,13 +161,10 @@ export class WebGLCanvasElement extends LitElement implements IWebGLCanvasContex
         const canvas = this._canvasRef.value;
         if (canvas && !this._gl) {
             this._initWebGL(canvas);
-        } else if (this._gl) {
-            this._syncLoop();
         }
     }
 
     public override disconnectedCallback(): void {
-        this._stopLoop();
         this._contextManager.destroy();
         super.disconnectedCallback();
     }
@@ -184,7 +185,6 @@ export class WebGLCanvasElement extends LitElement implements IWebGLCanvasContex
         }
 
         if (changedProperties.has("renderMode")) {
-            this._syncLoop();
             if (this.renderMode === "on-demand") {
                 this.requestRender();
             }
@@ -196,7 +196,6 @@ export class WebGLCanvasElement extends LitElement implements IWebGLCanvasContex
         ) {
             this._visibilityController.hostDisconnected();
             this._visibilityController.hostConnected();
-            this._syncLoop();
         }
     }
 
@@ -253,7 +252,8 @@ export class WebGLCanvasElement extends LitElement implements IWebGLCanvasContex
     }
 
     public destroy(): void {
-        this._stopLoop();
+        this._frameUnsubscribe?.();
+        this._frameUnsubscribe = null;
         this._animManager.destroy();
 
         const canvas = this._canvasRef.value;
@@ -295,7 +295,6 @@ export class WebGLCanvasElement extends LitElement implements IWebGLCanvasContex
 
         this._subscriberManager.notifyInit(gl, this._dimensions);
 
-        this._syncLoop();
         if (this.renderMode === "on-demand") {
             this.requestRender();
         }
@@ -339,47 +338,15 @@ export class WebGLCanvasElement extends LitElement implements IWebGLCanvasContex
         }
     }
 
-    private _shouldLoop(): boolean {
-        return (
-            this.renderMode === "continuous" &&
-            this._visibilityController.isVisible &&
-            !this._isContextLost &&
-            this._gl !== null
-        );
-    }
-
-    private _syncLoop(): void {
-        if (this._shouldLoop()) {
-            if (this._frameUnsubscribe === null) {
-                this._frameUnsubscribe = this._animManager.subscribe((frameState) => {
-                    this._renderFrame(frameState.timeInfo);
-                });
-            }
-        } else {
-            this._stopLoop();
-        }
-    }
-
-    private _stopLoop(): void {
-        if (this._frameUnsubscribe !== null) {
-            this._frameUnsubscribe();
-            this._frameUnsubscribe = null;
-        }
-    }
-
     private _renderFrame(timeInfo: TimeInfo): void {
-        const gl = this._gl;
-        if (!gl || this._isContextLost || !this._visibilityController.isVisible) {
-            return;
+        if (this._gl && !this._isContextLost) {
+            this._lastTimeInfo = timeInfo;
+            this._subscriberManager.notifyRender(this._gl, timeInfo, this._dimensions);
         }
-
-        this._lastTimeInfo = timeInfo;
-        this._subscriberManager.notifyRender(gl, timeInfo, this._dimensions);
     }
 
     private _handleContextLost = (e: Event): void => {
         e.preventDefault();
-        this._stopLoop();
         this._isContextLost = true;
         this._contextManager.handleContextLost();
         this._canvasProvider.setValue(this, true);
@@ -406,7 +373,6 @@ export class WebGLCanvasElement extends LitElement implements IWebGLCanvasContex
             this._canvasProvider.setValue(this, true);
             this.dispatchEvent(new WebGLContextRestoredEvent(gl));
             this._subscriberManager.notifyContextRestored(gl, this._dimensions);
-            this._syncLoop();
             if (this.renderMode === "on-demand") {
                 this.requestRender();
             }
