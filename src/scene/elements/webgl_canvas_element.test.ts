@@ -474,6 +474,33 @@ describe("WebGLCanvasElement", () => {
 
             expect(resizeSpy).toHaveBeenCalled();
             expect(subResizeSpy).toHaveBeenCalled();
+            expect(mockGL.viewport).toHaveBeenCalledWith(
+                0,
+                0,
+                element.dimensions.width,
+                element.dimensions.height
+            );
+            expect(element.contextManager.getViewport()).toEqual({
+                x: 0,
+                y: 0,
+                width: element.dimensions.width,
+                height: element.dimensions.height,
+            });
+        });
+
+        it("should synchronize contextManager viewport to match DPR-scaled buffer dimensions on init", () => {
+            expect(element.contextManager.getViewport()).toEqual({
+                x: 0,
+                y: 0,
+                width: element.dimensions.width,
+                height: element.dimensions.height,
+            });
+            expect(mockGL.viewport).toHaveBeenCalledWith(
+                0,
+                0,
+                element.dimensions.width,
+                element.dimensions.height
+            );
         });
     });
 

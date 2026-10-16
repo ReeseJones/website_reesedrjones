@@ -315,6 +315,10 @@ export class WebGLCanvasElement extends LitElement implements IWebGLCanvasContex
             canvas.height = height;
         }
 
+        if (gl) {
+            this._contextManager.setViewport(0, 0, width, height);
+        }
+
         const nextDims: CanvasDimensions = {
             width,
             height,

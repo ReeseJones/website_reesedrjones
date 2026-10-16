@@ -740,4 +740,83 @@ describe("WebGLContextManager", () => {
             expect(manager.getDiagnostics()).toEqual({});
         });
     });
+
+    describe("viewport management", () => {
+        it("initializes with null viewport", () => {
+            expect(manager.getViewport()).toBeNull();
+        });
+
+        it("calls gl.viewport and caches the viewport rectangle", () => {
+            manager.setContext(gl);
+            manager.setViewport(0, 0, 1920, 1080);
+
+            expect(gl.viewport).toHaveBeenCalledTimes(1);
+            expect(gl.viewport).toHaveBeenCalledWith(0, 0, 1920, 1080);
+            expect(manager.getViewport()).toEqual({ x: 0, y: 0, width: 1920, height: 1080 });
+        });
+
+        it("skips redundant gl.viewport calls when identical coordinates are passed", () => {
+            manager.setContext(gl);
+            manager.setViewport(0, 0, 800, 600);
+            expect(gl.viewport).toHaveBeenCalledTimes(1);
+
+            manager.setViewport(0, 0, 800, 600);
+            expect(gl.viewport).toHaveBeenCalledTimes(1);
+        });
+
+        it("invokes gl.viewport when any parameter changes", () => {
+            manager.setContext(gl);
+            manager.setViewport(0, 0, 800, 600);
+            expect(gl.viewport).toHaveBeenCalledTimes(1);
+
+            manager.setViewport(10, 0, 800, 600);
+            expect(gl.viewport).toHaveBeenCalledTimes(2);
+            expect(gl.viewport).toHaveBeenLastCalledWith(10, 0, 800, 600);
+
+            manager.setViewport(10, 20, 800, 600);
+            expect(gl.viewport).toHaveBeenCalledTimes(3);
+            expect(gl.viewport).toHaveBeenLastCalledWith(10, 20, 800, 600);
+
+            manager.setViewport(10, 20, 1024, 600);
+            expect(gl.viewport).toHaveBeenCalledTimes(4);
+            expect(gl.viewport).toHaveBeenLastCalledWith(10, 20, 1024, 600);
+
+            manager.setViewport(10, 20, 1024, 768);
+            expect(gl.viewport).toHaveBeenCalledTimes(5);
+            expect(gl.viewport).toHaveBeenLastCalledWith(10, 20, 1024, 768);
+        });
+
+        it("caches viewport without error when context is null", () => {
+            expect(manager.getContext()).toBeNull();
+            manager.setViewport(0, 0, 640, 480);
+
+            expect(manager.getViewport()).toEqual({ x: 0, y: 0, width: 640, height: 480 });
+        });
+
+        it("invalidates cached viewport on handleContextLost and handleContextRestored", () => {
+            manager.setContext(gl);
+            manager.setViewport(0, 0, 1920, 1080);
+            expect(manager.getViewport()).toEqual({ x: 0, y: 0, width: 1920, height: 1080 });
+
+            manager.handleContextLost();
+            expect(manager.getViewport()).toBeNull();
+
+            const newGl = createMockWebGL2Context();
+            manager.handleContextRestored(newGl);
+            expect(manager.getViewport()).toBeNull();
+
+            manager.setViewport(0, 0, 1920, 1080);
+            expect(newGl.viewport).toHaveBeenCalledTimes(1);
+            expect(newGl.viewport).toHaveBeenCalledWith(0, 0, 1920, 1080);
+        });
+
+        it("clears cached viewport on destroy", () => {
+            manager.setContext(gl);
+            manager.setViewport(0, 0, 1920, 1080);
+            expect(manager.getViewport()).not.toBeNull();
+
+            manager.destroy();
+            expect(manager.getViewport()).toBeNull();
+        });
+    });
 });

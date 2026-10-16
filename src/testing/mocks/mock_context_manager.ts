@@ -1,5 +1,5 @@
 import { vi } from "vitest";
-import type { IWebGLContextManager } from "../../webgl/core/context_manager_types";
+import type { IWebGLContextManager, ViewportRect } from "../../webgl/core/context_manager_types";
 import type { IShaderManager } from "../../webgl/shaders/shader_manager_types";
 import type { IGeometryManager } from "../../webgl/geometry/geometry_manager_types";
 import type { ITextureManager } from "../../webgl/textures/texture_manager_types";
@@ -198,6 +198,8 @@ export function createMockContextManager(gl?: WebGL2RenderingContext): IWebGLCon
         setContext: vi.fn((newGl: WebGL2RenderingContext) => {
             currentGl = newGl;
         }),
+        setViewport: vi.fn(),
+        getViewport: vi.fn(() => null),
         getContext: vi.fn(() => currentGl),
         getCurrentProgram: vi.fn(() => null),
         getCurrentShader: vi.fn(() => null),

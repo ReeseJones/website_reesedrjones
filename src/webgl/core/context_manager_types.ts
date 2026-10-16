@@ -16,6 +16,12 @@ export interface IWebGLContextManager {
     /** Sets or updates the active WebGL2 rendering context. */
     setContext(gl: WebGL2RenderingContext): void;
 
+    /** Sets the WebGL viewport with redundant-call skipping. */
+    setViewport(x: number, y: number, width: number, height: number): void;
+
+    /** Retrieves the currently cached WebGL viewport rectangle, if set. */
+    getViewport(): ViewportRect | null;
+
     /** Retrieves the current WebGL2 rendering context. */
     getContext(): WebGL2RenderingContext | null;
 
@@ -100,3 +106,14 @@ export interface WebGLContextManagerSubsystems {
     readonly textures: ITextureManager;
     readonly geometries: IGeometryManager;
 }
+
+/**
+ * 2D WebGL viewport boundary rectangle.
+ */
+export interface ViewportRect {
+    readonly x: number;
+    readonly y: number;
+    readonly width: number;
+    readonly height: number;
+}
+

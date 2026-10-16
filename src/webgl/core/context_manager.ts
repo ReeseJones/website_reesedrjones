@@ -1,6 +1,10 @@
 import type { ShaderProgram } from "../shaders/shader_program";
 import type { ShaderProgramOptions } from "../shaders/shader_program_types";
-import type { IWebGLContextManager, WebGLContextManagerSubsystems } from "./context_manager_types";
+import type {
+    IWebGLContextManager,
+    ViewportRect,
+    WebGLContextManagerSubsystems,
+} from "./context_manager_types";
 import { BlendMode, type PipelineState } from "../../scene/materials/material_types";
 import type { ShaderKey, ShaderProgramDef, ShaderUniformsOf } from "../shaders/shader_types";
 import type { IContextSubsystem, SubsystemDiagnostics } from "./subsystem_types";
@@ -21,6 +25,7 @@ export class WebGLContextManager implements IWebGLContextManager {
     private readonly _subsystems: IContextSubsystem[] = [];
     private gl: WebGL2RenderingContext | null = null;
     private currentPipelineState: PipelineState | null = null;
+    private _currentViewport: ViewportRect | null = null;
     private _maxTextureUnits: number = 16;
 
     constructor(subsystems: WebGLContextManagerSubsystems) {
@@ -57,6 +62,7 @@ export class WebGLContextManager implements IWebGLContextManager {
     public setContext(gl: WebGL2RenderingContext): void {
         this.gl = gl;
         this.currentPipelineState = null;
+        this._currentViewport = null;
         this._maxTextureUnits = gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS) || 16;
 
         const sorted = [...this._subsystems].sort((a, b) => a.restorationPriority - b.restorationPriority);
@@ -70,6 +76,35 @@ export class WebGLContextManager implements IWebGLContextManager {
      */
     public getContext(): WebGL2RenderingContext | null {
         return this.gl;
+    }
+
+    /**
+     * Sets the WebGL viewport with redundant-call skipping.
+     */
+    public setViewport(x: number, y: number, width: number, height: number): void {
+        const current = this._currentViewport;
+        if (
+            current &&
+            current.x === x &&
+            current.y === y &&
+            current.width === width &&
+            current.height === height
+        ) {
+            return;
+        }
+
+        if (this.gl) {
+            this.gl.viewport(x, y, width, height);
+        }
+
+        this._currentViewport = { x, y, width, height };
+    }
+
+    /**
+     * Retrieves the currently cached WebGL viewport rectangle, if set.
+     */
+    public getViewport(): ViewportRect | null {
+        return this._currentViewport ? { ...this._currentViewport } : null;
     }
 
     /**
@@ -228,6 +263,7 @@ export class WebGLContextManager implements IWebGLContextManager {
     public handleContextLost(): void {
         this.gl = null;
         this.currentPipelineState = null;
+        this._currentViewport = null;
         for (const sub of this._subsystems) {
             sub.onContextLost();
         }
@@ -242,6 +278,7 @@ export class WebGLContextManager implements IWebGLContextManager {
     public handleContextRestored(newGl: WebGL2RenderingContext): void {
         this.gl = newGl;
         this.currentPipelineState = null;
+        this._currentViewport = null;
         this._maxTextureUnits = newGl.getParameter(newGl.MAX_TEXTURE_IMAGE_UNITS) || 16;
 
         const sorted = [...this._subsystems].sort((a, b) => a.restorationPriority - b.restorationPriority);
@@ -260,6 +297,7 @@ export class WebGLContextManager implements IWebGLContextManager {
         this._subsystems.length = 0;
 
         this.currentPipelineState = null;
+        this._currentViewport = null;
         this.gl = null;
     }
 }
