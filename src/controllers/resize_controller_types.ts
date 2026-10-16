@@ -10,6 +10,7 @@ export interface ViewportDimensions {
 export interface ResizeControllerOptions {
     readonly target?: HTMLElement;
     readonly dprCap?: number;
+    readonly debounceMs?: number;
     readonly onResize?: (dimensions: ViewportDimensions) => void;
 }
 

@@ -8,6 +8,7 @@ import {
     DEFAULT_ASPECT_RATIO,
     DEFAULT_DEVICE_PIXEL_RATIO,
     DEFAULT_FALLBACK_DIMENSION,
+    MIN_DEBOUNCE_MS,
     MIN_DEVICE_PIXEL_RATIO,
     MIN_VIEWPORT_DIMENSION,
 } from "./resize_controller_constants";
@@ -20,6 +21,7 @@ export class ResizeController implements ReactiveController, IResizeController {
     private readonly host: ReactiveControllerHost;
     private readonly options: ResizeControllerOptions;
     private observer: ResizeObserver | null = null;
+    private debounceTimerId: ReturnType<typeof setTimeout> | null = null;
     private hasMeasured: boolean = false;
 
     private currentDimensions: ViewportDimensions = {
@@ -51,6 +53,10 @@ export class ResizeController implements ReactiveController, IResizeController {
     }
 
     public hostDisconnected(): void {
+        if (this.debounceTimerId !== null) {
+            clearTimeout(this.debounceTimerId);
+            this.debounceTimerId = null;
+        }
         if (this.observer) {
             this.observer.disconnect();
             this.observer = null;
@@ -59,6 +65,11 @@ export class ResizeController implements ReactiveController, IResizeController {
     }
 
     public measureImmediate(): ViewportDimensions {
+        if (this.debounceTimerId !== null) {
+            clearTimeout(this.debounceTimerId);
+            this.debounceTimerId = null;
+        }
+
         const target = this.targetElement;
         if (!target) {
             return this.currentDimensions;
@@ -115,7 +126,18 @@ export class ResizeController implements ReactiveController, IResizeController {
     }
 
     private handleResize = (): void => {
-        this.measureImmediate();
+        const debounceMs = this.options.debounceMs;
+        if (debounceMs !== undefined && debounceMs > MIN_DEBOUNCE_MS) {
+            if (this.debounceTimerId !== null) {
+                clearTimeout(this.debounceTimerId);
+            }
+            this.debounceTimerId = setTimeout(() => {
+                this.debounceTimerId = null;
+                this.measureImmediate();
+            }, debounceMs);
+        } else {
+            this.measureImmediate();
+        }
     };
 
     private get targetElement(): HTMLElement | null {

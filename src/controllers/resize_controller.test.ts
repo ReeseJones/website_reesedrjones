@@ -432,4 +432,145 @@ describe("ResizeController", () => {
             expect(controller.dimensions.height).toBe(400);
         });
     });
+
+    describe("debounceMs option", () => {
+        beforeEach(() => {
+            vi.useFakeTimers();
+        });
+
+        afterEach(() => {
+            vi.useRealTimers();
+        });
+
+        it("should debounce rapid ResizeObserver notifications to a single measure after delay", () => {
+            let width = 100;
+            let height = 100;
+            vi.spyOn(targetElement, "getBoundingClientRect").mockImplementation(() => ({
+                width,
+                height,
+                top: 0,
+                left: 0,
+                bottom: height,
+                right: width,
+                x: 0,
+                y: 0,
+                toJSON: () => ({}),
+            }));
+
+            const onResize = vi.fn();
+            const controller = new ResizeController(host, {
+                target: targetElement,
+                debounceMs: 100,
+                onResize,
+            });
+            controller.hostConnected();
+
+            // hostConnected invokes measureImmediate once synchronously
+            expect(onResize).toHaveBeenCalledTimes(1);
+
+            const observer = observerInstances[0];
+
+            // Rapid triggers
+            width = 200;
+            observer.callback([], observer as unknown as ResizeObserver);
+            width = 300;
+            observer.callback([], observer as unknown as ResizeObserver);
+            width = 400;
+            observer.callback([], observer as unknown as ResizeObserver);
+
+            // Debounced: nothing called yet
+            expect(onResize).toHaveBeenCalledTimes(1);
+
+            // Advance partial time
+            vi.advanceTimersByTime(50);
+            expect(onResize).toHaveBeenCalledTimes(1);
+
+            // Advance remaining time
+            vi.advanceTimersByTime(50);
+            expect(onResize).toHaveBeenCalledTimes(2);
+            expect(controller.dimensions.width).toBe(400);
+        });
+
+        it("should execute synchronously on measureImmediate() and cancel pending debounce timer", () => {
+            let width = 100;
+            let height = 100;
+            vi.spyOn(targetElement, "getBoundingClientRect").mockImplementation(() => ({
+                width,
+                height,
+                top: 0,
+                left: 0,
+                bottom: height,
+                right: width,
+                x: 0,
+                y: 0,
+                toJSON: () => ({}),
+            }));
+
+            const onResize = vi.fn();
+            const controller = new ResizeController(host, {
+                target: targetElement,
+                debounceMs: 100,
+                onResize,
+            });
+            controller.hostConnected();
+            expect(onResize).toHaveBeenCalledTimes(1);
+
+            const observer = observerInstances[0];
+            width = 500;
+            observer.callback([], observer as unknown as ResizeObserver);
+
+            // Pending debounce timer active
+            expect(onResize).toHaveBeenCalledTimes(1);
+
+            // Direct measureImmediate executes immediately
+            width = 600;
+            controller.measureImmediate();
+            expect(onResize).toHaveBeenCalledTimes(2);
+            expect(controller.dimensions.width).toBe(600);
+
+            // Advance time past original debounce timer
+            vi.advanceTimersByTime(200);
+
+            // Should not fire again since timer was cancelled
+            expect(onResize).toHaveBeenCalledTimes(2);
+        });
+
+        it("should cancel any pending debounce timer on hostDisconnected() without firing", () => {
+            let width = 100;
+            let height = 100;
+            vi.spyOn(targetElement, "getBoundingClientRect").mockImplementation(() => ({
+                width,
+                height,
+                top: 0,
+                left: 0,
+                bottom: height,
+                right: width,
+                x: 0,
+                y: 0,
+                toJSON: () => ({}),
+            }));
+
+            const onResize = vi.fn();
+            const controller = new ResizeController(host, {
+                target: targetElement,
+                debounceMs: 100,
+                onResize,
+            });
+            controller.hostConnected();
+            expect(onResize).toHaveBeenCalledTimes(1);
+
+            const observer = observerInstances[0];
+            width = 500;
+            observer.callback([], observer as unknown as ResizeObserver);
+
+            // Disconnect host before debounce fires
+            controller.hostDisconnected();
+
+            // Advance time past debounce duration
+            vi.advanceTimersByTime(200);
+
+            // onResize should NOT have been called a second time
+            expect(onResize).toHaveBeenCalledTimes(1);
+        });
+    });
 });

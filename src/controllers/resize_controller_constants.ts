@@ -3,3 +3,5 @@ export const DEFAULT_DEVICE_PIXEL_RATIO = 1;
 export const DEFAULT_ASPECT_RATIO = 1;
 export const MIN_VIEWPORT_DIMENSION = 1;
 export const MIN_DEVICE_PIXEL_RATIO = 0;
+export const DEFAULT_RESIZE_DEBOUNCE_MS = 100;
+export const MIN_DEBOUNCE_MS = 0;
