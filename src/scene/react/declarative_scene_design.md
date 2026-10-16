@@ -75,7 +75,7 @@ import type { ISceneNode } from "../core/scene_node_types";
 import type { ICamera } from "../camera/camera_types";
 import type { IMeshGeometry } from "../models/mesh_geometry_types";
 import type { IMaterial } from "../materials/material_types";
-import type { TimeInfo } from "../../components/webgl_canvas/types";
+import type { TimeInfo } from "../../webgl/canvas/canvas_types";
 
 export type Vector3Tuple = [x: number, y: number, z: number];
 export type EulerTuple = [pitch: number, yaw: number, roll: number];

@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useWebGLContext } from "./webgl_context";
-import { CanvasDimensions, TimeInfo } from "./types";
+import type { CanvasDimensions, TimeInfo } from "../../webgl/canvas/canvas_types";
 
 export type WebGLFrameCallback = (
     gl: WebGL2RenderingContext,
@@ -21,9 +21,7 @@ export function useWebGLFrame(callback: WebGLFrameCallback, priority = 0): void 
     callbackRef.current = callback;
 
     useEffect(() => {
-        const id = Math.random().toString(36).substring(2, 9);
         return subscribe({
-            id,
             priority,
             render: (gl, timeInfo, dims) => {
                 callbackRef.current(gl, timeInfo, dims);

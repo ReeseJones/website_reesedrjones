@@ -1,6 +1,6 @@
 import "./webgl_canvas.scss";
 import React, { useCallback, useMemo } from "react";
-import { WebGLCanvasProps, WebGLCanvasContextValue } from "./types";
+import { WebGLCanvasProps, WebGLCanvasContextValue } from "./webgl_canvas_types";
 import { WebGLCanvasContext } from "./webgl_context";
 import { useWebGLCanvas } from "./use_webgl_canvas";
 

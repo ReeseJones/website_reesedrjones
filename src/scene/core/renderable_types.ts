@@ -1,7 +1,7 @@
 import type { ISceneNode } from "./scene_node_types";
 import type { ICamera } from "../camera/camera_types";
 import type { IWebGLContextManager } from "../../webgl/core/context_manager_types";
-import type { CanvasDimensions } from "../../components/webgl_canvas/types";
+import type { CanvasDimensions } from "../../webgl/canvas/canvas_types";
 
 /**
  * Execution context passed to IRenderable nodes during the render pass.

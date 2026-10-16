@@ -251,7 +251,7 @@ export interface IWebGLContextManager {
 import type { IScene } from "../core/scene_types";
 import type { ICamera } from "../camera/camera_types";
 import type { IModelInstance } from "../models/model_instance_types";
-import type { CanvasDimensions, TimeInfo } from "../../components/webgl_canvas/types";
+import type { CanvasDimensions, TimeInfo } from "../../webgl/canvas/canvas_types";
 import type { IWebGLContextManager } from "../../webgl/core/context_manager_types";
 
 export interface StandardShaderUniforms {

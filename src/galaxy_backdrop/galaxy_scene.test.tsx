@@ -19,11 +19,9 @@ import {
 import { GalaxyMaterial } from "../scene/materials/galaxy_material";
 import { BlendMode } from "../scene/materials/material_types";
 import { WebGLCanvasContext } from "../components/webgl_canvas/webgl_context";
-import type {
-    WebGLCanvasContextValue,
-    WebGLSubscriber,
-    CanvasDimensions,
-} from "../components/webgl_canvas/types";
+import type { WebGLCanvasContextValue } from "../components/webgl_canvas/webgl_canvas_types";
+import type { CanvasDimensions } from "../webgl/canvas/canvas_types";
+import type { WebGLSubscriber } from "../webgl/canvas/subscriber_types";
 import { createMockContextManager } from "../testing/mocks/mock_context_manager";
 import { createMockAnimationFrameScheduler } from "../testing/mocks/mock_animation_frame";
 import type { IMockAnimationFrameScheduler } from "../testing/mocks/mock_animation_frame_types";

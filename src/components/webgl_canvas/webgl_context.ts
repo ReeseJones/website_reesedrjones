@@ -1,5 +1,5 @@
 import { createContext, useContext } from "react";
-import { WebGLCanvasContextValue } from "./types";
+import { WebGLCanvasContextValue } from "./webgl_canvas_types";
 
 export const WebGLCanvasContext = createContext<WebGLCanvasContextValue | null>(null);
 

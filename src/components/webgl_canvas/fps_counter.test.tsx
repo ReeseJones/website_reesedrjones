@@ -9,7 +9,9 @@ import {
     type FpsCounterPosition,
 } from "./fps_counter_types";
 import { WebGLCanvasContext } from "./webgl_context";
-import type { CanvasDimensions, WebGLCanvasContextValue, WebGLSubscriber } from "./types";
+import type { WebGLCanvasContextValue } from "./webgl_canvas_types";
+import type { CanvasDimensions } from "../../webgl/canvas/canvas_types";
+import type { WebGLSubscriber } from "../../webgl/canvas/subscriber_types";
 import { createMockContextManager } from "../../testing/mocks/mock_context_manager";
 
 /**

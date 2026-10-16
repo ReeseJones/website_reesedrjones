@@ -1,7 +1,7 @@
 import type { IScene } from "../core/scene_types";
 import type { ICamera } from "../camera/camera_types";
 import type { IRenderable } from "../core/renderable_types";
-import type { CanvasDimensions, TimeInfo } from "../../components/webgl_canvas/types";
+import type { CanvasDimensions, TimeInfo } from "../../webgl/canvas/canvas_types";
 import type { IWebGLContextManager } from "../../webgl/core/context_manager_types";
 
 /**

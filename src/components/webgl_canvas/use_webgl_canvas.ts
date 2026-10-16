@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
+import type {
     CanvasDimensions,
     TimeInfo,
     WebGLContextOptions,
-    WebGLSubscriber,
-} from "./types";
+} from "../../webgl/canvas/canvas_types";
+import type { WebGLSubscriber } from "../../webgl/canvas/subscriber_types";
 
 import type { WebGLContextManager } from "../../webgl/core/context_manager";
 import { createDefaultContextManager } from "../../webgl/core/context_manager_factory";
@@ -65,7 +65,7 @@ export function useWebGLCanvas(config?: UseWebGLCanvasOptions) {
     const dimensionsRef = useRef<CanvasDimensions>(dimensions);
     dimensionsRef.current = dimensions;
 
-    const subscribersRef = useRef<Map<string, WebGLSubscriber>>(new Map());
+    const subscribersRef = useRef<Set<WebGLSubscriber>>(new Set());
     const optionsRef = useRef(options);
     optionsRef.current = options;
 
@@ -153,14 +153,14 @@ export function useWebGLCanvas(config?: UseWebGLCanvasOptions) {
     // Subscribe a new pass or observer
     const subscribe = useCallback(
         (subscriber: WebGLSubscriber) => {
-            subscribersRef.current.set(subscriber.id, subscriber);
+            subscribersRef.current.add(subscriber);
             const gl = glRef.current;
             if (gl && !isContextLost) {
                 subscriber.init?.(gl, dimensionsRef.current);
             }
             return () => {
                 subscriber.destroy?.();
-                subscribersRef.current.delete(subscriber.id);
+                subscribersRef.current.delete(subscriber);
             };
         },
         [isContextLost]

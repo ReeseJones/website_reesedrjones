@@ -3,7 +3,8 @@ import type { IScene, SceneFrameCallback } from "../core/scene_types";
 import type { ISceneNode } from "../core/scene_node_types";
 import type { ICamera } from "../camera/camera_types";
 import type { IWebGLContextManager } from "../../webgl/core/context_manager_types";
-import type { CanvasDimensions, WebGLSubscriber } from "../../components/webgl_canvas/types";
+import type { CanvasDimensions } from "../../webgl/canvas/canvas_types";
+import type { WebGLSubscriber } from "../../webgl/canvas/subscriber_types";
 import type { SceneElement } from "./scene_element";
 
 /**

@@ -6,7 +6,7 @@ import {
     MIN_SIMULATION_DT_SEC,
 } from "./animation_frame_manager_constants";
 import type { AnimationFrameState } from "./animation_frame_manager_types";
-import type { TimeInfo } from "../../components/webgl_canvas/types";
+import type { TimeInfo } from "../../webgl/canvas/canvas_types";
 import { createMockAnimationFrameScheduler } from "../../testing/mocks/mock_animation_frame";
 import type { IMockAnimationFrameScheduler } from "../../testing/mocks/mock_animation_frame_types";
 

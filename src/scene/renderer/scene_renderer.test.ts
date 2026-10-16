@@ -4,7 +4,7 @@ import { SceneRenderer } from "./scene_renderer";
 import type { IScene } from "../core/scene_types";
 import { BlendMode, type IMaterial, type PipelineState } from "../materials/material_types";
 import type { IMeshGeometry } from "../models/mesh_geometry_types";
-import type { CanvasDimensions, TimeInfo } from "../../components/webgl_canvas/types";
+import type { CanvasDimensions, TimeInfo } from "../../webgl/canvas/canvas_types";
 import type { RenderOptions } from "./scene_renderer_types";
 import type { ShaderKey } from "../../webgl/shaders/shader_types";
 import type { ITexture } from "../../webgl/textures/texture_types";

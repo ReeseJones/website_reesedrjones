@@ -14,7 +14,7 @@ import type {
     IAnimationFrameScheduler,
     Milliseconds,
 } from "./animation_frame_manager_types";
-import type { TimeInfo } from "../../components/webgl_canvas/types";
+import type { TimeInfo } from "../../webgl/canvas/canvas_types";
 
 const defaultBrowserScheduler: IAnimationFrameScheduler = {
     requestAnimationFrame: (callback) => globalThis.requestAnimationFrame(callback),

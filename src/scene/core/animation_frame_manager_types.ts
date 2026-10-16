@@ -1,4 +1,4 @@
-import type { TimeInfo } from "../../components/webgl_canvas/types";
+import type { TimeInfo } from "../../webgl/canvas/canvas_types";
 
 /**
  * Opaque numeric handle identifying a scheduled requestAnimationFrame callback.

@@ -1,8 +1,8 @@
 import { useEffect, useRef } from "react";
 import { useWebGLContext } from "./webgl_context";
-import { WebGLSubscriber } from "./types";
+import type { WebGLSubscriber } from "../../webgl/canvas/subscriber_types";
 
-export type WebGLPassOptions = Omit<WebGLSubscriber, "id">;
+export type WebGLPassOptions = WebGLSubscriber;
 
 /**
  * Hook to register a comprehensive multi-lifecycle render pass with the enclosing <WebGLCanvas>.
@@ -16,9 +16,7 @@ export function useWebGLPass(pass: WebGLPassOptions): void {
     passRef.current = pass;
 
     useEffect(() => {
-        const id = Math.random().toString(36).substring(2, 9);
         return subscribe({
-            id,
             get priority() {
                 return passRef.current.priority;
             },

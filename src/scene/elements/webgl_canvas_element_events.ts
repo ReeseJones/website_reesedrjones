@@ -1,4 +1,4 @@
-import type { CanvasDimensions } from "../../components/webgl_canvas/types";
+import type { CanvasDimensions } from "../../webgl/canvas/canvas_types";
 import type { IWebGLContextManager } from "../../webgl/core/context_manager_types";
 
 /**
