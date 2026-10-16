@@ -2,7 +2,11 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import type { ReactiveControllerHost } from "lit";
 import { ResizeController } from "./resize_controller";
-import type { ViewportDimensions, ResizeControllerOptions } from "./resize_controller_types";
+import type {
+    IResizeObserverLike,
+    IResizeObserverFactory,
+    ResizeObserverCallbackLike,
+} from "./resize_controller_types";
 import {
     DEFAULT_ASPECT_RATIO,
     DEFAULT_DEVICE_PIXEL_RATIO,
@@ -34,15 +38,13 @@ if (!customElements.get("mock-resize-element-host")) {
 describe("ResizeController", () => {
     let host: MockElementHost;
     let targetElement: HTMLDivElement;
-    let originalResizeObserver: typeof ResizeObserver | undefined;
     let originalDevicePixelRatio: number | undefined;
 
     let observerInstances: Array<{
-        callback: ResizeObserverCallback;
-        observe: ReturnType<typeof vi.fn>;
-        disconnect: ReturnType<typeof vi.fn>;
-        unobserve: ReturnType<typeof vi.fn>;
+        callback: ResizeObserverCallbackLike;
+        observer: IResizeObserverLike;
     }> = [];
+    let mockObserverFactory: IResizeObserverFactory;
 
     beforeEach(() => {
         host = new MockElementHost();
@@ -51,30 +53,25 @@ describe("ResizeController", () => {
         document.body.appendChild(targetElement);
 
         observerInstances = [];
-        originalResizeObserver = globalThis.ResizeObserver;
+        mockObserverFactory = {
+            create: vi.fn((cb: ResizeObserverCallbackLike): IResizeObserverLike => {
+                const instanceObserver: IResizeObserverLike = {
+                    observe: vi.fn(),
+                    unobserve: vi.fn(),
+                    disconnect: vi.fn(),
+                };
+                observerInstances.push({ callback: cb, observer: instanceObserver });
+                return instanceObserver;
+            }),
+        };
+
         originalDevicePixelRatio = window.devicePixelRatio;
-
-        // Custom ResizeObserver fake that captures callbacks
-        class FakeResizeObserver implements ResizeObserver {
-            public callback: ResizeObserverCallback;
-            public observe = vi.fn();
-            public disconnect = vi.fn();
-            public unobserve = vi.fn();
-
-            public constructor(cb: ResizeObserverCallback) {
-                this.callback = cb;
-                observerInstances.push(this);
-            }
-        }
-
-        globalThis.ResizeObserver = FakeResizeObserver as unknown as typeof ResizeObserver;
     });
 
     afterEach(() => {
         host.remove();
         targetElement.remove();
         document.body.innerHTML = "";
-        globalThis.ResizeObserver = originalResizeObserver as typeof ResizeObserver;
         if (originalDevicePixelRatio !== undefined) {
             Object.defineProperty(window, "devicePixelRatio", {
                 value: originalDevicePixelRatio,
@@ -87,12 +84,12 @@ describe("ResizeController", () => {
 
     describe("constructor", () => {
         it("should register controller with host via host.addController()", () => {
-            const controller = new ResizeController(host);
+            const controller = new ResizeController(host, { observerFactory: mockObserverFactory });
             expect(host.controllers).toContain(controller);
         });
 
         it("should initialize default fallback dimensions", () => {
-            const controller = new ResizeController(host);
+            const controller = new ResizeController(host, { observerFactory: mockObserverFactory });
             expect(controller.dimensions).toEqual({
                 width: DEFAULT_FALLBACK_DIMENSION,
                 height: DEFAULT_FALLBACK_DIMENSION,
@@ -106,19 +103,24 @@ describe("ResizeController", () => {
 
     describe("hostConnected() and hostDisconnected()", () => {
         it("should attach ResizeObserver and observe target element upon connection", () => {
-            const controller = new ResizeController(host, { target: targetElement });
+            const controller = new ResizeController(host, {
+                observerFactory: mockObserverFactory,
+                target: targetElement,
+            });
             controller.hostConnected();
 
+            expect(mockObserverFactory.create).toHaveBeenCalledTimes(1);
             expect(observerInstances).toHaveLength(1);
-            expect(observerInstances[0].observe).toHaveBeenCalledWith(targetElement);
+            expect(observerInstances[0].observer.observe).toHaveBeenCalledWith(targetElement);
         });
 
         it("should observe host element upon connection when options.target is omitted", () => {
-            const controller = new ResizeController(host);
+            const controller = new ResizeController(host, { observerFactory: mockObserverFactory });
             controller.hostConnected();
 
+            expect(mockObserverFactory.create).toHaveBeenCalledTimes(1);
             expect(observerInstances).toHaveLength(1);
-            expect(observerInstances[0].observe).toHaveBeenCalledWith(host);
+            expect(observerInstances[0].observer.observe).toHaveBeenCalledWith(host);
         });
 
         it("should measure immediate dimensions upon connection", () => {
@@ -135,7 +137,11 @@ describe("ResizeController", () => {
             });
 
             const onResize = vi.fn();
-            const controller = new ResizeController(host, { target: targetElement, onResize });
+            const controller = new ResizeController(host, {
+                observerFactory: mockObserverFactory,
+                target: targetElement,
+                onResize,
+            });
             controller.hostConnected();
 
             expect(onResize).toHaveBeenCalledTimes(1);
@@ -145,14 +151,17 @@ describe("ResizeController", () => {
         });
 
         it("should disconnect and nullify ResizeObserver upon disconnection", () => {
-            const controller = new ResizeController(host, { target: targetElement });
+            const controller = new ResizeController(host, {
+                observerFactory: mockObserverFactory,
+                target: targetElement,
+            });
             controller.hostConnected();
 
             const observerInstance = observerInstances[0];
             expect(observerInstance).toBeDefined();
 
             controller.hostDisconnected();
-            expect(observerInstance.disconnect).toHaveBeenCalledTimes(1);
+            expect(observerInstance.observer.disconnect).toHaveBeenCalledTimes(1);
 
             // Reconnecting should establish a fresh observer
             controller.hostConnected();
@@ -173,7 +182,11 @@ describe("ResizeController", () => {
             });
 
             const onResize = vi.fn();
-            const controller = new ResizeController(host, { target: targetElement, onResize });
+            const controller = new ResizeController(host, {
+                observerFactory: mockObserverFactory,
+                target: targetElement,
+                onResize,
+            });
 
             controller.hostConnected();
             expect(onResize).toHaveBeenCalledTimes(1);
@@ -199,7 +212,7 @@ describe("ResizeController", () => {
                 toJSON: () => ({}),
             });
 
-            const controller = new ResizeController(host);
+            const controller = new ResizeController(host, { observerFactory: mockObserverFactory });
             const dims = controller.measureImmediate();
 
             expect(dims.cssWidth).toBe(500);
@@ -220,7 +233,10 @@ describe("ResizeController", () => {
                 toJSON: () => ({}),
             });
 
-            const controller = new ResizeController(host, { target: targetElement });
+            const controller = new ResizeController(host, {
+                observerFactory: mockObserverFactory,
+                target: targetElement,
+            });
             const dims = controller.measureImmediate();
 
             expect(dims.cssWidth).toBe(600);
@@ -247,7 +263,10 @@ describe("ResizeController", () => {
                 toJSON: () => ({}),
             });
 
-            const controller = new ResizeController(host, { target: targetElement });
+            const controller = new ResizeController(host, {
+                observerFactory: mockObserverFactory,
+                target: targetElement,
+            });
             const dims = controller.measureImmediate();
 
             expect(dims.cssWidth).toBe(640);
@@ -278,6 +297,7 @@ describe("ResizeController", () => {
             });
 
             const controller = new ResizeController(host, {
+                observerFactory: mockObserverFactory,
                 target: targetElement,
                 dprCap: 1.5,
             });
@@ -308,6 +328,7 @@ describe("ResizeController", () => {
             });
 
             const controller = new ResizeController(host, {
+                observerFactory: mockObserverFactory,
                 target: targetElement,
                 dprCap: 2.0,
             });
@@ -338,6 +359,7 @@ describe("ResizeController", () => {
             });
 
             const controller = new ResizeController(host, {
+                observerFactory: mockObserverFactory,
                 target: targetElement,
                 dprCap: -1,
             });
@@ -360,7 +382,10 @@ describe("ResizeController", () => {
                 toJSON: () => ({}),
             });
 
-            const controller = new ResizeController(host, { target: targetElement });
+            const controller = new ResizeController(host, {
+                observerFactory: mockObserverFactory,
+                target: targetElement,
+            });
             const dims = controller.measureImmediate();
 
             expect(dims.cssWidth).toBe(0);
@@ -384,7 +409,11 @@ describe("ResizeController", () => {
             });
 
             const onResize = vi.fn();
-            const controller = new ResizeController(host, { target: targetElement, onResize });
+            const controller = new ResizeController(host, {
+                observerFactory: mockObserverFactory,
+                target: targetElement,
+                onResize,
+            });
 
             controller.measureImmediate();
             expect(onResize).toHaveBeenCalledTimes(1);
@@ -415,7 +444,11 @@ describe("ResizeController", () => {
             }));
 
             const onResize = vi.fn();
-            const controller = new ResizeController(host, { target: targetElement, onResize });
+            const controller = new ResizeController(host, {
+                observerFactory: mockObserverFactory,
+                target: targetElement,
+                onResize,
+            });
             controller.hostConnected();
 
             expect(onResize).toHaveBeenCalledTimes(1);
@@ -425,8 +458,8 @@ describe("ResizeController", () => {
             width = 600;
             height = 400;
 
-            const observer = observerInstances[0];
-            observer.callback([], observer as unknown as ResizeObserver);
+            const observerRecord = observerInstances[0];
+            observerRecord.callback([], observerRecord.observer);
 
             expect(onResize).toHaveBeenCalledTimes(2);
             expect(controller.dimensions.width).toBe(600);
@@ -460,6 +493,7 @@ describe("ResizeController", () => {
 
             const onResize = vi.fn();
             const controller = new ResizeController(host, {
+                observerFactory: mockObserverFactory,
                 target: targetElement,
                 debounceMs: 100,
                 onResize,
@@ -469,15 +503,15 @@ describe("ResizeController", () => {
             // hostConnected invokes measureImmediate once synchronously
             expect(onResize).toHaveBeenCalledTimes(1);
 
-            const observer = observerInstances[0];
+            const observerRecord = observerInstances[0];
 
             // Rapid triggers
             width = 200;
-            observer.callback([], observer as unknown as ResizeObserver);
+            observerRecord.callback([], observerRecord.observer);
             width = 300;
-            observer.callback([], observer as unknown as ResizeObserver);
+            observerRecord.callback([], observerRecord.observer);
             width = 400;
-            observer.callback([], observer as unknown as ResizeObserver);
+            observerRecord.callback([], observerRecord.observer);
 
             // Debounced: nothing called yet
             expect(onResize).toHaveBeenCalledTimes(1);
@@ -509,6 +543,7 @@ describe("ResizeController", () => {
 
             const onResize = vi.fn();
             const controller = new ResizeController(host, {
+                observerFactory: mockObserverFactory,
                 target: targetElement,
                 debounceMs: 100,
                 onResize,
@@ -516,9 +551,9 @@ describe("ResizeController", () => {
             controller.hostConnected();
             expect(onResize).toHaveBeenCalledTimes(1);
 
-            const observer = observerInstances[0];
+            const observerRecord = observerInstances[0];
             width = 500;
-            observer.callback([], observer as unknown as ResizeObserver);
+            observerRecord.callback([], observerRecord.observer);
 
             // Pending debounce timer active
             expect(onResize).toHaveBeenCalledTimes(1);
@@ -553,6 +588,7 @@ describe("ResizeController", () => {
 
             const onResize = vi.fn();
             const controller = new ResizeController(host, {
+                observerFactory: mockObserverFactory,
                 target: targetElement,
                 debounceMs: 100,
                 onResize,
@@ -560,9 +596,9 @@ describe("ResizeController", () => {
             controller.hostConnected();
             expect(onResize).toHaveBeenCalledTimes(1);
 
-            const observer = observerInstances[0];
+            const observerRecord = observerInstances[0];
             width = 500;
-            observer.callback([], observer as unknown as ResizeObserver);
+            observerRecord.callback([], observerRecord.observer);
 
             // Disconnect host before debounce fires
             controller.hostDisconnected();

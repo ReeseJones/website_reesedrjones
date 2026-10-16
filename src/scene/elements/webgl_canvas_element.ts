@@ -35,6 +35,7 @@ import {
     CONTEXT_SIMULATE_LOSS_DEFAULT_DELAY_MS,
 } from "./webgl_canvas_element_constants";
 import { ResizeController } from "../../controllers/resize_controller";
+import { defaultResizeObserverFactory } from "../../controllers/resize_observer_factory";
 import type { ViewportDimensions } from "../../controllers/resize_controller_types";
 import {
     DEFAULT_ASPECT_RATIO,
@@ -42,6 +43,7 @@ import {
     DEFAULT_FALLBACK_DIMENSION,
 } from "../../controllers/resize_controller_constants";
 import { VisibilityController } from "../../controllers/visibility_controller";
+import { defaultIntersectionObserverFactory } from "../../controllers/intersection_observer_factory";
 import { AnimationFrameManager } from "../core/animation_frame_manager";
 import { WebGLSubscriberManager } from "../../webgl/canvas/webgl_subscriber_manager";
 
@@ -122,6 +124,7 @@ export class WebGLCanvasElement extends LitElement implements IWebGLCanvasContex
 
         const self = this;
         this._resizeController = new ResizeController(this, {
+            observerFactory: defaultResizeObserverFactory,
             get dprCap(): number {
                 return self.dprCap;
             },
@@ -130,6 +133,7 @@ export class WebGLCanvasElement extends LitElement implements IWebGLCanvasContex
         });
 
         this._visibilityController = new VisibilityController(this, {
+            observerFactory: defaultIntersectionObserverFactory,
             get pauseWhenOffscreen(): boolean {
                 return self.pauseWhenOffscreen;
             },

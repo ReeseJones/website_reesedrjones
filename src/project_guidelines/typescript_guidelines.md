@@ -94,5 +94,64 @@ Principles, standards, and typing patterns for TypeScript code in this repositor
   ```
 - **Runtime `instanceof` Narrowing:** Custom event classes provide clean runtime type guards (`if (event instanceof SceneCameraChangedEvent)`) without unsafe type assertions.
 
+---
+
+## 9. Browser & Hardware API Boundaries: Factory Object Dependency Injection
+
+Any time codebase logic interacts with browser-native hardware, DOM observers, or platform classes (such as `ResizeObserver`, `IntersectionObserver`, `MutationObserver`, `AudioContext`, `Worker`, `WebSocket`, `IndexedDB`), it must follow the **3-Tier Factory Object Dependency Injection Pattern**.
+
+### Core Rules
+
+- **Zero Inline Instantiation:** Never call `new BrowserAPI(...)` directly inside services, managers, hooks, or reactive controllers.
+- **Zero Fallback Branches:** Do NOT author `typeof BrowserAPI !== "undefined"` fallback branches. Relying on environment checks creates dead code branches, hides test coverage gaps, and complicates execution across non-DOM environments. The factory must be a **required** dependency.
+- **Pure Interfaces in Dedicated Types Modules:** Separate the target's contract and factory interfaces into dedicated `*_types.ts` files, adhering to Section 5.
+
+### The 3-Tier Structure
+
+1. **Target Contract Interface (`*_types.ts`):**
+   Define a minimal, strongly-typed interface capturing the contract methods needed from the browser class:
+   ```ts
+   export interface IResizeObserverLike {
+       observe(target: Element, options?: ResizeObserverOptions): void;
+       unobserve(target: Element): void;
+       disconnect(): void;
+   }
+   ```
+
+2. **Factory Object Interface (`*_types.ts`):**
+   Define an explicit factory interface containing a `.create()` method that returns the contract interface:
+   ```ts
+   export interface IResizeObserverFactory {
+       create(callback: ResizeObserverCallback): IResizeObserverLike;
+   }
+   ```
+   In options or constructor parameters, require this factory explicitly:
+   ```ts
+   export interface ResizeControllerOptions {
+       readonly observerFactory: IResizeObserverFactory;
+       readonly target?: HTMLElement;
+       // ... other options
+   }
+   ```
+
+3. **Standalone Default Factory Module (`*_factory.ts`):**
+   In a separate, dedicated module (outside the controller or service file), implement and export a standalone default factory singleton:
+   ```ts
+   import type { IResizeObserverFactory } from "./resize_controller_types";
+
+   export const defaultResizeObserverFactory: IResizeObserverFactory = {
+       create(callback: ResizeObserverCallback) {
+           return new ResizeObserver(callback);
+       },
+   };
+   ```
+
+### Benefits for Architecture & Testing
+
+- **Decoupled Engine Logic:** Engine services and controllers remain pure TypeScript modules with zero hidden dependencies on global browser state.
+- **Hermetic Unit Testing:** Unit tests for controllers and services can run in headless Node.js by passing a mock factory (`{ create: vi.fn(() => mockInstance) }`) without requiring DOM shims or browser environments.
+- **Native Spyability in Consumers:** High-level consumer components or custom elements that consume the default factory singleton can be tested by cleanly spying on the method (`vi.spyOn(defaultResizeObserverFactory, "create")`) and restoring it (`spy.mockRestore()`), eliminating all need for monkey-patching `globalThis`.
+
+
 
 

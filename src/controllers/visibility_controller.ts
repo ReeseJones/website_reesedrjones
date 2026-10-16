@@ -1,6 +1,8 @@
 import type { ReactiveController } from "lit";
 import type {
     ElementControllerHost,
+    IIntersectionObserverEntryLike,
+    IIntersectionObserverLike,
     IVisibilityController,
     VisibilityControllerOptions,
 } from "./visibility_controller_types";
@@ -19,12 +21,12 @@ export class VisibilityController implements ReactiveController, IVisibilityCont
     private readonly host: ElementControllerHost;
     private readonly target: HTMLElement;
     private readonly options: VisibilityControllerOptions;
-    private intersectionObserver: IntersectionObserver | null = null;
+    private intersectionObserver: IIntersectionObserverLike | null = null;
     private _isOffscreen: boolean = false;
     private _isHidden: boolean = false;
     private _isVisible: boolean = true;
 
-    public constructor(host: ElementControllerHost, options: VisibilityControllerOptions = {}) {
+    public constructor(host: ElementControllerHost, options: VisibilityControllerOptions) {
         this.host = host;
         this.options = options;
         this.target = options.target ?? host;
@@ -58,8 +60,8 @@ export class VisibilityController implements ReactiveController, IVisibilityCont
             this._isHidden = false;
         }
 
-        if (pauseOffscreen && typeof IntersectionObserver !== "undefined") {
-            this.intersectionObserver = new IntersectionObserver(this.handleIntersection);
+        if (pauseOffscreen) {
+            this.intersectionObserver = this.options.observerFactory.create(this.handleIntersection);
             this.intersectionObserver.observe(this.target);
         } else {
             this._isOffscreen = false;
@@ -84,7 +86,7 @@ export class VisibilityController implements ReactiveController, IVisibilityCont
         }
     }
 
-    private handleIntersection = (entries: readonly IntersectionObserverEntry[]): void => {
+    private handleIntersection = (entries: readonly IIntersectionObserverEntryLike[]): void => {
         const entry = entries[0];
         if (!entry) {
             return;

@@ -14,6 +14,7 @@ This document specifies the testing principles, authoring conventions, custom ma
   - **`*.test.tsx` files execute in simulated DOM (`environment: "happy-dom"`):** All React components, custom hooks, and DOM-interacting units execute in happy-dom via Vitest's `projects` configuration. This provides access to `window`, `document`, and React's DOM renderer lifecycle.
   - **Extension-Based Convention:** Feature directories collocate components, hooks, shaders, and engine classes. The file extension dictates the test environment: pure TypeScript tests must be named `*.test.ts`; React component and hook tests must be named `*.test.tsx`.
   - **Deterministic Hardware Boundaries:** WebGL state machine dispatch is verified with deterministic spy fakes ([`createMockWebGL2Context`](../testing/mocks/mock_gl_context.ts)) rather than real GPU rasterization. Actual GPU compilation and visual regression checks are intentionally separated from unit tests.
+  - **Browser API & Hardware Boundary Isolation:** When testing classes, services, or controllers that interact with browser-native APIs (`ResizeObserver`, `IntersectionObserver`, `AudioContext`, `Worker`, etc.), always isolate the boundary via injected factory objects or method spies. Never monkey-patch `globalThis` (`globalThis.ResizeObserver = Fake...` is strictly forbidden). Tests must remain hermetic, fast, and deterministic across pure Node.js and simulated DOM environments.
 - **Zero Magic Numbers & High-Readability Assertions:** Never write assertions with incomprehensible raw index arithmetic (such as `expect(attrs[0]).toBeCloseTo(...)`). Instead, use structured test helper decoders (e.g., [`getVertex`](../testing/geometry_test_helpers.ts)) that unpack raw interleaved buffers into named spatial, normal, and texture coordinate fields.
 - **Foundation-First Test Progression:** Tests must be implemented and maintained in foundation-first dependency order: low-level mathematical structures and primitive geometries first, followed by composite objects, cameras, materials, and finally renderers.
 - **Assert Return Values and Contracts:** Tests must explicitly verify what a function or method **returns** (return values, status flags, fluent chaining contracts like `return this`), rather than only verifying internal side effects.
@@ -196,6 +197,39 @@ Centralized mock generators in `src/testing/mocks/` are reserved exclusively for
   - Example: `const listener = vi.fn(); geometry.onDispose(listener);`
   - Assert call counts, arguments, and execution order: `expect(listener).toHaveBeenCalledTimes(1);`
 - For observing method execution on real class instances, use `vi.spyOn(instance, "methodName")`. Restore spies when necessary with `spy.mockRestore()`.
+
+### E. Browser & Hardware API Boundary Isolation via Factory Objects
+- **Zero Global Monkey-Patching Policy:** Never overwrite or monkey-patch globals (`globalThis.ResizeObserver = ...`, `globalThis.IntersectionObserver = ...`). Mutating `globalThis` leaks across test suites, produces order-dependent flakes, and hides unmocked code paths.
+- **Direct Unit Testing of Controllers & Services:** Pass a mock factory object directly into the target's constructor or options:
+  ```ts
+  const mockObserver: IResizeObserverLike = {
+      observe: vi.fn(),
+      unobserve: vi.fn(),
+      disconnect: vi.fn(),
+  };
+
+  const mockFactory: IResizeObserverFactory = {
+      create: vi.fn(() => mockObserver),
+  };
+
+  const controller = new ResizeController(host, { observerFactory: mockFactory });
+  controller.hostConnected();
+
+  expect(mockFactory.create).toHaveBeenCalledTimes(1);
+  expect(mockObserver.observe).toHaveBeenCalledWith(host);
+  ```
+- **Testing Consumers of Default Factories (Custom Elements & Components):** When testing higher-level consumers that configure controllers with the production default factory singleton, spy directly on the factory object's `.create()` method using `vi.spyOn()` and restore it in cleanup:
+  ```ts
+  import { defaultResizeObserverFactory } from "../../controllers/resize_observer_factory";
+
+  const factorySpy = vi.spyOn(defaultResizeObserverFactory, "create");
+  const el = document.createElement("rj-webgl-canvas");
+  document.body.appendChild(el);
+  await el.updateComplete;
+
+  expect(factorySpy).toHaveBeenCalled();
+  factorySpy.mockRestore();
+  ```
 
 ---
 

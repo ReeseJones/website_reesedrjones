@@ -27,6 +27,8 @@ import { createMockAnimationFrameScheduler } from "../../testing/mocks/mock_anim
 import type { IMockAnimationFrameScheduler } from "../../testing/mocks/mock_animation_frame_types";
 import type { CanvasDimensions, TimeInfo } from "../../webgl/canvas/canvas_types";
 import type { WebGLSubscriber } from "../../webgl/canvas/subscriber_types";
+import { defaultResizeObserverFactory } from "../../controllers/resize_observer_factory";
+import { defaultIntersectionObserverFactory } from "../../controllers/intersection_observer_factory";
 
 class TestCanvasConsumerElement extends LitElement {
     public canvasValue: IWebGLCanvasContext | undefined;
@@ -495,6 +497,25 @@ describe("WebGLCanvasElement", () => {
 
             // Calling destroy again should be idempotent
             expect(() => element.destroy()).not.toThrow();
+        });
+    });
+
+    describe("observer factory injection", () => {
+        it("should cleanly delegate observer creation to default factories upon connection", async () => {
+            const resizeSpy = vi.spyOn(defaultResizeObserverFactory, "create");
+            const visibilitySpy = vi.spyOn(defaultIntersectionObserverFactory, "create");
+
+            const testElement = document.createElement(TAG_RJ_WEBGL_CANVAS);
+            document.body.appendChild(testElement);
+            await testElement.updateComplete;
+
+            expect(resizeSpy).toHaveBeenCalled();
+            expect(visibilitySpy).toHaveBeenCalled();
+
+            resizeSpy.mockRestore();
+            visibilitySpy.mockRestore();
+            testElement.destroy();
+            testElement.remove();
         });
     });
 

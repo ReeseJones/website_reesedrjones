@@ -11,7 +11,23 @@ export interface ViewportDimensions {
     readonly aspect: number;
 }
 
+export interface IResizeObserverLike {
+    observe(target: Element, options?: ResizeObserverOptions): void;
+    unobserve(target: Element): void;
+    disconnect(): void;
+}
+
+export type ResizeObserverCallbackLike = (
+    entries?: readonly unknown[],
+    observer?: IResizeObserverLike
+) => void;
+
+export interface IResizeObserverFactory {
+    create(callback: ResizeObserverCallbackLike): IResizeObserverLike;
+}
+
 export interface ResizeControllerOptions {
+    readonly observerFactory: IResizeObserverFactory;
     readonly target?: HTMLElement;
     readonly dprCap?: number;
     readonly debounceMs?: number;

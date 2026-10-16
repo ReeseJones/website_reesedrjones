@@ -2,6 +2,7 @@ import type { ReactiveController } from "lit";
 import type {
     ElementControllerHost,
     IResizeController,
+    IResizeObserverLike,
     ResizeControllerOptions,
     ViewportDimensions,
 } from "./resize_controller_types";
@@ -22,7 +23,7 @@ export class ResizeController implements ReactiveController, IResizeController {
     private readonly host: ElementControllerHost;
     private readonly target: HTMLElement;
     private readonly options: ResizeControllerOptions;
-    private observer: ResizeObserver | null = null;
+    private observer: IResizeObserverLike | null = null;
     private debounceTimerId: ReturnType<typeof setTimeout> | null = null;
     private hasMeasured: boolean = false;
 
@@ -35,7 +36,7 @@ export class ResizeController implements ReactiveController, IResizeController {
         aspect: DEFAULT_ASPECT_RATIO,
     };
 
-    public constructor(host: ElementControllerHost, options: ResizeControllerOptions = {}) {
+    public constructor(host: ElementControllerHost, options: ResizeControllerOptions) {
         this.host = host;
         this.options = options;
         this.target = options.target ?? host;
@@ -47,10 +48,8 @@ export class ResizeController implements ReactiveController, IResizeController {
     }
 
     public hostConnected(): void {
-        if (typeof ResizeObserver !== "undefined") {
-            this.observer = new ResizeObserver(this.handleResize);
-            this.observer.observe(this.target);
-        }
+        this.observer = this.options.observerFactory.create(this.handleResize);
+        this.observer.observe(this.target);
         this.measureImmediate();
     }
 
