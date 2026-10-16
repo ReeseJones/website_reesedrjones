@@ -34,4 +34,5 @@ export interface IVisibilityController {
     readonly isVisible: boolean;
     readonly isOffscreen: boolean;
     readonly isHidden: boolean;
+    reconfigure(options?: Partial<VisibilityControllerOptions>): void;
 }

@@ -19,8 +19,9 @@ import {
  */
 export class VisibilityController implements ReactiveController, IVisibilityController {
     private readonly host: ElementControllerHost;
-    private readonly target: HTMLElement;
-    private readonly options: VisibilityControllerOptions;
+    private target: HTMLElement;
+    private options: VisibilityControllerOptions;
+    private isConnected: boolean = false;
     private intersectionObserver: IIntersectionObserverLike | null = null;
     private _isOffscreen: boolean = false;
     private _isHidden: boolean = false;
@@ -50,32 +51,48 @@ export class VisibilityController implements ReactiveController, IVisibilityCont
     }
 
     public hostConnected(): void {
-        const pauseOffscreen = this.options.pauseWhenOffscreen ?? DEFAULT_PAUSE_WHEN_OFFSCREEN;
-        const pauseHidden = this.options.pauseWhenHidden ?? DEFAULT_PAUSE_WHEN_HIDDEN;
-
-        if (pauseHidden && typeof document !== "undefined") {
-            this._isHidden = document.hidden;
-            document.addEventListener(EVENT_VISIBILITY_CHANGE, this.handleVisibilityChange);
-        } else {
-            this._isHidden = false;
-        }
-
-        if (pauseOffscreen) {
-            this.intersectionObserver = this.options.observerFactory.create(this.handleIntersection);
-            this.intersectionObserver.observe(this.target);
-        } else {
-            this._isOffscreen = false;
-        }
-
-        const nextVisible = !this._isOffscreen && !this._isHidden;
-        if (this._isVisible !== nextVisible) {
-            this._isVisible = nextVisible;
-            this.options.onChange?.(nextVisible);
-            this.host.requestUpdate();
-        }
+        this.isConnected = true;
+        this.syncObservers();
     }
 
     public hostDisconnected(): void {
+        this.isConnected = false;
+        this.teardownObservers();
+    }
+
+    /**
+     * Reconfigures visibility options and synchronizes observers with the updated settings.
+     *
+     * @param options Optional partial configuration overrides.
+     */
+    public reconfigure(options?: Partial<VisibilityControllerOptions>): void {
+        const targetChanged = options?.target !== undefined && options.target !== this.target;
+        if (options) {
+            this.options = {
+                ...this.options,
+                ...options,
+            };
+            if (options.target !== undefined) {
+                this.target = options.target ?? this.host;
+            }
+        }
+
+        if (targetChanged && this.intersectionObserver) {
+            this.intersectionObserver.disconnect();
+            this.intersectionObserver = null;
+        }
+
+        if (this.isConnected) {
+            this.syncObservers();
+        } else {
+            const pauseHidden = this.options.pauseWhenHidden ?? DEFAULT_PAUSE_WHEN_HIDDEN;
+            this._isHidden = pauseHidden && typeof document !== "undefined" ? document.hidden : false;
+            this._isOffscreen = false;
+            this.updateVisibility();
+        }
+    }
+
+    private teardownObservers(): void {
         if (this.intersectionObserver) {
             this.intersectionObserver.disconnect();
             this.intersectionObserver = null;
@@ -84,6 +101,37 @@ export class VisibilityController implements ReactiveController, IVisibilityCont
         if (typeof document !== "undefined") {
             document.removeEventListener(EVENT_VISIBILITY_CHANGE, this.handleVisibilityChange);
         }
+    }
+
+    private syncObservers(): void {
+        const pauseOffscreen = this.options.pauseWhenOffscreen ?? DEFAULT_PAUSE_WHEN_OFFSCREEN;
+        const pauseHidden = this.options.pauseWhenHidden ?? DEFAULT_PAUSE_WHEN_HIDDEN;
+
+        if (pauseHidden && typeof document !== "undefined") {
+            this._isHidden = document.hidden;
+            document.removeEventListener(EVENT_VISIBILITY_CHANGE, this.handleVisibilityChange);
+            document.addEventListener(EVENT_VISIBILITY_CHANGE, this.handleVisibilityChange);
+        } else {
+            if (typeof document !== "undefined") {
+                document.removeEventListener(EVENT_VISIBILITY_CHANGE, this.handleVisibilityChange);
+            }
+            this._isHidden = false;
+        }
+
+        if (pauseOffscreen) {
+            if (!this.intersectionObserver) {
+                this.intersectionObserver = this.options.observerFactory.create(this.handleIntersection);
+                this.intersectionObserver.observe(this.target);
+            }
+        } else {
+            if (this.intersectionObserver) {
+                this.intersectionObserver.disconnect();
+                this.intersectionObserver = null;
+            }
+            this._isOffscreen = false;
+        }
+
+        this.updateVisibility();
     }
 
     private handleIntersection = (entries: readonly IIntersectionObserverEntryLike[]): void => {

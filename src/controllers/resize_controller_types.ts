@@ -29,7 +29,6 @@ export interface IResizeObserverFactory {
 export interface ResizeControllerOptions {
     readonly observerFactory: IResizeObserverFactory;
     readonly target?: HTMLElement;
-    readonly dprCap?: number;
     readonly debounceMs?: number;
     readonly onResize?: (dimensions: ViewportDimensions) => void;
 }

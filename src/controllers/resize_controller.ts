@@ -72,21 +72,12 @@ export class ResizeController implements ReactiveController, IResizeController {
         }
 
         const rect = this.target.getBoundingClientRect();
-        const rawDpr =
+        const devicePixelRatio =
             typeof window !== "undefined" &&
             typeof window.devicePixelRatio === "number" &&
             window.devicePixelRatio > MIN_DEVICE_PIXEL_RATIO
                 ? window.devicePixelRatio
                 : DEFAULT_DEVICE_PIXEL_RATIO;
-
-        const dprCap =
-            this.options.dprCap !== undefined &&
-            Number.isFinite(this.options.dprCap) &&
-            this.options.dprCap > MIN_DEVICE_PIXEL_RATIO
-                ? this.options.dprCap
-                : Number.POSITIVE_INFINITY;
-
-        const devicePixelRatio = Math.min(rawDpr, dprCap);
         const cssWidth = rect.width;
         const cssHeight = rect.height;
         const width = Math.max(MIN_VIEWPORT_DIMENSION, Math.round(cssWidth * devicePixelRatio));

@@ -41,6 +41,8 @@ import {
     DEFAULT_ASPECT_RATIO,
     DEFAULT_DEVICE_PIXEL_RATIO,
     DEFAULT_FALLBACK_DIMENSION,
+    MIN_DEVICE_PIXEL_RATIO,
+    MIN_VIEWPORT_DIMENSION,
 } from "../../controllers/resize_controller_constants";
 import { VisibilityController } from "../../controllers/visibility_controller";
 import { defaultIntersectionObserverFactory } from "../../controllers/intersection_observer_factory";
@@ -72,10 +74,6 @@ export class WebGLCanvasElement extends LitElement implements IWebGLCanvasContex
             position: relative;
             width: 100%;
             height: 100%;
-            pointer-events: none;
-        }
-        ::slotted(*) {
-            pointer-events: auto;
         }
     `;
 
@@ -122,24 +120,16 @@ export class WebGLCanvasElement extends LitElement implements IWebGLCanvasContex
             initialValue: this,
         });
 
-        const self = this;
         this._resizeController = new ResizeController(this, {
             observerFactory: defaultResizeObserverFactory,
-            get dprCap(): number {
-                return self.dprCap;
-            },
             debounceMs: DEFAULT_RESIZE_DEBOUNCE_MS,
             onResize: (dims: ViewportDimensions) => this._handleResize(dims),
         });
 
         this._visibilityController = new VisibilityController(this, {
             observerFactory: defaultIntersectionObserverFactory,
-            get pauseWhenOffscreen(): boolean {
-                return self.pauseWhenOffscreen;
-            },
-            get pauseWhenHidden(): boolean {
-                return self.pauseWhenHidden;
-            },
+            pauseWhenOffscreen: this.pauseWhenOffscreen,
+            pauseWhenHidden: this.pauseWhenHidden,
         });
 
         this._animManager = new AnimationFrameManager((timeInfo) => ({ timeInfo }));
@@ -185,7 +175,7 @@ export class WebGLCanvasElement extends LitElement implements IWebGLCanvasContex
         super.updated(changedProperties);
 
         if (changedProperties.has("dprCap") && this._gl) {
-            this._handleResize(this._resizeController.measureImmediate());
+            this._handleResize(this._resizeController.dimensions);
         }
 
         if (changedProperties.has("renderMode")) {
@@ -198,8 +188,10 @@ export class WebGLCanvasElement extends LitElement implements IWebGLCanvasContex
             changedProperties.has("pauseWhenOffscreen") ||
             changedProperties.has("pauseWhenHidden")
         ) {
-            this._visibilityController.hostDisconnected();
-            this._visibilityController.hostConnected();
+            this._visibilityController.reconfigure({
+                pauseWhenOffscreen: this.pauseWhenOffscreen,
+                pauseWhenHidden: this.pauseWhenHidden,
+            });
         }
     }
 
@@ -305,21 +297,31 @@ export class WebGLCanvasElement extends LitElement implements IWebGLCanvasContex
     }
 
     private _handleResize(dims: ViewportDimensions): void {
+        const rawDpr = dims.devicePixelRatio;
+        const dprCap =
+            Number.isFinite(this.dprCap) && this.dprCap > MIN_DEVICE_PIXEL_RATIO
+                ? this.dprCap
+                : Number.POSITIVE_INFINITY;
+        const effectiveDpr = Math.min(rawDpr, dprCap);
+        const width = Math.max(MIN_VIEWPORT_DIMENSION, Math.round(dims.cssWidth * effectiveDpr));
+        const height = Math.max(MIN_VIEWPORT_DIMENSION, Math.round(dims.cssHeight * effectiveDpr));
+        const aspect = width / Math.max(MIN_VIEWPORT_DIMENSION, height);
+
         const canvas = this._canvasRef.value;
         const gl = this._gl;
 
-        if (canvas && (canvas.width !== dims.width || canvas.height !== dims.height)) {
-            canvas.width = dims.width;
-            canvas.height = dims.height;
+        if (canvas && (canvas.width !== width || canvas.height !== height)) {
+            canvas.width = width;
+            canvas.height = height;
         }
 
         const nextDims: CanvasDimensions = {
-            width: dims.width,
-            height: dims.height,
+            width,
+            height,
             cssWidth: dims.cssWidth,
             cssHeight: dims.cssHeight,
-            dpr: dims.devicePixelRatio,
-            aspect: dims.aspect,
+            dpr: effectiveDpr,
+            aspect,
         };
 
         const hasChanged =

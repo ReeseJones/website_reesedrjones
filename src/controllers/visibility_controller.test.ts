@@ -355,4 +355,145 @@ describe("VisibilityController", () => {
             expect(controller.isVisible).toBe(true);
         });
     });
+
+    describe("reconfigure()", () => {
+        it("should dynamically disconnect observer and reset isOffscreen when pauseWhenOffscreen is toggled to false", () => {
+            const controller = new VisibilityController(host, {
+                observerFactory: mockObserverFactory,
+                target: targetElement,
+                pauseWhenOffscreen: true,
+            });
+            controller.hostConnected();
+
+            expect(observerInstances).toHaveLength(1);
+            const observerRecord = observerInstances[0];
+
+            // Simulate moving offscreen
+            observerRecord.callback([{ isIntersecting: false, intersectionRatio: 0 }]);
+            expect(controller.isOffscreen).toBe(true);
+            expect(controller.isVisible).toBe(false);
+
+            // Reconfigure to disable offscreen pausing
+            controller.reconfigure({ pauseWhenOffscreen: false });
+
+            expect(observerRecord.observer.disconnect).toHaveBeenCalled();
+            expect(controller.isOffscreen).toBe(false);
+            expect(controller.isVisible).toBe(true);
+        });
+
+        it("should dynamically create observer and observe target when pauseWhenOffscreen is toggled to true", () => {
+            const controller = new VisibilityController(host, {
+                observerFactory: mockObserverFactory,
+                target: targetElement,
+                pauseWhenOffscreen: false,
+            });
+            controller.hostConnected();
+
+            expect(observerInstances).toHaveLength(0);
+
+            // Reconfigure to enable offscreen pausing
+            controller.reconfigure({ pauseWhenOffscreen: true });
+
+            expect(observerInstances).toHaveLength(1);
+            expect(observerInstances[0].observer.observe).toHaveBeenCalledWith(targetElement);
+        });
+
+        it("should dynamically remove visibilitychange listener and reset isHidden when pauseWhenHidden is toggled to false", () => {
+            const removeSpy = vi.spyOn(document, "removeEventListener");
+            Object.defineProperty(document, "hidden", {
+                value: true,
+                writable: true,
+                configurable: true,
+            });
+
+            const controller = new VisibilityController(host, {
+                observerFactory: mockObserverFactory,
+                pauseWhenHidden: true,
+            });
+            controller.hostConnected();
+
+            expect(controller.isHidden).toBe(true);
+            expect(controller.isVisible).toBe(false);
+
+            // Reconfigure to disable hidden pausing
+            controller.reconfigure({ pauseWhenHidden: false });
+
+            expect(removeSpy).toHaveBeenCalledWith(EVENT_VISIBILITY_CHANGE, expect.any(Function));
+            expect(controller.isHidden).toBe(false);
+            expect(controller.isVisible).toBe(true);
+        });
+
+        it("should dynamically attach visibilitychange listener and sync state when pauseWhenHidden is toggled to true", () => {
+            const addSpy = vi.spyOn(document, "addEventListener");
+            Object.defineProperty(document, "hidden", {
+                value: true,
+                writable: true,
+                configurable: true,
+            });
+
+            const controller = new VisibilityController(host, {
+                observerFactory: mockObserverFactory,
+                pauseWhenHidden: false,
+            });
+            controller.hostConnected();
+
+            expect(controller.isHidden).toBe(false);
+
+            // Reconfigure to enable hidden pausing while tab is hidden
+            controller.reconfigure({ pauseWhenHidden: true });
+
+            expect(addSpy).toHaveBeenCalledWith(EVENT_VISIBILITY_CHANGE, expect.any(Function));
+            expect(controller.isHidden).toBe(true);
+            expect(controller.isVisible).toBe(false);
+        });
+
+        it("should disconnect old observer and observe new target when target is changed", () => {
+            const controller = new VisibilityController(host, {
+                observerFactory: mockObserverFactory,
+                target: targetElement,
+                pauseWhenOffscreen: true,
+            });
+            controller.hostConnected();
+
+            const firstObserver = observerInstances[0].observer;
+            const newTarget = document.createElement("section");
+            document.body.appendChild(newTarget);
+
+            controller.reconfigure({ target: newTarget });
+
+            expect(firstObserver.disconnect).toHaveBeenCalled();
+            expect(observerInstances).toHaveLength(2);
+            expect(observerInstances[1].observer.observe).toHaveBeenCalledWith(newTarget);
+
+            newTarget.remove();
+        });
+
+        it("should safely update options without attaching DOM observers if host is not connected", () => {
+            const controller = new VisibilityController(host, {
+                observerFactory: mockObserverFactory,
+                target: targetElement,
+                pauseWhenOffscreen: false,
+            });
+
+            // Reconfigure while disconnected
+            controller.reconfigure({ pauseWhenOffscreen: true });
+            expect(observerInstances).toHaveLength(0);
+
+            // Observers attach once hostConnected is called
+            controller.hostConnected();
+            expect(observerInstances).toHaveLength(1);
+            expect(observerInstances[0].observer.observe).toHaveBeenCalledWith(targetElement);
+        });
+
+        it("should support reconfigure() without arguments to resynchronize active state", () => {
+            const controller = new VisibilityController(host, {
+                observerFactory: mockObserverFactory,
+                target: targetElement,
+                pauseWhenOffscreen: true,
+            });
+            controller.hostConnected();
+
+            expect(() => controller.reconfigure()).not.toThrow();
+        });
+    });
 });

@@ -113,6 +113,38 @@ describe("WebGLCanvasElement", () => {
 
                 expect(element.dprCap).toBe(1.75);
             });
+
+            it("should cap effective DPR and buffer dimensions when window.devicePixelRatio exceeds dprCap", async () => {
+                Object.defineProperty(window, "devicePixelRatio", {
+                    value: 3.0,
+                    writable: true,
+                    configurable: true,
+                });
+
+                const testEl = document.createElement(TAG_RJ_WEBGL_CANVAS) as WebGLCanvasElement;
+                testEl.dprCap = 1.25;
+                vi.spyOn(testEl, "getBoundingClientRect").mockReturnValue({
+                    width: 800,
+                    height: 600,
+                    top: 0,
+                    left: 0,
+                    bottom: 600,
+                    right: 800,
+                    x: 0,
+                    y: 0,
+                    toJSON: () => ({}),
+                });
+
+                document.body.appendChild(testEl);
+                await testEl.updateComplete;
+
+                expect(testEl.dimensions.dpr).toBe(1.25);
+                expect(testEl.dimensions.width).toBe(1000);
+                expect(testEl.dimensions.height).toBe(750);
+
+                testEl.destroy();
+                testEl.remove();
+            });
         });
 
         describe("renderMode", () => {
