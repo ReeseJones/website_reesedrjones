@@ -1,5 +1,3 @@
-import type { NormalizedRgbaTuple } from "./converters/rgba_color_converter_types";
-
 /**
  * HTML custom element tag name for the WebGL canvas wrapper Web Component.
  */
@@ -9,17 +7,10 @@ export const TAG_RJ_WEBGL_CANVAS = "rj-webgl-canvas";
  * Default configuration values for <rj-webgl-canvas>.
  */
 export const DEFAULT_DPR_CAP = 1.5;
-export const DEFAULT_AUTO_CLEAR = true;
-export const DEFAULT_CLEAR_COLOR: NormalizedRgbaTuple = [0, 0, 0, 0];
 export const DEFAULT_RENDER_MODE: "continuous" = "continuous";
 export const DEFAULT_PAUSE_WHEN_OFFSCREEN = true;
 export const DEFAULT_PAUSE_WHEN_HIDDEN = true;
-
-/**
- * Viewport origin coordinates.
- */
-export const VIEWPORT_X = 0;
-export const VIEWPORT_Y = 0;
+export const DEFAULT_RESIZE_DEBOUNCE_MS = 100;
 
 /**
  * Default WebGL context initialization attributes.

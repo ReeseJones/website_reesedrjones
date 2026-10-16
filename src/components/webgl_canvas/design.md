@@ -127,8 +127,6 @@ Contract implemented by any layer, pass, or observer registered with the canvas:
 
 ```typescript
 export interface WebGLSubscriber {
-    /** Unique identifier for the subscriber */
-    id: string;
     /** Execution order: lower numbers render first (e.g. 0 = background clear, 10 = galaxy, 100 = overlay) */
     priority: number;
     /** Called when the subscriber is registered or when context becomes available */

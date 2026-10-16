@@ -18,18 +18,13 @@ import {
 import {
     TAG_RJ_WEBGL_CANVAS,
     DEFAULT_DPR_CAP,
-    DEFAULT_AUTO_CLEAR,
-    DEFAULT_CLEAR_COLOR,
     DEFAULT_RENDER_MODE,
     DEFAULT_PAUSE_WHEN_OFFSCREEN,
     DEFAULT_PAUSE_WHEN_HIDDEN,
 } from "./webgl_canvas_element_constants";
 import { createMockWebGL2Context } from "../../testing/mocks/mock_gl_context";
-import type {
-    WebGLSubscriber,
-    CanvasDimensions,
-    TimeInfo,
-} from "../../components/webgl_canvas/types";
+import type { CanvasDimensions, TimeInfo } from "../../webgl/canvas/canvas_types";
+import type { WebGLSubscriber } from "../../webgl/canvas/subscriber_types";
 
 class TestCanvasConsumerElement extends LitElement {
     public canvasValue: IWebGLCanvasContext | undefined;
@@ -114,60 +109,6 @@ describe("WebGLCanvasElement", () => {
                 await element.updateComplete;
 
                 expect(element.dprCap).toBe(1.75);
-            });
-        });
-
-        describe("autoClear", () => {
-            it("should default to DEFAULT_AUTO_CLEAR (true)", () => {
-                expect(element.autoClear).toBe(DEFAULT_AUTO_CLEAR);
-            });
-
-            it("should reflect property update to auto-clear attribute", async () => {
-                element.autoClear = false;
-                await element.updateComplete;
-
-                expect(element.hasAttribute("auto-clear")).toBe(false);
-
-                element.autoClear = true;
-                await element.updateComplete;
-                expect(element.hasAttribute("auto-clear")).toBe(true);
-            });
-
-            it("should reflect auto-clear attribute change to property", async () => {
-                element.removeAttribute("auto-clear");
-                await element.updateComplete;
-                expect(element.autoClear).toBe(false);
-
-                element.setAttribute("auto-clear", "");
-                await element.updateComplete;
-                expect(element.autoClear).toBe(true);
-            });
-        });
-
-        describe("clearColor", () => {
-            it("should default to DEFAULT_CLEAR_COLOR ([0, 0, 0, 0])", () => {
-                expect(element.clearColor).toEqual(DEFAULT_CLEAR_COLOR);
-            });
-
-            it("should reflect property update to clear-color attribute as hex", async () => {
-                element.clearColor = [1, 0, 0, 1];
-                await element.updateComplete;
-
-                expect(element.getAttribute("clear-color")).toBe("#ff0000");
-
-                element.clearColor = [0, 0, 1, 0.5];
-                await element.updateComplete;
-                expect(element.getAttribute("clear-color")).toBe("#0000ff80");
-            });
-
-            it("should reflect clear-color attribute change to property as normalized tuple", async () => {
-                element.setAttribute("clear-color", "#00ff00");
-                await element.updateComplete;
-
-                expect(element.clearColor[0]).toBeCloseTo(0, 4);
-                expect(element.clearColor[1]).toBeCloseTo(1, 4);
-                expect(element.clearColor[2]).toBeCloseTo(0, 4);
-                expect(element.clearColor[3]).toBeCloseTo(1, 4);
             });
         });
 
@@ -295,7 +236,6 @@ describe("WebGLCanvasElement", () => {
         it("should register subscriber and immediately invoke init() when gl is active", () => {
             const initSpy = vi.fn();
             const subscriber: WebGLSubscriber = {
-                id: "test-sub-1",
                 priority: 0,
                 init: initSpy,
             };
@@ -311,7 +251,6 @@ describe("WebGLCanvasElement", () => {
             const destroySpy = vi.fn();
             const renderSpy = vi.fn();
             const subscriber: WebGLSubscriber = {
-                id: "test-sub-2",
                 priority: 10,
                 destroy: destroySpy,
                 render: renderSpy,
@@ -326,6 +265,18 @@ describe("WebGLCanvasElement", () => {
             element.requestRender();
             expect(renderSpy).not.toHaveBeenCalled();
         });
+
+        it("should trigger requestRender() immediately on subscribe() when renderMode is 'on-demand'", () => {
+            element.renderMode = "on-demand";
+            const renderSpy = vi.fn();
+            const subscriber: WebGLSubscriber = {
+                priority: 0,
+                render: renderSpy,
+            };
+
+            element.subscribe(subscriber);
+            expect(renderSpy).toHaveBeenCalledTimes(1);
+        });
     });
 
     describe(".requestRender()", () => {
@@ -333,7 +284,6 @@ describe("WebGLCanvasElement", () => {
             const executionOrder: string[] = [];
 
             const subHigh: WebGLSubscriber = {
-                id: "high-priority",
                 priority: 100,
                 render: () => {
                     executionOrder.push("high");
@@ -341,7 +291,6 @@ describe("WebGLCanvasElement", () => {
             };
 
             const subLow: WebGLSubscriber = {
-                id: "low-priority",
                 priority: 0,
                 render: () => {
                     executionOrder.push("low");
@@ -349,7 +298,6 @@ describe("WebGLCanvasElement", () => {
             };
 
             const subMid: WebGLSubscriber = {
-                id: "mid-priority",
                 priority: 50,
                 render: () => {
                     executionOrder.push("mid");
@@ -365,32 +313,12 @@ describe("WebGLCanvasElement", () => {
             expect(executionOrder).toEqual(["low", "mid", "high"]);
         });
 
-        it("should clear color buffer when autoClear is true", () => {
-            element.autoClear = true;
-            element.clearColor = [0.2, 0.4, 0.6, 1.0];
-
-            element.requestRender();
-
-            expect(mockGL.clearColor).toHaveBeenCalledWith(0.2, 0.4, 0.6, 1.0);
-            expect(mockGL.clear).toHaveBeenCalledWith(WebGL2RenderingContext.COLOR_BUFFER_BIT);
-        });
-
-        it("should not clear color buffer when autoClear is false", () => {
-            vi.mocked(mockGL.clear).mockClear();
-            element.autoClear = false;
-
-            element.requestRender();
-
-            expect(mockGL.clear).not.toHaveBeenCalled();
-        });
-
         it("should pass active gl, timeInfo, and dimensions to subscriber render()", () => {
             let receivedGL: WebGL2RenderingContext | null = null;
             let receivedTime: TimeInfo | null = null;
             let receivedDims: CanvasDimensions | null = null;
 
             const subscriber: WebGLSubscriber = {
-                id: "test-params-sub",
                 priority: 0,
                 render: (gl, time, dims) => {
                     receivedGL = gl;
@@ -406,6 +334,21 @@ describe("WebGLCanvasElement", () => {
             expect(receivedTime).toBeDefined();
             expect(receivedTime!.frameCount).toBeGreaterThanOrEqual(1);
             expect(receivedDims).toEqual(element.dimensions);
+        });
+
+        it("should execute zero gl.clear, zero gl.clearColor, and zero gl.viewport calls (delegated to subscribers)", () => {
+            const subscriber: WebGLSubscriber = {
+                priority: 0,
+                render: vi.fn(),
+            };
+
+            element.subscribe(subscriber);
+            element.requestRender();
+
+            expect(mockGL.clear).not.toHaveBeenCalled();
+            expect(mockGL.clearColor).not.toHaveBeenCalled();
+            expect(mockGL.viewport).not.toHaveBeenCalled();
+            expect(subscriber.render).toHaveBeenCalledTimes(1);
         });
     });
 
@@ -436,7 +379,6 @@ describe("WebGLCanvasElement", () => {
 
             element.addEventListener(WebGLContextLostEvent.TYPE, eventSpy);
             element.subscribe({
-                id: "loss-sub",
                 priority: 0,
                 onContextLost: subLossSpy,
             });
@@ -457,7 +399,6 @@ describe("WebGLCanvasElement", () => {
 
             element.addEventListener(WebGLContextRestoredEvent.TYPE, eventSpy);
             element.subscribe({
-                id: "restore-sub",
                 priority: 0,
                 onContextRestored: subRestoreSpy,
             });
@@ -475,7 +416,7 @@ describe("WebGLCanvasElement", () => {
             expect(subRestoreSpy).toHaveBeenCalledTimes(1);
         });
 
-        it("should dispatch WebGLResizeEvent and notify subscribers on resize", () => {
+        it("should dispatch WebGLResizeEvent and notify subscribers on resize", async () => {
             const resizeSpy = vi.fn();
             const subResizeSpy = vi.fn();
 
@@ -484,7 +425,6 @@ describe("WebGLCanvasElement", () => {
             });
 
             element.subscribe({
-                id: "resize-sub",
                 priority: 0,
                 resize: subResizeSpy,
             });
@@ -510,8 +450,10 @@ describe("WebGLCanvasElement", () => {
 
             // Force measure
             element.requestUpdate("dprCap");
+            await element.updateComplete;
 
-            expect(mockGL.viewport).toHaveBeenCalled();
+            expect(resizeSpy).toHaveBeenCalled();
+            expect(subResizeSpy).toHaveBeenCalled();
         });
     });
 
@@ -553,7 +495,6 @@ describe("WebGLCanvasElement", () => {
         it("should clean up subscribers, disconnect context manager, and release gl context", () => {
             const destroySpy = vi.fn();
             element.subscribe({
-                id: "destroy-test-sub",
                 priority: 0,
                 destroy: destroySpy,
             });

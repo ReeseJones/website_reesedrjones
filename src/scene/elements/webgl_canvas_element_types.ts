@@ -1,12 +1,11 @@
 import type {
     CanvasDimensions,
     TimeInfo,
-    WebGLSubscriber,
     WebGLContextOptions,
-} from "../../components/webgl_canvas/types";
+} from "../../webgl/canvas/canvas_types";
+import type { WebGLSubscriber } from "../../webgl/canvas/subscriber_types";
 import type { IWebGLCanvasContext } from "./scene_element_types";
 import type { WebGLCanvasElement } from "./webgl_canvas_element";
-import type { NormalizedRgbaTuple } from "./converters/rgba_color_converter_types";
 
 export type {
     CanvasDimensions,
@@ -14,7 +13,6 @@ export type {
     WebGLSubscriber,
     WebGLContextOptions,
     IWebGLCanvasContext,
-    NormalizedRgbaTuple,
 };
 
 export type WebGLCanvasRenderMode = "continuous" | "on-demand";
@@ -24,8 +22,6 @@ export type WebGLCanvasRenderMode = "continuous" | "on-demand";
  */
 export interface WebGLCanvasElementProps {
     dprCap?: number;
-    autoClear?: boolean;
-    clearColor?: NormalizedRgbaTuple;
     renderMode?: WebGLCanvasRenderMode;
     pauseWhenOffscreen?: boolean;
     pauseWhenHidden?: boolean;

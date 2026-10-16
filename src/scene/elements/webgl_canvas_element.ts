@@ -15,14 +15,9 @@ import {
 } from "./scene_element_types";
 import { createDefaultContextManager } from "../../webgl/core/context_manager_factory";
 import type { IWebGLContextManager } from "../../webgl/core/context_manager_types";
-import type {
-    CanvasDimensions,
-    TimeInfo,
-    WebGLSubscriber,
-} from "../../components/webgl_canvas/types";
+import type { CanvasDimensions, TimeInfo } from "../../webgl/canvas/canvas_types";
+import type { WebGLSubscriber } from "../../webgl/canvas/subscriber_types";
 import type { WebGLCanvasRenderMode } from "./webgl_canvas_element_types";
-import type { NormalizedRgbaTuple } from "./converters/rgba_color_converter_types";
-import { rgbaColorConverter } from "./converters/rgba_color_converter";
 import {
     WebGLContextCreatedEvent,
     WebGLContextLostEvent,
@@ -32,14 +27,11 @@ import {
 import {
     TAG_RJ_WEBGL_CANVAS,
     DEFAULT_DPR_CAP,
-    DEFAULT_AUTO_CLEAR,
-    DEFAULT_CLEAR_COLOR,
     DEFAULT_RENDER_MODE,
     DEFAULT_PAUSE_WHEN_OFFSCREEN,
     DEFAULT_PAUSE_WHEN_HIDDEN,
+    DEFAULT_RESIZE_DEBOUNCE_MS,
     DEFAULT_WEBGL_CONTEXT_ATTRIBUTES,
-    VIEWPORT_X,
-    VIEWPORT_Y,
     CONTEXT_SIMULATE_LOSS_DEFAULT_DELAY_MS,
 } from "./webgl_canvas_element_constants";
 import { ResizeController } from "../../controllers/resize_controller";
@@ -51,6 +43,7 @@ import {
 } from "../../controllers/resize_controller_constants";
 import { VisibilityController } from "../../controllers/visibility_controller";
 import { AnimationFrameManager } from "../core/animation_frame_manager";
+import { WebGLSubscriberManager } from "../../webgl/canvas/webgl_subscriber_manager";
 
 /**
  * Web Component (<rj-webgl-canvas>) hosting a persistent WebGL2 rendering surface,
@@ -87,12 +80,6 @@ export class WebGLCanvasElement extends LitElement implements IWebGLCanvasContex
     @property({ type: Number, attribute: "dpr-cap", reflect: true })
     public accessor dprCap: number = DEFAULT_DPR_CAP;
 
-    @property({ type: Boolean, attribute: "auto-clear", reflect: true })
-    public accessor autoClear: boolean = DEFAULT_AUTO_CLEAR;
-
-    @property({ converter: rgbaColorConverter, attribute: "clear-color", reflect: true })
-    public accessor clearColor: NormalizedRgbaTuple = DEFAULT_CLEAR_COLOR;
-
     @property({ type: String, attribute: "render-mode", reflect: true })
     public accessor renderMode: WebGLCanvasRenderMode = DEFAULT_RENDER_MODE;
 
@@ -105,10 +92,10 @@ export class WebGLCanvasElement extends LitElement implements IWebGLCanvasContex
     private readonly _canvasRef: Ref<HTMLCanvasElement> = createRef();
     private readonly _canvasProvider: ContextProvider<typeof webglCanvasContext>;
     private readonly _contextManager: IWebGLContextManager;
+    private readonly _subscriberManager: WebGLSubscriberManager;
     private readonly _resizeController: ResizeController;
     private readonly _visibilityController: VisibilityController;
     private readonly _animManager: AnimationFrameManager;
-    private readonly _subscribers: Map<string, WebGLSubscriber> = new Map();
 
     private _gl: WebGL2RenderingContext | null = null;
     private _isContextLost: boolean = false;
@@ -127,6 +114,7 @@ export class WebGLCanvasElement extends LitElement implements IWebGLCanvasContex
     public constructor() {
         super();
         this._contextManager = createDefaultContextManager();
+        this._subscriberManager = new WebGLSubscriberManager();
         this._canvasProvider = new ContextProvider(this, {
             context: webglCanvasContext,
             initialValue: this,
@@ -137,6 +125,7 @@ export class WebGLCanvasElement extends LitElement implements IWebGLCanvasContex
             get dprCap(): number {
                 return self.dprCap;
             },
+            debounceMs: DEFAULT_RESIZE_DEBOUNCE_MS,
             onResize: (dims: ViewportDimensions) => this._handleResize(dims),
         });
 
@@ -209,13 +198,6 @@ export class WebGLCanvasElement extends LitElement implements IWebGLCanvasContex
             this._visibilityController.hostConnected();
             this._syncLoop();
         }
-
-        if (
-            (changedProperties.has("autoClear") || changedProperties.has("clearColor")) &&
-            this.renderMode === "on-demand"
-        ) {
-            this.requestRender();
-        }
     }
 
     public get gl(): WebGL2RenderingContext | null {
@@ -235,19 +217,13 @@ export class WebGLCanvasElement extends LitElement implements IWebGLCanvasContex
     }
 
     public subscribe(subscriber: WebGLSubscriber): () => void {
-        this._subscribers.set(subscriber.id, subscriber);
+        const unsubscribe = this._subscriberManager.subscribe(subscriber);
 
-        if (this._gl && !this._isContextLost) {
-            subscriber.init?.(this._gl, this._dimensions);
-            if (this.renderMode === "on-demand") {
-                this.requestRender();
-            }
+        if (this.renderMode === "on-demand" && this._gl && !this._isContextLost) {
+            this.requestRender();
         }
 
-        return () => {
-            subscriber.destroy?.();
-            this._subscribers.delete(subscriber.id);
-        };
+        return unsubscribe;
     }
 
     public requestRender(): void {
@@ -286,11 +262,7 @@ export class WebGLCanvasElement extends LitElement implements IWebGLCanvasContex
             canvas.removeEventListener("webglcontextrestored", this._handleContextRestored);
         }
 
-        for (const sub of this._subscribers.values()) {
-            sub.destroy?.();
-        }
-        this._subscribers.clear();
-
+        this._subscriberManager.destroy();
         this._contextManager.destroy();
 
         if (this._gl) {
@@ -321,9 +293,7 @@ export class WebGLCanvasElement extends LitElement implements IWebGLCanvasContex
         this._handleResize(this._resizeController.measureImmediate());
         this.dispatchEvent(new WebGLContextCreatedEvent(gl, this._contextManager));
 
-        for (const sub of this._subscribers.values()) {
-            sub.init?.(gl, this._dimensions);
-        }
+        this._subscriberManager.notifyInit(gl, this._dimensions);
 
         this._syncLoop();
         if (this.renderMode === "on-demand") {
@@ -338,10 +308,6 @@ export class WebGLCanvasElement extends LitElement implements IWebGLCanvasContex
         if (canvas && (canvas.width !== dims.width || canvas.height !== dims.height)) {
             canvas.width = dims.width;
             canvas.height = dims.height;
-        }
-
-        if (gl) {
-            gl.viewport(VIEWPORT_X, VIEWPORT_Y, dims.width, dims.height);
         }
 
         const nextDims: CanvasDimensions = {
@@ -364,9 +330,7 @@ export class WebGLCanvasElement extends LitElement implements IWebGLCanvasContex
         if (hasChanged) {
             this.dispatchEvent(new WebGLResizeEvent(nextDims));
             if (gl) {
-                for (const sub of this._subscribers.values()) {
-                    sub.resize?.(gl, nextDims);
-                }
+                this._subscriberManager.notifyResize(gl, nextDims);
             }
         }
 
@@ -410,21 +374,7 @@ export class WebGLCanvasElement extends LitElement implements IWebGLCanvasContex
         }
 
         this._lastTimeInfo = timeInfo;
-
-        if (this.autoClear) {
-            const [r, g, b, a] = this.clearColor;
-            gl.clearColor(r, g, b, a);
-            gl.clear(WebGL2RenderingContext.COLOR_BUFFER_BIT);
-        }
-
-        const sorted = Array.from(this._subscribers.values()).sort(
-            (a, b) => a.priority - b.priority
-        );
-
-        const dims = this._dimensions;
-        for (let i = 0; i < sorted.length; i++) {
-            sorted[i].render?.(gl, timeInfo, dims);
-        }
+        this._subscriberManager.notifyRender(gl, timeInfo, this._dimensions);
     }
 
     private _handleContextLost = (e: Event): void => {
@@ -434,9 +384,7 @@ export class WebGLCanvasElement extends LitElement implements IWebGLCanvasContex
         this._contextManager.handleContextLost();
         this._canvasProvider.setValue(this, true);
         this.dispatchEvent(new WebGLContextLostEvent());
-        for (const sub of this._subscribers.values()) {
-            sub.onContextLost?.(e as WebGLContextEvent);
-        }
+        this._subscriberManager.notifyContextLost(e as WebGLContextEvent);
     };
 
     private _handleContextRestored = (): void => {
@@ -457,9 +405,7 @@ export class WebGLCanvasElement extends LitElement implements IWebGLCanvasContex
             this._handleResize(this._resizeController.measureImmediate());
             this._canvasProvider.setValue(this, true);
             this.dispatchEvent(new WebGLContextRestoredEvent(gl));
-            for (const sub of this._subscribers.values()) {
-                sub.onContextRestored?.(gl, this._dimensions);
-            }
+            this._subscriberManager.notifyContextRestored(gl, this._dimensions);
             this._syncLoop();
             if (this.renderMode === "on-demand") {
                 this.requestRender();

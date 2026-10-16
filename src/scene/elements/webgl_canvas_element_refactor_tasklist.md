@@ -44,22 +44,22 @@ This document tracks the phased implementation and verification progress for ref
   - [x] Remove `static override properties` and `public declare` statements.
   - [x] Annotate public properties with `@property({ reflect: true })`:
     - `dprCap` (`type: Number`, `attribute: "dpr-cap"`, `reflect: true`)
-    - `autoClear` (`type: Boolean`, `attribute: "auto-clear"`, `reflect: true`)
-    - `clearColor` (`converter: rgbaColorConverter`, `attribute: "clear-color"`, `reflect: true`)
     - `renderMode` (`type: String`, `attribute: "render-mode"`, `reflect: true`)
     - `pauseWhenOffscreen` (`type: Boolean`, `attribute: "pause-when-offscreen"`, `reflect: true`)
     - `pauseWhenHidden` (`type: Boolean`, `attribute: "pause-when-hidden"`, `reflect: true`)
+  - [x] Eliminated direct WebGL draw calls (`gl.clear`, `gl.clearColor`, `gl.viewport`) and removed `autoClear` / `clearColor` from canvas host.
 
 - [x] **3.2 Zero-Query DOM Reference**
   - [x] Instantiate `private readonly _canvasRef = createRef<HTMLCanvasElement>();`.
   - [x] Bind in template: `<canvas ${ref(this._canvasRef)} part="canvas"></canvas>`.
   - [x] Access directly in `firstUpdated()` via `this._canvasRef.value`.
 
-- [x] **3.3 Controller & Animation Integration**
-  - [x] Instantiate `ResizeController` targeting the host element.
+- [x] **3.3 Controller, Registry & Subscriber Management**
+  - [x] Instantiate `ResizeController` targeting the host element with configurable `debounceMs` (defaulting to 100ms) to prevent GPU backbuffer churning during continuous window resize.
   - [x] Instantiate `VisibilityController` to pause/resume animation and rendering.
+  - [x] Abstracted subscriber sorting and caching into `PriorityRegistry<T>` (`src/core/collections/priority_registry.ts`).
+  - [x] Abstracted subscriber notifications and lifecycle into `WebGLSubscriberManager` (`src/webgl/canvas/webgl_subscriber_manager.ts`).
   - [x] Replace hand-rolled RAF loop with `AnimationFrameManager` from `src/scene/core/animation_frame_manager.ts`.
-  - [x] Maintain priority-sorted execution of subscribers during frame ticks.
 
 ---
 
