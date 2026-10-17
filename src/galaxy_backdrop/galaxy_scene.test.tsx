@@ -460,7 +460,7 @@ describe("Declarative Galaxy Backdrop Components", () => {
             expect(starsNode).toBeInstanceOf(ProgrammaticModelInstance);
             expect(starsNode.geometry).toBeInstanceOf(GalaxyGeometry);
             expect(starsNode.material).toBeInstanceOf(GalaxyMaterial);
-            expect(starsNode.material.pipelineState).toEqual({
+            expect(starsNode.material!.pipelineState).toEqual({
                 blendMode: BlendMode.Additive,
                 depthTest: false,
                 depthWrite: false,

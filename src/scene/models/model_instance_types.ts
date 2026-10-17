@@ -9,10 +9,10 @@ import type { IMaterial } from "../materials/material_types";
  */
 export interface IModelInstance extends IRenderable {
     /** Mesh geometry defining vertex buffer data and attribute layout */
-    geometry: IMeshGeometry;
+    geometry?: IMeshGeometry;
 
     /** Material defining shader key, uniforms, and pipeline state */
-    material: IMaterial;
+    material?: IMaterial;
 
     /** Render queue ordering priority (lower renders first; transparent objects typically higher) */
     renderOrder: number;

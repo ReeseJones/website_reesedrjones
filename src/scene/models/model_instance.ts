@@ -15,8 +15,8 @@ const s_normalMatrix = new Float32Array(9);
  */
 export class ModelInstance extends SceneNode implements IModelInstance {
     public override readonly isRenderable: true = true;
-    public geometry: IMeshGeometry;
-    public material: IMaterial;
+    public geometry?: IMeshGeometry;
+    public material?: IMaterial;
     public renderOrder: number;
 
     /**
@@ -26,8 +26,8 @@ export class ModelInstance extends SceneNode implements IModelInstance {
      * @param id Optional unique identifier.
      */
     constructor(
-        geometry: IMeshGeometry,
-        material: IMaterial,
+        geometry?: IMeshGeometry,
+        material?: IMaterial,
         name: string = "ModelInstance",
         id?: string
     ) {
