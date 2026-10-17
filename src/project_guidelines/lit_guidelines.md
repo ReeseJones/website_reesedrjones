@@ -87,6 +87,9 @@ Design principles, architecture standards, and authoring conventions for Lit Web
   - In `connectedCallback()`, attach the underlying programmatic engine node to its parent or register with the enclosing scene controller. Always call `super.connectedCallback()`.
   - In `disconnectedCallback()`, unregister from the scene, detach from parent nodes, and release GPU listeners. Always call `super.disconnectedCallback()`.
   - Ensure lifecycle cleanup is idempotent: re-attaching a detached element must seamlessly re-integrate into the scene without resource leaking or state corruption.
+- **Prohibition of Empty / No-Op Lifecycle Overrides:**
+  - Do NOT declare lifecycle hooks (`updated`, `connectedCallback`, `disconnectedCallback`, `firstUpdated`) if the element does not perform active work, state changes, or cleanup.
+  - Never author methods that solely delegate to `super.<lifecycle>()`. Adhere to [typescript_guidelines.md](typescript_guidelines.md#10-prohibition-of-superfluous--no-op-method-overrides).
 
 ---
 

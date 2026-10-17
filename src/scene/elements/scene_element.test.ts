@@ -12,8 +12,6 @@ import {
     TAG_RJ_SCENE,
     DEFAULT_SCENE_PASS_PRIORITY,
     DEFAULT_SCENE_CLEAR_DEPTH,
-    ATTR_PRIORITY,
-    ATTR_CLEAR_DEPTH,
     DEFAULT_SCENE_ROOT_NAME,
 } from "./scene_element_constants";
 import { PerspectiveCamera } from "../camera/perspective_camera";
@@ -83,17 +81,18 @@ describe("SceneElement", () => {
                 expect(element.priority).toBe(DEFAULT_SCENE_PASS_PRIORITY);
             });
 
-            it("should update when set via property", async () => {
+            it("should update and reflect to attribute when set via property", async () => {
                 const targetPriority = 25;
                 element.priority = targetPriority;
                 await element.updateComplete;
 
                 expect(element.priority).toBe(targetPriority);
+                expect(element.getAttribute("priority")).toBe(String(targetPriority));
             });
 
             it("should update when set via attribute", async () => {
                 const attributePriority = 50;
-                element.setAttribute(ATTR_PRIORITY, String(attributePriority));
+                element.setAttribute("priority", String(attributePriority));
                 await element.updateComplete;
 
                 expect(element.priority).toBe(attributePriority);
@@ -105,19 +104,25 @@ describe("SceneElement", () => {
                 expect(element.clearDepth).toBe(DEFAULT_SCENE_CLEAR_DEPTH);
             });
 
-            it("should update when set via property", async () => {
+            it("should update and reflect to attribute when set via property", async () => {
                 element.clearDepth = false;
                 await element.updateComplete;
 
                 expect(element.clearDepth).toBe(false);
+                expect(element.hasAttribute("clear-depth")).toBe(false);
+
+                element.clearDepth = true;
+                await element.updateComplete;
+                expect(element.clearDepth).toBe(true);
+                expect(element.hasAttribute("clear-depth")).toBe(true);
             });
 
             it("should update when toggled via attribute", async () => {
-                element.setAttribute(ATTR_CLEAR_DEPTH, "");
+                element.setAttribute("clear-depth", "");
                 await element.updateComplete;
                 expect(element.clearDepth).toBe(true);
 
-                element.removeAttribute(ATTR_CLEAR_DEPTH);
+                element.removeAttribute("clear-depth");
                 await element.updateComplete;
                 expect(element.clearDepth).toBe(false);
             });

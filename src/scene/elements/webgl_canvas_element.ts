@@ -272,7 +272,7 @@ export class WebGLCanvasElement extends LitElement implements IWebGLCanvasContex
         const gl = canvas.getContext(
             "webgl2",
             DEFAULT_WEBGL_CONTEXT_ATTRIBUTES
-        ) as WebGL2RenderingContext | null;
+        );
 
         if (!gl) {
             console.error("WebGLCanvasElement: Failed to acquire WebGL2 rendering context.");

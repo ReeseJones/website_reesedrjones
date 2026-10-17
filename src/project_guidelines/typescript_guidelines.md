@@ -4,14 +4,19 @@ Principles, standards, and typing patterns for TypeScript code in this repositor
 
 ---
 
-## 1. Type Safety & The `unknown` vs. `any` Rule
-- **Prefer `unknown` Over `any`:** `unknown` is the type-safe counterpart of `any`. It denotes a value whose shape is undetermined without silencing compiler verification. Always prefer `unknown` over `any`.
-- **Mandatory Type Narrowing:** Any value typed as `unknown` must be narrowed using standard runtime checks before properties, indices, or methods are invoked:
-  - `typeof val === "number"`, `typeof val === "string"`, `typeof val === "boolean"`
-  - `Array.isArray(val)` or `val instanceof Float32Array`
-  - Discriminated union property tags (e.g., `event.type === "click"`)
-  - User-defined type guards (`(val: unknown): val is SpecificType => ...`)
-- **Rare Exceptions for `any`:** The use of `any` is restricted to situations where TypeScript's type system becomes prohibitively complex or structurally impossible to satisfy (e.g., circular type evaluation limits in legacy third-party definitions). When `any` is strictly required, provide an inline code comment justifying why `unknown` or a specific generic cannot be used.
+## 1. Type Safety: Favoring `unknown` Over `any`, Type Narrowing & Escalation
+- **Heavily Favor `unknown` Over `any`:** `unknown` is the type-safe counterpart of `any`. It denotes a value whose shape is undetermined without silencing compiler verification. Heavily favor `unknown` over `any` across all type definitions, parameters, return types, generic defaults, event payloads, and deserialized inputs. Never use `any` as a convenience shortcut or placeholder.
+- **Prefer Type Checking & Narrowing Over Casting:** Prefer type checking and narrowing with guards or other built-in mechanisms to arrive at the correct type instead of type casting (`as Type` or `<Type>`). Type casting bypasses compiler safety, conceals type mismatches, and introduces brittle runtime assumptions. Instead of casting, use TypeScript's built-in narrowing mechanisms and guards:
+  - **Primitive checks:** `typeof val === "number"`, `typeof val === "string"`, `typeof val === "boolean"`, `typeof val === "function"`
+  - **Instance & prototype checks:** `val instanceof TargetClass`, `val instanceof HTMLElement`, `val instanceof Float32Array`
+  - **Array checks:** `Array.isArray(val)`
+  - **Property existence checks:** `"propName" in val` (using the `in` operator on `object`)
+  - **Discriminated unions:** Matching literal tags (e.g., `event.type === "click"`, `msg.kind === "ready"`)
+  - **User-defined type guards:** Functions with type predicates (`(val: unknown): val is SpecificType => ...`)
+  - **Assertion functions:** Functions with assertion signatures (`asserts val is SpecificType`)
+- **Escalation to Prompters & Mandatory Documentation for `any`:** The use of `any` is strictly forbidden under normal circumstances. If a situation arises where `any` appears strictly necessary or unavoidable (e.g., intractable circular type evaluation in third-party library definitions or compiler limits):
+  - **Bring it up to the prompters:** Agents and developers must halt and explicitly bring it up to the prompter (the user) before introducing `any`, explaining why the type system cannot resolve the type cleanly and outlining alternatives.
+  - **Document if `any` must be used:** If approved by the prompter, the use of `any` must be thoroughly documented in-place with an inline code comment detailing the exact technical justification, why `unknown` or a generic parameter was insufficient, and the context of the prompter approval.
 
 ---
 
@@ -152,6 +157,16 @@ Any time codebase logic interacts with browser-native hardware, DOM observers, o
 - **Hermetic Unit Testing:** Unit tests for controllers and services can run in headless Node.js by passing a mock factory (`{ create: vi.fn(() => mockInstance) }`) without requiring DOM shims or browser environments.
 - **Native Spyability in Consumers:** High-level consumer components or custom elements that consume the default factory singleton can be tested by cleanly spying on the method (`vi.spyOn(defaultResizeObserverFactory, "create")`) and restoring it (`spy.mockRestore()`), eliminating all need for monkey-patching `globalThis`.
 
+---
 
+## 10. Prohibition of Superfluous & No-Op Method Overrides
 
-
+- **No Pure Pass-Through Super Delegations:** Never declare an `override` method, lifecycle hook, or constructor whose sole action is delegating directly to `super.methodName(...args)`.
+- **Zero Typing Justification:** TypeScript classes automatically inherit all base class method signatures and return types. Overriding a method purely to restate the parent's signature or parameter types provides zero type-safety benefits to callers and creates dead code, redundant call frames, and maintenance overhead.
+- **Lifecycle Hook Cleanliness:** In component lifecycle hierarchies (such as Lit Web Components, React class components, or custom DOM controllers):
+  - Do not implement `connectedCallback()`, `disconnectedCallback()`, `updated()`, or `firstUpdated()` unless the class executes concrete setup, resource unregistration, DOM listeners, or reactive property diffing.
+  - Stubs or scaffolding left behind from template generators or incomplete refactors must be removed immediately.
+- **When Overrides Are Justified:** An `override` method is appropriate ONLY when:
+  - Executing custom logic, state updates, validation, or side-effects before or after calling `super`.
+  - Implementing or fulfilling an `abstract` method or virtual extension hook defined by the base contract.
+  - Explicitly specializing or narrowing the return type of a method that cannot be expressed via generics on the base class.

@@ -1,16 +1,11 @@
 import type { ICamera } from "../camera/camera_types";
 import type { ISceneNode } from "../core/scene_node_types";
-import {
-    EVENT_ACTIVE_CAMERA_CHANGED,
-    EVENT_SCENE_NODE_ATTACHED,
-    EVENT_SCENE_NODE_DETACHED,
-} from "./scene_element_constants";
 
 /**
  * Event dispatched whenever the active camera of an <rj-scene> changes.
  */
 export class SceneCameraChangedEvent extends Event {
-    public static readonly TYPE = EVENT_ACTIVE_CAMERA_CHANGED;
+    public static readonly TYPE = "scene-camera-changed";
 
     public readonly camera: ICamera | null;
 
@@ -24,7 +19,7 @@ export class SceneCameraChangedEvent extends Event {
  * Event dispatched when a scene graph node attaches to the DOM hierarchy.
  */
 export class SceneNodeAttachedEvent extends Event {
-    public static readonly TYPE = EVENT_SCENE_NODE_ATTACHED;
+    public static readonly TYPE = "scene-node-attached";
 
     public readonly node: ISceneNode;
     public readonly element: HTMLElement;
@@ -40,7 +35,7 @@ export class SceneNodeAttachedEvent extends Event {
  * Event dispatched when a scene graph node detaches from the DOM hierarchy.
  */
 export class SceneNodeDetachedEvent extends Event {
-    public static readonly TYPE = EVENT_SCENE_NODE_DETACHED;
+    public static readonly TYPE = "scene-node-detached";
 
     public readonly node: ISceneNode;
     public readonly element: HTMLElement;

@@ -1,4 +1,5 @@
-import { LitElement, type PropertyDeclarations } from "lit";
+import { LitElement } from "lit";
+import { property } from "lit/decorators.js";
 import { ContextProvider } from "@lit/context";
 import { Scene } from "../core/scene";
 import type { IScene, SceneFrameCallback } from "../core/scene_types";
@@ -13,8 +14,6 @@ import {
     TAG_RJ_SCENE,
     DEFAULT_SCENE_PASS_PRIORITY,
     DEFAULT_SCENE_CLEAR_DEPTH,
-    ATTR_PRIORITY,
-    ATTR_CLEAR_DEPTH,
     DEFAULT_SCENE_ROOT_NAME,
 } from "./scene_element_constants";
 
@@ -24,13 +23,11 @@ import {
  * and providing hierarchical scene and parent node contexts via @lit/context.
  */
 export class SceneElement extends LitElement implements ISceneContext {
-    public static override properties: PropertyDeclarations = {
-        priority: { type: Number, attribute: ATTR_PRIORITY },
-        clearDepth: { type: Boolean, attribute: ATTR_CLEAR_DEPTH },
-    };
+    @property({ type: Number, reflect: true })
+    public accessor priority: number = DEFAULT_SCENE_PASS_PRIORITY;
 
-    public declare priority: number;
-    public declare clearDepth: boolean;
+    @property({ type: Boolean, attribute: "clear-depth", reflect: true })
+    public accessor clearDepth: boolean = DEFAULT_SCENE_CLEAR_DEPTH;
 
     private readonly _scene: Scene;
     private readonly _sceneProvider: ContextProvider<typeof sceneContext>;
@@ -38,8 +35,6 @@ export class SceneElement extends LitElement implements ISceneContext {
 
     public constructor() {
         super();
-        this.priority = DEFAULT_SCENE_PASS_PRIORITY;
-        this.clearDepth = DEFAULT_SCENE_CLEAR_DEPTH;
         this._scene = new Scene(DEFAULT_SCENE_ROOT_NAME);
 
         this._sceneProvider = new ContextProvider(this, {
@@ -65,10 +60,6 @@ export class SceneElement extends LitElement implements ISceneContext {
         super.connectedCallback();
         this._sceneProvider.setValue(this);
         this._parentProvider.setValue(this._scene);
-    }
-
-    public override disconnectedCallback(): void {
-        super.disconnectedCallback();
     }
 
     /**
