@@ -8,7 +8,7 @@ import {
 import {
     webglCanvasContext,
     type IWebGLCanvasContext,
-} from "./scene_element_types";
+} from "./webgl_canvas_element_types";
 import {
     WebGLContextCreatedEvent,
     WebGLContextLostEvent,
@@ -434,6 +434,25 @@ describe("WebGLCanvasElement", () => {
             expect(element.isContextLost).toBe(false);
             expect(eventSpy).toHaveBeenCalledTimes(1);
             expect(subRestoreSpy).toHaveBeenCalledTimes(1);
+        });
+
+        it("should keep isContextLost as true if context acquisition fails on restore", () => {
+            const eventSpy = vi.fn();
+            element.addEventListener(WebGLContextRestoredEvent.TYPE, eventSpy);
+
+            const canvas = element.shadowRoot?.querySelector("canvas");
+            canvas?.dispatchEvent(new Event("webglcontextlost", { cancelable: true }));
+            expect(element.isContextLost).toBe(true);
+
+            // Mock getContext to fail upon restore
+            if (canvas) {
+                vi.spyOn(canvas, "getContext").mockReturnValue(null);
+            }
+
+            canvas?.dispatchEvent(new Event("webglcontextrestored"));
+
+            expect(element.isContextLost).toBe(true);
+            expect(eventSpy).not.toHaveBeenCalled();
         });
 
         it("should dispatch WebGLResizeEvent and notify subscribers on resize", async () => {

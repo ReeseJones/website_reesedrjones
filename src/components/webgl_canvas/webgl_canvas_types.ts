@@ -2,17 +2,9 @@ import React from "react";
 import type { IWebGLContextManager } from "../../webgl/core/context_manager_types";
 import type {
     CanvasDimensions,
-    TimeInfo,
     WebGLContextOptions,
 } from "../../webgl/canvas/canvas_types";
 import type { WebGLSubscriber } from "../../webgl/canvas/subscriber_types";
-
-export type {
-    CanvasDimensions,
-    TimeInfo,
-    WebGLContextOptions,
-    WebGLSubscriber,
-};
 
 export interface WebGLCanvasContextValue {
     /** The active WebGL2 context (null if unmounted or lost) */

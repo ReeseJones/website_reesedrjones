@@ -9,15 +9,15 @@ import {
 import { property } from "lit/decorators.js";
 import { createRef, ref, type Ref } from "lit/directives/ref.js";
 import { ContextProvider } from "@lit/context";
-import {
-    webglCanvasContext,
-    type IWebGLCanvasContext,
-} from "./scene_element_types";
 import { createDefaultContextManager } from "../../webgl/core/context_manager_factory";
 import type { IWebGLContextManager } from "../../webgl/core/context_manager_types";
 import type { CanvasDimensions, TimeInfo } from "../../webgl/canvas/canvas_types";
 import type { WebGLSubscriber } from "../../webgl/canvas/subscriber_types";
-import type { WebGLCanvasRenderMode } from "./webgl_canvas_element_types";
+import {
+    webglCanvasContext,
+    type IWebGLCanvasContext,
+    type WebGLCanvasRenderMode,
+} from "./webgl_canvas_element_types";
 import {
     WebGLContextCreatedEvent,
     WebGLContextLostEvent,
@@ -365,7 +365,6 @@ export class WebGLCanvasElement extends LitElement implements IWebGLCanvasContex
     };
 
     private _handleContextRestored = (): void => {
-        this._isContextLost = false;
         const canvas = this._canvasRef.value;
         if (!canvas) {
             return;
@@ -378,6 +377,7 @@ export class WebGLCanvasElement extends LitElement implements IWebGLCanvasContex
 
         if (gl) {
             this._gl = gl;
+            this._isContextLost = false;
             this._contextManager.handleContextRestored(gl);
             this._handleResize(this._resizeController.measureImmediate());
             this._canvasProvider.setValue(this, true);
