@@ -23,8 +23,8 @@ flowchart TD
     Canvas["<webgl-canvas>\nProvides: webglCanvasContext (GL device, resource manager)"]
     Scene["<rj-scene>\nConsumes: webglCanvasContext\nProvides: sceneContext (IScene, registerCamera, subscribeFrame)\nProvides: parentNodeContext (root ISceneNode)"]
     Camera["<rj-perspective-camera make-default>\nConsumes: sceneContext (active camera registration)\nConsumes: parentNodeContext (attaches to root scene)\nProvides: parentNodeContext (camera node for child attachments)"]
-    Group["<rj-scene-group>\nConsumes: parentNodeContext (attaches to camera or root)\nProvides: parentNodeContext (group node for children)"]
-    Model1["<rj-model-instance .geometry={shipGeo} .material={shipMat}>\nConsumes: parentNodeContext (attaches to group)"]
+    Group["<rj-node-3d>\nConsumes: parentNodeContext (attaches to camera or root)\nProvides: parentNodeContext (node for children)"]
+    Model1["<rj-model-instance .geometry={shipGeo} .material={shipMat}>\nConsumes: parentNodeContext (attaches to node)"]
     Model2["<rj-model-instance .geometry={galaxyGeo} .material={galaxyMat}>\nConsumes: parentNodeContext (attaches to root)"]
     NestedModel["<rj-model-instance .geometry={turretGeo} .material={turretMat}>\nConsumes: parentNodeContext (attaches to ship)"]
 
@@ -38,7 +38,7 @@ flowchart TD
 
 ### Element Descriptions
 - **`<rj-scene>`:** (Class `SceneElement`) Hosts the programmatic `Scene` instance, manages the simulation `requestAnimationFrame` loop, coordinates active camera selection, and bridges to render passes. Provides `sceneContext` and `parentNodeContext`.
-- **`<rj-scene-group>` / `<rj-scene-node>`:** (Classes `SceneGroupElement` / `SceneNodeElement`) Instantiates a programmatic `SceneNode`, consumes `parentNodeContext` to attach to its parent, and re-provides `parentNodeContext` initialized to its own node for nested children.
+- **`<rj-node-3d>`:** (Class `Node3DElement`) Instantiates a programmatic `SceneNode`, consumes `parentNodeContext` to attach to its parent, and re-provides `parentNodeContext` initialized to its own node for nested children.
 - **`<rj-perspective-camera>`:** (Class `PerspectiveCameraElement`) Instantiates a programmatic `PerspectiveCamera`, synchronizes projection attributes (`fov`, `near`, `far`, `aspect`), registers itself with `sceneContext`, and provides `parentNodeContext` (so accessories or heads-up nodes attach to the camera).
 - **`<rj-model-instance>`:** (Class `ModelInstanceElement`) Instantiates a programmatic `ModelInstance`, consumes `parentNodeContext`, and binds GPU `geometry` and `material` references passed directly via properties.
 
@@ -50,7 +50,7 @@ flowchart TD
 Three distinct context tokens governed by unique `Symbol()` keys are exported directly from `scene_element_types.ts`:
 - **`webglCanvasContext`:** `createContext<IWebGLCanvasContext>(Symbol("rj-webgl-canvas-context"))`. Provides the WebGL2 rendering device, canvas dimensions, resolution, and resource manager. Provided by `<webgl-canvas>`.
 - **`sceneContext`:** `createContext<ISceneContext>(Symbol("rj-scene-context"))`. Provides the root `IScene` engine, active camera registrar, and demand-driven frame subscription loop. Provided by `<rj-scene>`.
-- **`parentNodeContext`:** `createContext<ISceneNode>(Symbol("rj-parent-node-context"))`. Provides the immediate parent `ISceneNode`. Provided by `<rj-scene>` and shadowed/re-provided by each structural node (`<rj-scene-group>`, `<rj-perspective-camera>`).
+- **`parentNodeContext`:** `createContext<ISceneNode>(Symbol("rj-parent-node-context"))`. Provides the immediate parent `ISceneNode`. Provided by `<rj-scene>` and shadowed/re-provided by each structural node (`<rj-node-3d>`, `<rj-perspective-camera>`).
 
 By defining these context tokens in `scene_element_types.ts`, both providers and consumers can import them without importing implementation classes or introducing circular dependencies.
 
@@ -60,7 +60,7 @@ When an element is inserted into the DOM tree:
 - **Step 2 (Context Attachment):** `ContextConsumer` dispatches a composed `context-request` event.
   - Receives `parentNodeContext` and invokes `parentNode.addChild(this.node)`.
   - For cameras: receives `sceneContext` and invokes `scene.registerCamera(this.camera, this.makeDefault)`.
-- **Step 3 (Context Provision):** Elements that can act as parents (`SceneElement`, `SceneGroupElement`, `PerspectiveCameraElement`) initialize a `ContextProvider` for `parentNodeContext` set to their programmatic node.
+- **Step 3 (Context Provision):** Elements that can act as parents (`SceneElement`, `Node3DElement`, `PerspectiveCameraElement`) initialize a `ContextProvider` for `parentNodeContext` set to their programmatic node.
 - **Step 4 (Event Notification):** Dispatch an optional bubbling `scene-node-attached` custom event (`bubbles: true`, `composed: true`) for diagnostic or telemetry observers.
 
 ### Removal & Cleanup Procedure (`disconnectedCallback`)
@@ -123,7 +123,7 @@ export interface SceneElementProps {
     clearDepth?: boolean;
 }
 
-export interface SceneNodeElementProps {
+export interface Node3DElementProps {
     name?: string;
     position?: Vector3Tuple;
     rotation?: Vector3Tuple;
@@ -131,7 +131,7 @@ export interface SceneNodeElementProps {
     visible?: boolean;
 }
 
-export interface PerspectiveCameraElementProps extends SceneNodeElementProps {
+export interface PerspectiveCameraElementProps extends Node3DElementProps {
     fov?: number;
     near?: number;
     far?: number;
@@ -179,8 +179,7 @@ export class SceneNodeDetachedEvent extends Event {
 declare global {
     interface HTMLElementTagNameMap {
         "rj-scene": SceneElement;
-        "rj-scene-node": SceneNodeElement;
-        "rj-scene-group": SceneGroupElement;
+        "rj-node-3d": Node3DElement;
         "rj-perspective-camera": PerspectiveCameraElement;
     }
 
@@ -200,9 +199,9 @@ declare global {
     - `registerCamera(camera: ICamera, makeDefault?: boolean): () => void`
     - `setActiveCamera(camera: ICamera | null): void`
     - `subscribeFrame(callback: SceneFrameCallback, priority?: number): () => void`
-- **`SceneGroupElement` (`<rj-scene-group>`):**
+- **`Node3DElement` (`<rj-node-3d>`):**
   - Properties: `name` (string), `position` (Vector3Tuple), `rotation` (Vector3Tuple), `scale` (Vector3Tuple), `visible` (boolean).
-  - Public Readonly: `node: ISceneNode`.
+  - Public Readonly: `node: SceneNode`.
 - **`PerspectiveCameraElement` (`<rj-perspective-camera>`):**
   - Properties: Inherits transform properties plus `fov` (number), `near` (number), `far` (number), `aspect` (number), `makeDefault` (boolean).
   - Public Readonly: `camera: PerspectiveCamera`.
@@ -293,9 +292,9 @@ export function GalaxySceneView() {
                     position={[0, 5, 20]}
                     makeDefault
                 />
-                <rj-scene-group position={[0, 0, 0]} rotation={[0, 0.5, 0]}>
+                <rj-node-3d position={[0, 0, 0]} rotation={[0, 0.5, 0]}>
                     <rj-model-instance />
-                </rj-scene-group>
+                </rj-node-3d>
             </rj-scene>
         </webgl-canvas>
     );
@@ -314,7 +313,9 @@ export function GalaxySceneView() {
 - `src/scene/elements/scene_element_types.ts`: TypeScript contracts, property interfaces, Symbol-keyed Lit Context tokens (`webglCanvasContext`, `sceneContext`, `parentNodeContext`), and native element map augmentations.
 - `src/scene/elements/scene_element_events.ts`: Strongly-typed native `Event` subclasses (`SceneCameraChangedEvent`, `SceneNodeAttachedEvent`, `SceneNodeDetachedEvent`) and `HTMLElementEventMap` augmentation.
 - `src/scene/elements/scene_element.ts`: `<rj-scene>` implementation (`SceneElement`) and `setupSceneElement()`.
-- `src/scene/elements/scene_node_element.ts`: `<rj-scene-node>` and `<rj-scene-group>` implementations and `setupSceneNodeElements()`.
+- `src/scene/elements/node_3d_element_constants.ts`: Tag name (`rj-node-3d`), default names, visibility, transform vector defaults, and component index constants.
+- `src/scene/elements/node_3d_element_types.ts`: `Node3DElementProps` interface and `HTMLElementTagNameMap` augmentation.
+- `src/scene/elements/node_3d_element.ts`: `<rj-node-3d>` implementation (`Node3DElement`) and `setupNode3DElement()`.
 - `src/scene/elements/perspective_camera_element.ts`: `<rj-perspective-camera>` implementation (`PerspectiveCameraElement`) and `setupPerspectiveCameraElement()`.
 - `src/scene/elements/model_instance_element.ts`: `<rj-model-instance>` implementation (`ModelInstanceElement`) and `setupModelInstanceElement()`.
 - `src/scene/elements/setup_scene_elements.ts`: Unified, flag-guarded `setupSceneElements()` registration entry point.
