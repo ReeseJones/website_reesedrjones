@@ -1,6 +1,6 @@
-import { LitElement } from "lit";
+import { LitElement, type PropertyValues } from "lit";
 import { property } from "lit/decorators.js";
-import { ContextProvider } from "@lit/context";
+import { ContextConsumer, ContextProvider } from "@lit/context";
 import { Scene } from "../core/scene";
 import type { IScene, SceneFrameCallback } from "../core/scene_types";
 import type { ICamera } from "../camera/camera_types";
@@ -9,6 +9,12 @@ import {
     parentNodeContext,
     type ISceneContext,
 } from "./scene_element_types";
+import {
+    webglCanvasContext,
+    type IWebGLCanvasContext,
+} from "./webgl_canvas_element_types";
+import { SceneRenderer } from "../renderer/scene_renderer";
+import type { WebGLSubscriber } from "../../webgl/canvas/subscriber_types";
 import { SceneCameraChangedEvent } from "./scene_element_events";
 import {
     TAG_RJ_SCENE,
@@ -32,6 +38,11 @@ export class SceneElement extends LitElement implements ISceneContext {
     private readonly _scene: Scene;
     private readonly _sceneProvider: ContextProvider<typeof sceneContext>;
     private readonly _parentProvider: ContextProvider<typeof parentNodeContext>;
+    private readonly _canvasConsumer: ContextConsumer<typeof webglCanvasContext, SceneElement>;
+
+    private readonly _renderer: SceneRenderer = new SceneRenderer();
+    private _canvasSubscription: (() => void) | null = null;
+    private _currentCanvasContext: IWebGLCanvasContext | null = null;
 
     public constructor() {
         super();
@@ -45,6 +56,14 @@ export class SceneElement extends LitElement implements ISceneContext {
         this._parentProvider = new ContextProvider(this, {
             context: parentNodeContext,
             initialValue: this._scene,
+        });
+
+        this._canvasConsumer = new ContextConsumer(this, {
+            context: webglCanvasContext,
+            subscribe: true,
+            callback: (canvasContext) => {
+                this._handleCanvasContext(canvasContext);
+            },
         });
     }
 
@@ -62,6 +81,25 @@ export class SceneElement extends LitElement implements ISceneContext {
         this._parentProvider.setValue(this._scene);
     }
 
+    public override disconnectedCallback(): void {
+        super.disconnectedCallback();
+
+        if (this._canvasSubscription) {
+            this._canvasSubscription();
+            this._canvasSubscription = null;
+        }
+        this._currentCanvasContext = null;
+        this._renderer.reset();
+    }
+
+    protected override updated(changedProperties: PropertyValues<this>): void {
+        super.updated(changedProperties);
+
+        if (changedProperties.has("priority") && this._currentCanvasContext) {
+            this._subscribeToCanvas(this._currentCanvasContext);
+        }
+    }
+
     /**
      * Underlying programmatic Scene instance.
      */
@@ -74,6 +112,13 @@ export class SceneElement extends LitElement implements ISceneContext {
      */
     public get activeCamera(): ICamera | null {
         return this._scene.activeCamera;
+    }
+
+    /**
+     * Scene renderer instance managing render passes and queue dispatch.
+     */
+    public get renderer(): SceneRenderer {
+        return this._renderer;
     }
 
     /**
@@ -115,7 +160,61 @@ export class SceneElement extends LitElement implements ISceneContext {
      * Explicitly destroys the programmatic scene and releases its resources.
      */
     public destroy(): void {
+        if (this._canvasSubscription) {
+            this._canvasSubscription();
+            this._canvasSubscription = null;
+        }
+        this._currentCanvasContext = null;
+        this._renderer.reset();
         this._scene.destroy();
+    }
+
+    private _handleCanvasContext(canvasContext: IWebGLCanvasContext | undefined): void {
+        if (this._currentCanvasContext === canvasContext) {
+            return;
+        }
+
+        if (this._canvasSubscription) {
+            this._canvasSubscription();
+            this._canvasSubscription = null;
+        }
+
+        if (canvasContext) {
+            this._currentCanvasContext = canvasContext;
+            this._subscribeToCanvas(canvasContext);
+        } else {
+            this._currentCanvasContext = null;
+            this._renderer.reset();
+        }
+    }
+
+    private _subscribeToCanvas(canvasContext: IWebGLCanvasContext): void {
+        if (this._canvasSubscription) {
+            this._canvasSubscription();
+            this._canvasSubscription = null;
+        }
+
+        const subscriber: WebGLSubscriber = {
+            priority: this.priority,
+            render: (_gl, timeInfo, dims) => {
+                if (!this._scene.activeCamera) {
+                    return;
+                }
+                this._renderer.render({
+                    contextManager: canvasContext.contextManager,
+                    scene: this._scene,
+                    camera: this._scene.activeCamera,
+                    dimensions: dims,
+                    timeInfo,
+                    clearDepth: this.clearDepth,
+                });
+            },
+            destroy: () => {
+                this._renderer.reset();
+            },
+        };
+
+        this._canvasSubscription = canvasContext.subscribe(subscriber);
     }
 
     private _notifyActiveCameraChangedIfUpdated(previousCamera: ICamera | null): void {

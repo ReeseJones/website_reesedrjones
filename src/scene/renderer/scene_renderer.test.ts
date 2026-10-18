@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { mat4, mat3 } from "gl-matrix";
 import { SceneRenderer } from "./scene_renderer";
 import type { IScene } from "../core/scene_types";
+import type { ICamera } from "../camera/camera_types";
 import { BlendMode, type IMaterial, type PipelineState } from "../materials/material_types";
 import type { IMeshGeometry } from "../models/mesh_geometry_types";
 import type { CanvasDimensions, TimeInfo } from "../../webgl/canvas/canvas_types";
@@ -47,10 +48,20 @@ describe("SceneRenderer", () => {
         frameCount: 750,
     };
 
-    const defaultOptions: RenderOptions = {
-        timeInfo: defaultTimeInfo,
-        dimensions: defaultDims,
-    };
+    function createRenderOptions(
+        scene: IScene,
+        camera?: ICamera | null,
+        overrides?: Partial<RenderOptions>
+    ): RenderOptions {
+        return {
+            contextManager: mockCm,
+            scene,
+            camera,
+            dimensions: defaultDims,
+            timeInfo: defaultTimeInfo,
+            ...overrides,
+        };
+    }
 
     function createCamera(options?: { x?: number; y?: number; z?: number; aspect?: number }): PerspectiveCamera {
         const camera = new PerspectiveCamera({
@@ -97,12 +108,13 @@ describe("SceneRenderer", () => {
     beforeEach(() => {
         mockGl = createMockWebGL2Context();
         mockCm = createMockContextManager(mockGl);
-        renderer = new SceneRenderer(mockCm);
+        renderer = new SceneRenderer();
     });
 
-    describe("constructor and initialization", () => {
-        it("stores contextManager on public property contextManager", () => {
-            expect(renderer.contextManager).toBe(mockCm);
+    describe("constructor", () => {
+        it("instantiates a parameterless SceneRenderer", () => {
+            const instance = new SceneRenderer();
+            expect(instance).toBeInstanceOf(SceneRenderer);
         });
     });
 
@@ -112,7 +124,7 @@ describe("SceneRenderer", () => {
             const updateSpy = vi.spyOn(scene, "update");
             const camera = createCamera();
 
-            renderer.render(scene, camera, defaultOptions);
+            renderer.render(createRenderOptions(scene, camera));
 
             expect(updateSpy).toHaveBeenCalledTimes(1);
         });
@@ -129,7 +141,7 @@ describe("SceneRenderer", () => {
                 dpr: 2.0,
             };
 
-            renderer.render(scene, camera, { timeInfo: defaultTimeInfo, dimensions: customDims });
+            renderer.render(createRenderOptions(scene, camera, { dimensions: customDims }));
 
             expect(camera.updateAspectRatio).toHaveBeenCalledTimes(1);
             expect(camera.updateAspectRatio).toHaveBeenCalledWith(customDims.aspect);
@@ -145,7 +157,7 @@ describe("SceneRenderer", () => {
             const scene = new Scene();
             scene.addChild(instance);
 
-            renderer.render(scene, camera, defaultOptions);
+            renderer.render(createRenderOptions(scene, camera));
 
             expect(mockShader.setVec3).toHaveBeenCalledWith(
                 "u_cameraPosition",
@@ -167,7 +179,7 @@ describe("SceneRenderer", () => {
             scene.addChild(instanceNode);
             const camera = createCamera();
 
-            renderer.render(scene, camera, defaultOptions);
+            renderer.render(createRenderOptions(scene, camera));
 
             expect(mockCm.geometries.bind).toHaveBeenCalledTimes(1);
             expect(mockCm.geometries.bind).toHaveBeenCalledWith(instanceNode.geometry);
@@ -188,7 +200,7 @@ describe("SceneRenderer", () => {
             scene.addChild(invisibleInstance);
 
             const camera = createCamera();
-            renderer.render(scene, camera, defaultOptions);
+            renderer.render(createRenderOptions(scene, camera));
 
             expect(mockCm.geometries.bind).toHaveBeenCalledTimes(1);
             expect(mockCm.geometries.bind).toHaveBeenCalledWith(visibleInstance.geometry);
@@ -235,7 +247,7 @@ describe("SceneRenderer", () => {
             scene.addChild(instOrder0);
 
             const camera = createCamera();
-            renderer.render(scene, camera, defaultOptions);
+            renderer.render(createRenderOptions(scene, camera));
 
             expect(executionOrder).toEqual([
                 instOrderMinus100.geometry,
@@ -284,7 +296,7 @@ describe("SceneRenderer", () => {
             scene.addChild(instOrderMinus5);
 
             const camera = createCamera();
-            renderer.render(scene, camera, defaultOptions);
+            renderer.render(createRenderOptions(scene, camera));
 
             expect(executionOrder).toEqual([
                 instOrderMinus5.geometry,
@@ -315,7 +327,7 @@ describe("SceneRenderer", () => {
             scene.addChild(instance);
             const camera = createCamera();
 
-            renderer.render(scene, camera, defaultOptions);
+            renderer.render(createRenderOptions(scene, camera));
 
             expect(mockCm.applyPipelineState).toHaveBeenCalledTimes(1);
             expect(mockCm.applyPipelineState).toHaveBeenCalledWith(material.pipelineState);
@@ -329,7 +341,7 @@ describe("SceneRenderer", () => {
             scene.addChild(instance);
             const camera = createCamera();
 
-            renderer.render(scene, camera, defaultOptions);
+            renderer.render(createRenderOptions(scene, camera));
 
             expect(mockCm.shaders.bindKey).toHaveBeenCalledWith("unlit");
         });
@@ -348,7 +360,7 @@ describe("SceneRenderer", () => {
             const scene = new Scene();
             scene.addChild(instance);
 
-            renderer.render(scene, camera, defaultOptions);
+            renderer.render(createRenderOptions(scene, camera));
 
             const expectedMV = new Float32Array(16);
             mat4.multiply(
@@ -383,7 +395,7 @@ describe("SceneRenderer", () => {
             scene.addChild(instanceInvertible);
 
             const camera = createCamera();
-            renderer.render(scene, camera, defaultOptions);
+            renderer.render(createRenderOptions(scene, camera));
 
             const normalCall1 = (mockShader.setMat3 as any).mock.calls.find(
                 (c: [string, Float32Array]) => c[0] === "u_normalMatrix"
@@ -406,7 +418,7 @@ describe("SceneRenderer", () => {
                 instanceDegenerate.worldMatrix.fill(0);
             });
 
-            renderer.render(scene, camera, defaultOptions);
+            renderer.render(createRenderOptions(scene, camera));
 
             const normalCall2 = (mockShader.setMat3 as any).mock.calls.find(
                 (c: [string, Float32Array]) => c[0] === "u_normalMatrix"
@@ -424,7 +436,7 @@ describe("SceneRenderer", () => {
             const scene = new Scene();
             scene.addChild(instance);
 
-            renderer.render(scene, camera, defaultOptions);
+            renderer.render(createRenderOptions(scene, camera));
 
             expect(mockShader.setMat4).toHaveBeenCalledWith(
                 "u_viewProjectionMatrix",
@@ -458,7 +470,7 @@ describe("SceneRenderer", () => {
             const scene = new Scene();
             scene.addChild(instance);
 
-            renderer.render(scene, camera, defaultOptions);
+            renderer.render(createRenderOptions(scene, camera));
 
             expect(mockShader.setMat4).toHaveBeenCalledWith(
                 "u_modelMatrix",
@@ -494,7 +506,7 @@ describe("SceneRenderer", () => {
             scene.addChild(instance);
             const camera = createCamera();
 
-            renderer.render(scene, camera, defaultOptions);
+            renderer.render(createRenderOptions(scene, camera));
 
             expect(mockShader.setUniforms).toHaveBeenCalledTimes(1);
             expect(mockShader.setUniforms).toHaveBeenCalledWith(materialUniforms);
@@ -523,7 +535,7 @@ describe("SceneRenderer", () => {
             scene.addChild(instance);
             const camera = createCamera();
 
-            renderer.render(scene, camera, defaultOptions);
+            renderer.render(createRenderOptions(scene, camera));
 
             expect(mockCm.textures.bind).toHaveBeenCalledTimes(2);
             expect(mockCm.textures.bind).toHaveBeenCalledWith(TextureUnit.Color, tex0);
@@ -541,7 +553,7 @@ describe("SceneRenderer", () => {
             scene.addChild(instance);
 
             const camera = createCamera();
-            renderer.render(scene, camera, defaultOptions);
+            renderer.render(createRenderOptions(scene, camera));
 
             expect(mockCm.textures.bind).not.toHaveBeenCalled();
         });
@@ -565,7 +577,7 @@ describe("SceneRenderer", () => {
             scene.addChild(instance);
             const camera = createCamera();
 
-            renderer.render(scene, camera, defaultOptions);
+            renderer.render(createRenderOptions(scene, camera));
 
             expect(mockCm.textures.bindCube).toHaveBeenCalledTimes(1);
             expect(mockCm.textures.bindCube).toHaveBeenCalledWith(
@@ -587,7 +599,7 @@ describe("SceneRenderer", () => {
             scene.addChild(instance);
             const camera = createCamera();
 
-            renderer.render(scene, camera, defaultOptions);
+            renderer.render(createRenderOptions(scene, camera));
 
             expect(mockCm.geometries.bind).toHaveBeenCalledTimes(1);
             expect(mockCm.geometries.bind).toHaveBeenCalledWith(geometry);
@@ -614,7 +626,7 @@ describe("SceneRenderer", () => {
             scene.addChild(instance);
             const camera = createCamera();
 
-            renderer.render(scene, camera, defaultOptions);
+            renderer.render(createRenderOptions(scene, camera));
 
             expect(mockGl.drawElements).toHaveBeenCalledTimes(1);
             expect(mockGl.drawElements).toHaveBeenCalledWith(
@@ -655,7 +667,7 @@ describe("SceneRenderer", () => {
             scene.addChild(instance);
             const camera = createCamera();
 
-            renderer.render(scene, camera, defaultOptions);
+            renderer.render(createRenderOptions(scene, camera));
 
             expect(mockGl.drawArrays).toHaveBeenCalledTimes(1);
             expect(mockGl.drawArrays).toHaveBeenCalledWith(WebGL2RenderingContext.POINTS, 0, 3);
@@ -671,14 +683,14 @@ describe("SceneRenderer", () => {
             scene.addChild(instance2);
             const camera = createCamera();
 
-            renderer.render(scene, camera, defaultOptions);
+            renderer.render(createRenderOptions(scene, camera));
 
             expect(mockCm.geometries.unbind).not.toHaveBeenCalled();
         });
     });
 
-    describe("reset and context loss handling", () => {
-        it("reset(): clears render queue and calls contextManager.resetPipelineState()", () => {
+    describe(".reset()", () => {
+        it("clears render queue and resets frameId to 0 without interacting with contextManager", () => {
             const mockShader = createMockShaderProgram("unlit");
             mockCm.shaders.get = vi.fn(() => mockShader);
 
@@ -687,17 +699,22 @@ describe("SceneRenderer", () => {
             scene.addChild(instance);
             const camera = createCamera();
 
-            renderer.render(scene, camera, defaultOptions);
+            renderer.render(createRenderOptions(scene, camera));
 
             const internalQueue = (renderer as unknown as { _renderQueue: unknown[] })._renderQueue;
+            const internalFrameId = (renderer as unknown as { _frameId: number })._frameId;
             expect(internalQueue.length).toBe(1);
+            expect(internalFrameId).toBe(1);
 
             renderer.reset();
 
             expect(internalQueue.length).toBe(0);
-            expect(mockCm.resetPipelineState).toHaveBeenCalledTimes(1);
+            expect((renderer as unknown as { _frameId: number })._frameId).toBe(0);
+            expect(mockCm.resetPipelineState).not.toHaveBeenCalled();
         });
+    });
 
+    describe("render: context loss, depth clearing, and camera fallback", () => {
         it("early-exits safely without rendering when context is null", () => {
             mockCm.getContext = vi.fn(() => null);
 
@@ -705,7 +722,7 @@ describe("SceneRenderer", () => {
             const updateSpy = vi.spyOn(scene, "update");
             const camera = createCamera();
 
-            renderer.render(scene, camera, defaultOptions);
+            renderer.render(createRenderOptions(scene, camera));
 
             expect(updateSpy).not.toHaveBeenCalled();
             expect(mockCm.geometries.unbind).not.toHaveBeenCalled();
@@ -718,7 +735,7 @@ describe("SceneRenderer", () => {
             const updateSpy = vi.spyOn(scene, "update");
             const camera = createCamera();
 
-            renderer.render(scene, camera, defaultOptions);
+            renderer.render(createRenderOptions(scene, camera));
 
             expect(updateSpy).not.toHaveBeenCalled();
             expect(mockCm.geometries.unbind).not.toHaveBeenCalled();
@@ -728,10 +745,7 @@ describe("SceneRenderer", () => {
             const scene = new Scene();
             const camera = createCamera();
 
-            renderer.render(scene, camera, {
-                ...defaultOptions,
-                clearDepth: true,
-            });
+            renderer.render(createRenderOptions(scene, camera, { clearDepth: true }));
 
             expect(mockCm.setDepthMask).toHaveBeenCalledWith(true);
             expect(mockGl.clear).toHaveBeenCalledWith(WebGL2RenderingContext.DEPTH_BUFFER_BIT);
@@ -741,7 +755,7 @@ describe("SceneRenderer", () => {
             const scene = new Scene();
             const camera = createCamera();
 
-            renderer.render(scene, camera, defaultOptions);
+            renderer.render(createRenderOptions(scene, camera));
 
             expect(mockCm.setDepthMask).not.toHaveBeenCalled();
             expect(mockGl.clear).not.toHaveBeenCalled();
@@ -754,7 +768,7 @@ describe("SceneRenderer", () => {
             const instance = createModelInstance();
             scene.addChild(instance);
 
-            renderer.render(scene, null, defaultOptions);
+            renderer.render(createRenderOptions(scene, null));
 
             expect(activeCam.updateAspectRatio).toHaveBeenCalledTimes(1);
             expect(activeCam.updateMatrices).toHaveBeenCalledTimes(1);
@@ -764,7 +778,7 @@ describe("SceneRenderer", () => {
             const scene = new Scene();
             scene.activeCamera = null;
 
-            expect(() => renderer.render(scene, null, defaultOptions)).toThrow(
+            expect(() => renderer.render(createRenderOptions(scene, null))).toThrow(
                 "[SceneRenderer] No camera provided and scene.activeCamera is null."
             );
         });
@@ -779,11 +793,11 @@ describe("SceneRenderer", () => {
             mockRenderable.render = renderSpy;
             scene.addChild(mockRenderable);
 
-            renderer.render(scene, camera, defaultOptions);
+            renderer.render(createRenderOptions(scene, camera));
             expect(renderSpy).toHaveBeenCalledTimes(1);
             expect(renderSpy.mock.calls[0][0].frameId).toBe(1);
 
-            renderer.render(scene, camera, defaultOptions);
+            renderer.render(createRenderOptions(scene, camera));
             expect(renderSpy).toHaveBeenCalledTimes(2);
             expect(renderSpy.mock.calls[1][0].frameId).toBe(2);
         });

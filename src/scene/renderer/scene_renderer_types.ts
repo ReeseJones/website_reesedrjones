@@ -24,6 +24,12 @@ export interface StandardShaderUniforms {
  * Frame-level execution options passed to ISceneRenderer.render.
  */
 export interface RenderOptions {
+    /** Context manager providing WebGL resources and pipeline state management. */
+    contextManager: IWebGLContextManager;
+    /** The 3D scene containing objects to render. */
+    scene: IScene;
+    /** Optional camera override. Defaults to scene.activeCamera if omitted or null. */
+    camera?: ICamera | null;
     /** Frame timing and delta seconds. */
     timeInfo: TimeInfo;
     /** Viewport dimensions and aspect ratio. */
@@ -45,8 +51,6 @@ export interface RenderQueueItem {
  * pipeline state deduplication, uniform distribution, and draw call execution.
  */
 export interface ISceneRenderer {
-    readonly contextManager: IWebGLContextManager;
-
     /**
      * Executes the 5-stage frame rendering loop:
      * 1. Evaluates dirty transforms across the scene graph.
@@ -55,7 +59,7 @@ export interface ISceneRenderer {
      * 4. Asserts pipeline states with contextManager caching.
      * 5. Uploads Tier A/B/C uniforms and issues draw calls.
      */
-    render(scene: IScene, camera: ICamera | null | undefined, options: RenderOptions): void;
+    render(options: RenderOptions): void;
 
     /**
      * Clears internal transient render queues and resets pipeline state.

@@ -1,7 +1,4 @@
-import type { IScene } from "../core/scene_types";
-import type { ICamera } from "../camera/camera_types";
 import { isRenderable, type RenderContext } from "../core/renderable_types";
-import type { IWebGLContextManager } from "../../webgl/core/context_manager_types";
 import type { ISceneRenderer, RenderOptions, RenderQueueItem } from "./scene_renderer_types";
 import { DEFAULT_RENDER_ORDER } from "./scene_renderer_constants";
 
@@ -11,21 +8,20 @@ import { DEFAULT_RENDER_ORDER } from "./scene_renderer_constants";
  * and dispatching draw passes to IRenderable entities.
  */
 export class SceneRenderer implements ISceneRenderer {
-    public readonly contextManager: IWebGLContextManager;
-
     private readonly _renderQueue: RenderQueueItem[] = [];
     private _frameId: number = 0;
 
-    constructor(contextManager: IWebGLContextManager) {
-        this.contextManager = contextManager;
-    }
+    public render(options: RenderOptions): void {
+        const {
+            contextManager,
+            scene,
+            camera,
+            dimensions,
+            timeInfo,
+            clearDepth,
+        } = options;
 
-    public render(
-        scene: IScene,
-        camera: ICamera | null | undefined,
-        options: RenderOptions
-    ): void {
-        const gl = this.contextManager.getContext();
+        const gl = contextManager.getContext();
         if (!gl || gl.isContextLost()) {
             return;
         }
@@ -35,8 +31,8 @@ export class SceneRenderer implements ISceneRenderer {
             throw new Error("[SceneRenderer] No camera provided and scene.activeCamera is null.");
         }
 
-        if (options.clearDepth) {
-            this.contextManager.setDepthMask(true);
+        if (clearDepth) {
+            contextManager.setDepthMask(true);
             gl.clear(WebGL2RenderingContext.DEPTH_BUFFER_BIT);
         }
 
@@ -46,7 +42,7 @@ export class SceneRenderer implements ISceneRenderer {
         scene.update();
 
         // Stage 2: Camera matrix synchronization
-        activeCamera.updateAspectRatio(options.dimensions.aspect);
+        activeCamera.updateAspectRatio(dimensions.aspect);
         activeCamera.updateMatrices();
 
         // Stage 3: Collect visible renderables & stable sort by renderOrder
@@ -64,11 +60,11 @@ export class SceneRenderer implements ISceneRenderer {
 
         // Stage 4: Dispatch render calls to renderables
         const renderContext: RenderContext = {
-            contextManager: this.contextManager,
+            contextManager,
             gl,
             camera: activeCamera,
-            dimensions: options.dimensions,
-            time: options.timeInfo.time,
+            dimensions,
+            time: timeInfo.time,
             frameId: this._frameId,
         };
 
@@ -79,6 +75,6 @@ export class SceneRenderer implements ISceneRenderer {
 
     public reset(): void {
         this._renderQueue.length = 0;
-        this.contextManager.resetPipelineState();
+        this._frameId = 0;
     }
 }

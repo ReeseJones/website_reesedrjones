@@ -17,14 +17,17 @@ export function ScenePass({
     const { contextManager } = useWebGLContext();
     const rendererRef = useRef<SceneRenderer | null>(null);
 
-    if (!rendererRef.current || rendererRef.current.contextManager !== contextManager) {
-        rendererRef.current = new SceneRenderer(contextManager);
+    if (!rendererRef.current) {
+        rendererRef.current = new SceneRenderer();
     }
 
     useWebGLPass({
         priority,
         render: (_gl, timeInfo, dims) => {
-            rendererRef.current?.render(scene, camera, {
+            rendererRef.current?.render({
+                contextManager,
+                scene,
+                camera,
                 timeInfo,
                 dimensions: dims,
                 clearDepth,
