@@ -24,7 +24,7 @@ Comprehensive quick-reference guide indexing foundational Lit mechanics.
 - [x] **Task 1.1: Author Core Lit Cheat Sheet (`src/project_guidelines/lit_cheat_sheet.md`)**
   - Synthesize and index key concepts from official Lit documentation and the cheat sheet.
   - **Properties & State Index:**
-    - Property declaration methods (static `properties` vs. `@property()` and `@state()` decorators).
+    - Property declaration with TC39 Stage 3 auto-accessor decorators (`@property()` and `@state()`).
     - Attribute vs. property expressions (`attr=${v}`, `.prop=${v}`, `?attr=${v}`).
     - Change detection mechanics, dirty checking, mutation caveats with Arrays and Objects (`requestUpdate()`), and custom `hasChanged()` equality predicates.
   - **Lit & Custom Element Lifecycle Index:**

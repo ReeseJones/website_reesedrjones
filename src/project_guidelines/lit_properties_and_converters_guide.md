@@ -17,7 +17,7 @@ In this architecture:
 
 ## 2. Public Reactive Properties (`@property`)
 
-The `@property()` decorator declares a public property that participates in Lit's reactive lifecycle and synchronizes with an HTML attribute.
+The `@property()` decorator declares a public property that participates in Lit's reactive lifecycle and synchronizes with an HTML attribute using TC39 auto-accessors (`accessor`).
 
 ```ts
 import { LitElement, html } from "lit";
@@ -25,13 +25,13 @@ import { property } from "lit/decorators.js";
 
 export class PerspectiveCameraElement extends LitElement {
     @property({ type: Number })
-    public fov: number = 60;
+    public accessor fov: number = 60;
 
     @property({ type: Number, attribute: "near-plane" })
-    public near: number = 0.1;
+    public accessor near: number = 0.1;
 
     @property({ type: Boolean, reflect: true })
-    public active: boolean = false;
+    public accessor active: boolean = false;
 }
 ```
 
@@ -68,7 +68,7 @@ The `@property(options)` decorator accepts a `PropertyDeclaration` configuration
 
 ## 3. Internal Reactive State (`@state`)
 
-The `@state()` decorator declares internal, private, or protected component state that triggers updates but has zero DOM attribute footprint.
+The `@state()` decorator declares internal, private, or protected component state that triggers updates but has zero DOM attribute footprint, using TC39 auto-accessors (`accessor`).
 
 ```ts
 import { LitElement, html } from "lit";
@@ -76,13 +76,13 @@ import { state } from "lit/decorators.js";
 
 export class SceneViewportElement extends LitElement {
     @state()
-    private isInteracting: boolean = false;
+    private accessor isInteracting: boolean = false;
 
     @state()
-    private currentFps: number = 60;
+    private accessor currentFps: number = 60;
 
     @state()
-    private lastPointerPosition: { x: number; y: number } = { x: 0, y: 0 };
+    private accessor lastPointerPosition: { x: number; y: number } = { x: 0, y: 0 };
 }
 ```
 
@@ -253,10 +253,10 @@ export const vector3Converter: ComplexAttributeConverter<Vector3Tuple> = {
 ```ts
 export class SceneNodeElement extends LitElement {
     @property({ converter: vector3Converter, reflect: true })
-    public position: Vector3Tuple = [0, 0, 0];
+    public accessor position: Vector3Tuple = [0, 0, 0];
 
     @property({ converter: vector3Converter, reflect: true })
-    public scale: Vector3Tuple = [1, 1, 1];
+    public accessor scale: Vector3Tuple = [1, 1, 1];
 }
 ```
 **Markup Support:**

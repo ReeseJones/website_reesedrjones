@@ -18,12 +18,12 @@ Reactive properties and internal state form the foundation of Lit's reactive dat
 
 ### Reactive Properties vs. Internal State
 - **Public Reactive Properties (`@property()`):**
-  - Exposed as the element's public API for consumers.
+  - Exposed as the element's public API for consumers using TC39 auto-accessors (`@property({ type: Number }) public accessor count: number = 0;`).
   - Automatically synchronized with corresponding HTML attributes (kebab-cased by default).
   - Configurable with built-in or custom attribute converters.
   - Can be reflected back into DOM attributes (`reflect: true`) when required for CSS styling or external inspection.
 - **Internal Reactive State (`@state()`):**
-  - Private or protected internal component state.
+  - Private or protected internal component state using TC39 auto-accessors (`@state() private accessor _open: boolean = false;`).
   - Triggers the reactive update cycle when reassigned.
   - Has zero HTML attribute footprint and does not observe or reflect to the DOM.
   - Ideal for UI flags, internal timers, temporary input buffers, and active interaction modes.

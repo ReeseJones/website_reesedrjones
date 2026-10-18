@@ -77,9 +77,19 @@ Design principles, architecture standards, and authoring conventions for Lit Web
 
 ## 3. Reactive Properties & Lifecycle Protocol
 
-- **Static Properties Declaration:**
-  - Define reactive properties using `static properties` or the `@property()` decorator adhering to `useDefineForClassFields: true`.
-  - Always specify the property `type` (e.g., `Number`, `Boolean`, `String`, `Object`) and configure `reflect: true` only when the attribute needs to be mirrored to the DOM for CSS styling or inspection.
+- **TC39 Stage 3 Auto-Accessor Decorators (`@property`, `@state`):**
+  - Define all reactive properties and state using `@property()` and `@state()` decorators from `"lit/decorators.js"` paired with the TypeScript/TC39 `accessor` keyword:
+    ```ts
+    @property({ type: Number, reflect: true })
+    public accessor fov: number = 60;
+
+    @property({ converter: vector3Converter, reflect: true })
+    public accessor position: Vector3Tuple = [0, 0, 0];
+
+    @state()
+    private accessor _activeState: boolean = false;
+    ```
+  - Always specify the property `type` (e.g., `Number`, `Boolean`, `String`, `Object`) for primitive attributes, and configure `reflect: true` only when the attribute needs to be mirrored to the DOM for CSS styling or external inspection.
 - **Property Mutation vs. Dirty Checking:**
   - Leverage `updated(changedProperties: PropertyValues<this>)` for fine-grained change reaction.
   - Check `changedProperties.has("propName")` to cascade changes into the underlying programmatic engine, updating only dirty flags or dirty uniform matrices.
