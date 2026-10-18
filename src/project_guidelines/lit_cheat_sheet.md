@@ -17,14 +17,14 @@ Lit provides a lightweight, reactive abstraction over standard Web Components. I
 Reactive properties and internal state form the foundation of Lit's reactive data-binding system. Modifying a reactive property or state variable schedules an asynchronous, batched render cycle.
 
 ### Reactive Properties vs. Internal State
-- **Public Reactive Properties (`@property()`):**
-  - Exposed as the element's public API for consumers using TC39 auto-accessors (`@property({ type: Number }) public accessor count: number = 0;`).
+- **Public Reactive Properties (Static `properties` Field):**
+  - Exposed as the element's public API for consumers via `public static override properties = { ... }` and `public declare prop: type;`.
   - Automatically synchronized with corresponding HTML attributes (kebab-cased by default).
   - Configurable with built-in or custom attribute converters.
   - Can be reflected back into DOM attributes (`reflect: true`) when required for CSS styling or external inspection.
-- **Internal Reactive State (`@state()`):**
-  - Private or protected internal component state using TC39 auto-accessors (`@state() private accessor _open: boolean = false;`).
-  - Triggers the reactive update cycle when reassigned.
+- **Internal State Fields (Decoratorless):**
+  - Private or protected class fields (e.g., `private _open: boolean = false;`).
+  - Triggers the reactive update cycle by calling `this.requestUpdate()` when reassigned.
   - Has zero HTML attribute footprint and does not observe or reflect to the DOM.
   - Ideal for UI flags, internal timers, temporary input buffers, and active interaction modes.
 
@@ -187,8 +187,8 @@ Lit manages rendering into a component's render root (`shadowRoot` by default, o
 
 ## 6. Conceptual Index Summary
 
-- **`@property()`:** Exposes public attributes and reactive properties with converters and optional reflection.
-- **`@state()`:** Declares private/protected reactive internal state without attribute exposure.
+- **Static `properties`:** Exposes public attributes and reactive properties with converters and optional reflection without decorators.
+- **Internal State Fields:** Private/protected class fields triggering updates via `requestUpdate()` without attribute exposure.
 - **`requestUpdate()`:** Manually schedules a batched reactive update cycle.
 - **`updateComplete`:** A Promise resolving once microtask batching and DOM commits are complete.
 - **`willUpdate()`:** Synchronous pre-render computation for derived properties across client and SSR.

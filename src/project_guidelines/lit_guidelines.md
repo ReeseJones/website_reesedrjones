@@ -77,19 +77,32 @@ Design principles, architecture standards, and authoring conventions for Lit Web
 
 ## 3. Reactive Properties & Lifecycle Protocol
 
-- **TC39 Stage 3 Auto-Accessor Decorators (`@property`, `@state`):**
-  - Define all reactive properties and state using `@property()` and `@state()` decorators from `"lit/decorators.js"` paired with the TypeScript/TC39 `accessor` keyword:
+- **Static Properties Declaration (Decoratorless Workflow):**
+  - Define all reactive properties using Lit's standard static properties class field: `public static override properties = { ... }` paired with TypeScript ambient property declarations: `public declare prop: type;`.
+  - Initialize default property values in the class `constructor()`.
+  - Internal state variables are simple private/protected class fields (e.g. `private _activeState: boolean = false;`) that trigger updates via `this.requestUpdate()` when reactive re-rendering is needed.
+  - Example:
     ```ts
-    @property({ type: Number, reflect: true })
-    public accessor fov: number = 60;
+    export class PerspectiveCameraElement extends LitElement {
+        public static override properties = {
+            fov: { type: Number, reflect: true },
+            position: { converter: vector3Converter, reflect: true },
+        };
 
-    @property({ converter: vector3Converter, reflect: true })
-    public accessor position: Vector3Tuple = [0, 0, 0];
+        public declare fov: number;
+        public declare position: Vector3Tuple;
 
-    @state()
-    private accessor _activeState: boolean = false;
+        private _activeState: boolean = false;
+
+        public constructor() {
+            super();
+            this.fov = 60;
+            this.position = [0, 0, 0];
+        }
+    }
     ```
-  - Always specify the property `type` (e.g., `Number`, `Boolean`, `String`, `Object`) for primitive attributes, and configure `reflect: true` only when the attribute needs to be mirrored to the DOM for CSS styling or external inspection.
+  - Always specify the property `type` (e.g., `Number`, `Boolean`, `String`, `Object`) for primitive attributes, and configure `reflect: true` only when the attribute needs to be mirrored to the DOM for CSS styling or external inspection. Complex objects, arrays, or non-serialized properties must specify `attribute: false`.
+  - **Prohibition of Decorators:** Do not use experimental or Stage 3 decorators (`@property`, `@state`, or the `accessor` keyword). The project's build pipeline (Parcel 2 and SWC) is strictly standard ECMAScript without decorator transpilation.
 - **Property Mutation vs. Dirty Checking:**
   - Leverage `updated(changedProperties: PropertyValues<this>)` for fine-grained change reaction.
   - Check `changedProperties.has("propName")` to cascade changes into the underlying programmatic engine, updating only dirty flags or dirty uniform matrices.
@@ -221,11 +234,11 @@ For comprehensive deep-dives, concept indexes, and advanced architectural guides
   - [Lit Architectural Cheat Sheet & Concept Index](lit_cheat_sheet.md): Fast index for properties, state, reactive lifecycle hooks, data flow, and DOM access.
 - **Deep-Dive Tutorial Guides:**
   - [Lit Reactive Controllers Guide](lit_controllers_guide.md): Encapsulating non-rendered logic, lifecycle hooks, and controllers for animation loops, resize observation, orbit controls, and input.
-  - [Reactive Properties, State & Custom Converters Guide](lit_properties_and_converters_guide.md): `@property()` vs. `@state()`, reflection patterns, in-place mutation dirty-checking, and `ComplexAttributeConverter` (vectors, arrays, colors, JSON).
+  - [Reactive Properties, State & Custom Converters Guide](lit_properties_and_converters_guide.md): Static properties declaration, reflection patterns, in-place mutation dirty-checking, and `ComplexAttributeConverter` (vectors, arrays, colors, JSON).
   - [Lit Context Architecture & Hierarchical State Guide](lit_context_guide.md): W3C Context Community Protocol, symbol-keyed context tokens in `*_types.ts`, context shadowing, and multi-tier state stacks.
   - [Working with Lists, Iterables & Virtualization Guide](lit_lists_and_iteration_guide.md): `Array.map()`, built-in iteration directives, differential keyed updates with `repeat()`, and `@lit-labs/virtualizer`.
   - [Async Directives & Streaming Data Guide](lit_async_directives_guide.md): `AsyncDirective` lifecycle, micro-DOM updates via `this.setValue()`, `until()`, suspense patterns, observable streams, and GPU readbacks.
-  - [DOM Access, Shadow Roots & Light DOM Guide](lit_dom_access_guide.md): `@query`, `@queryAll`, `@queryAsync`, slotted content access, template `ref()` directives, and Light DOM scene graph architecture.
+  - [DOM Access, Shadow Roots & Light DOM Guide](lit_dom_access_guide.md): Template `ref()` directives, element queries, slotted content access, and Light DOM scene graph architecture.
 - **Curriculum Roadmap & Task List:**
   - [Lit Guidelines Task List](lit_guidelines_tasklist.md): Master checklist and progress tracking for the Lit documentation curriculum.
 

@@ -1,6 +1,6 @@
 # Lit Reactive Properties, State & Custom Converters Guide
 
-A comprehensive architectural and practical guide to defining public properties with `@property()`, managing internal state with `@state()`, understanding mutation caveats, and building high-performance Custom Attribute Converters for 3D and WebGL applications.
+A comprehensive architectural and practical guide to defining public properties with `static properties`, managing internal component state, understanding mutation caveats, and building high-performance Custom Attribute Converters for 3D and WebGL applications.
 
 ---
 
@@ -9,35 +9,42 @@ A comprehensive architectural and practical guide to defining public properties 
 Lit's reactive update pipeline relies on observation of properties and internal state. When a reactive property or state field changes, Lit marks the component as dirty and schedules an asynchronous, batched microtask update cycle.
 
 In this architecture:
-- **`@property()`** defines the public, declarative API of the element, automatically bridging HTML attributes to JavaScript properties.
-- **`@state()`** manages private or protected internal state that drives re-rendering without polluting the DOM with attributes.
+- **`public static override properties = { ... }`** defines the public, declarative API of the element, automatically bridging HTML attributes to JavaScript properties without requiring decorators.
+- **Internal State Fields** manage private or protected internal state that drives re-rendering via `this.requestUpdate()` without polluting the DOM with attributes.
 - **Attribute Converters** translate string-based HTML attributes into rich JavaScript types (numbers, vectors, color tuples, parsed configs) and vice versa.
 
 ---
 
-## 2. Public Reactive Properties (`@property`)
+## 2. Public Reactive Properties (`static properties`)
 
-The `@property()` decorator declares a public property that participates in Lit's reactive lifecycle and synchronizes with an HTML attribute using TC39 auto-accessors (`accessor`).
+In this project, reactive properties are declared using Lit's standard static properties class field paired with TypeScript's `declare` keyword. This avoids experimental compiler decorators and guarantees 100% standard ECMAScript compatibility across Parcel, SWC, and Vitest.
 
 ```ts
 import { LitElement, html } from "lit";
-import { property } from "lit/decorators.js";
 
 export class PerspectiveCameraElement extends LitElement {
-    @property({ type: Number })
-    public accessor fov: number = 60;
+    public static override properties = {
+        fov: { type: Number, reflect: true },
+        near: { type: Number, attribute: "near-plane" },
+        active: { type: Boolean, reflect: true },
+    };
 
-    @property({ type: Number, attribute: "near-plane" })
-    public accessor near: number = 0.1;
+    public declare fov: number;
+    public declare near: number;
+    public declare active: boolean;
 
-    @property({ type: Boolean, reflect: true })
-    public accessor active: boolean = false;
+    public constructor() {
+        super();
+        this.fov = 60;
+        this.near = 0.1;
+        this.active = false;
+    }
 }
 ```
 
 ### Property Options Reference
 
-The `@property(options)` decorator accepts a `PropertyDeclaration` configuration object:
+Each entry in the `properties` map accepts a `PropertyDeclaration` configuration object:
 
 - **`attribute` (`boolean | string`):**
   - **Default:** `true` (synchronizes with a kebab-cased HTML attribute, e.g., property `farPlane` maps to attribute `far-plane`).
@@ -62,41 +69,40 @@ The `@property(options)` decorator accepts a `PropertyDeclaration` configuration
   - By default, Lit uses strict inequality (`newVal !== oldVal`), with an exception that `NaN !== NaN` evaluates to false so `NaN` reassignments do not loop.
 
 - **`state` (`boolean`):**
-  - Setting `state: true` is functionally equivalent to using the `@state()` decorator.
+  - Setting `state: true` declares an internal reactive property that triggers update cycles but has no HTML attribute footprint.
 
 ---
 
-## 3. Internal Reactive State (`@state`)
+## 3. Internal Component State (Decoratorless)
 
-The `@state()` decorator declares internal, private, or protected component state that triggers updates but has zero DOM attribute footprint, using TC39 auto-accessors (`accessor`).
+Internal, private, or protected component state is represented as regular TypeScript class fields. To trigger an update cycle when internal state changes, call `this.requestUpdate()`:
 
 ```ts
 import { LitElement, html } from "lit";
-import { state } from "lit/decorators.js";
 
 export class SceneViewportElement extends LitElement {
-    @state()
-    private accessor isInteracting: boolean = false;
+    private _isInteracting: boolean = false;
+    private _currentFps: number = 60;
+    private _lastPointerPosition: { x: number; y: number } = { x: 0, y: 0 };
 
-    @state()
-    private accessor currentFps: number = 60;
-
-    @state()
-    private accessor lastPointerPosition: { x: number; y: number } = { x: 0, y: 0 };
+    public setInteracting(interacting: boolean): void {
+        this._isInteracting = interacting;
+        this.requestUpdate();
+    }
 }
 ```
 
-### Key Differences: `@property()` vs. `@state()`
+### Key Differences: Public Properties vs. Internal State
 
 - **DOM Visibility:**
-  - `@property()` maps to an HTML attribute (unless `attribute: false`). External consumers can configure it in markup (`<rj-camera fov="75">`).
-  - `@state()` never creates or observes an HTML attribute. It exists exclusively on the class instance.
+  - Public properties in `static properties` map to HTML attributes (unless `attribute: false`). External consumers can configure them in markup (`<rj-camera fov="75">`).
+  - Internal state fields never create or observe HTML attributes. They exist exclusively on the class instance.
 - **Component Boundary:**
-  - `@property()` represents inputs passed into the component from the outside world.
-  - `@state()` represents internal state managed privately by the component (e.g., hover flags, active pointer IDs, calculated camera matrices, animation timers).
+  - Public properties represent inputs passed into the component from the outside world.
+  - Internal state fields represent state managed privately by the component (e.g., hover flags, active pointer IDs, calculated camera matrices, animation timers).
 - **TypeScript Visibility:**
-  - `@property()` properties should typically be marked `public`.
-  - `@state()` properties should be marked `private` or `protected`.
+  - Public properties should be marked `public declare`.
+  - Internal state fields should be marked `private` or `protected`.
 
 ---
 
@@ -158,7 +164,7 @@ this.requestUpdate("vertexPositions");
 
 ### Solution Pattern C: Custom `hasChanged` Predicates
 
-You can supply a custom predicate to `@property` or `@state` for deep or component-wise equality checks:
+You can supply a custom predicate to property options in `static properties` for deep or component-wise equality checks:
 
 ```ts
 export interface Vector3 {
@@ -178,8 +184,11 @@ function hasVector3Changed(newVal?: Vector3, oldVal?: Vector3): boolean {
 }
 
 export class TransformElement extends LitElement {
-    @property({ hasChanged: hasVector3Changed })
-    public position: Vector3 = { x: 0, y: 0, z: 0 };
+    public static override properties = {
+        position: { hasChanged: hasVector3Changed },
+    };
+
+    public declare position: Vector3;
 }
 ```
 
@@ -252,11 +261,13 @@ export const vector3Converter: ComplexAttributeConverter<Vector3Tuple> = {
 **Usage in an Element:**
 ```ts
 export class SceneNodeElement extends LitElement {
-    @property({ converter: vector3Converter, reflect: true })
-    public accessor position: Vector3Tuple = [0, 0, 0];
+    public static override properties = {
+        position: { converter: vector3Converter, reflect: true },
+        scale: { converter: vector3Converter, reflect: true },
+    };
 
-    @property({ converter: vector3Converter, reflect: true })
-    public accessor scale: Vector3Tuple = [1, 1, 1];
+    public declare position: Vector3Tuple;
+    public declare scale: Vector3Tuple;
 }
 ```
 **Markup Support:**
@@ -473,7 +484,7 @@ export function CameraControls() {
 
 ## 8. Summary of Guidelines
 
-- **Use `@property()` for external API, `@state()` for internal state:** Public declarative configuration belongs in `@property()`; private rendering triggers belong in `@state()`.
+- **Use `static properties` for external API, class fields for internal state:** Public declarative configuration belongs in `static override properties = { ... }`; private rendering triggers belong in class fields invoking `this.requestUpdate()`.
 - **Never mutate arrays or objects in place without notifying Lit:** Either assign a new shallow copy (`[...items]`, `{ ...config }`) or invoke `this.requestUpdate("propName")`.
 - **Use dedicated converter modules:** Implement converters using `ComplexAttributeConverter` and define companion types in `*_types.ts` files according to [typescript_guidelines.md](typescript_guidelines.md).
 - **Guard against NaN and unparseable input:** Custom converters must always validate numbers with `Number.isFinite()` and return safe fallbacks instead of crashing.
