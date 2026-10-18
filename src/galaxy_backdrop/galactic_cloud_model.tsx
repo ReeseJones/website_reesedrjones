@@ -41,7 +41,6 @@ export function GalacticCloudModel({
         return () => {
             cloudGeometryRef.current?.dispose();
             cloudGeometryRef.current = null;
-            cloudMaterialRef.current?.dispose();
             cloudMaterialRef.current = null;
         };
     }, []);

@@ -6,7 +6,6 @@ import {
     type TemplateResult,
     type PropertyValues,
 } from "lit";
-import { property } from "lit/decorators.js";
 import { createRef, ref, type Ref } from "lit/directives/ref.js";
 import { ContextProvider } from "@lit/context";
 import { createDefaultContextManager } from "../../webgl/core/context_manager_factory";
@@ -77,17 +76,17 @@ export class WebGLCanvasElement extends LitElement implements IWebGLCanvasContex
         }
     `;
 
-    @property({ type: Number, attribute: "dpr-cap", reflect: true })
-    public accessor dprCap: number = DEFAULT_DPR_CAP;
+    public static override properties = {
+        dprCap: { type: Number, attribute: "dpr-cap", reflect: true },
+        renderMode: { type: String, attribute: "render-mode", reflect: true },
+        pauseWhenOffscreen: { type: Boolean, attribute: "pause-when-offscreen", reflect: true },
+        pauseWhenHidden: { type: Boolean, attribute: "pause-when-hidden", reflect: true },
+    };
 
-    @property({ type: String, attribute: "render-mode", reflect: true })
-    public accessor renderMode: WebGLCanvasRenderMode = DEFAULT_RENDER_MODE;
-
-    @property({ type: Boolean, attribute: "pause-when-offscreen", reflect: true })
-    public accessor pauseWhenOffscreen: boolean = DEFAULT_PAUSE_WHEN_OFFSCREEN;
-
-    @property({ type: Boolean, attribute: "pause-when-hidden", reflect: true })
-    public accessor pauseWhenHidden: boolean = DEFAULT_PAUSE_WHEN_HIDDEN;
+    public declare dprCap: number;
+    public declare renderMode: WebGLCanvasRenderMode;
+    public declare pauseWhenOffscreen: boolean;
+    public declare pauseWhenHidden: boolean;
 
     private readonly _canvasRef: Ref<HTMLCanvasElement> = createRef();
     private readonly _canvasProvider: ContextProvider<typeof webglCanvasContext>;
@@ -113,6 +112,10 @@ export class WebGLCanvasElement extends LitElement implements IWebGLCanvasContex
 
     public constructor() {
         super();
+        this.dprCap = DEFAULT_DPR_CAP;
+        this.renderMode = DEFAULT_RENDER_MODE;
+        this.pauseWhenOffscreen = DEFAULT_PAUSE_WHEN_OFFSCREEN;
+        this.pauseWhenHidden = DEFAULT_PAUSE_WHEN_HIDDEN;
         this._contextManager = createDefaultContextManager();
         this._subscriberManager = new WebGLSubscriberManager();
         this._canvasProvider = new ContextProvider(this, {

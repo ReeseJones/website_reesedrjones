@@ -10,6 +10,7 @@ import { Main } from './pages/main';
 import { ArticlesIndexPage } from './pages/articles/articles_index_page';
 import { ARTICLE_PAGES } from "./pages/articles/index_instance";
 import { APP_VERSION, GIT_COMMIT, GIT_BRANCH, BUILD_TIMESTAMP } from "./version";
+import { setupSceneElements } from "./scene/elements/setup_scene_elements";
 
 console.log(
   `%c[website_reesedrjones]%c v${APP_VERSION} (%c${GIT_COMMIT}%c on %c${GIT_BRANCH}%c) • Built ${BUILD_TIMESTAMP}`,
@@ -49,4 +50,6 @@ const router = createBrowserRouter([
 ]);
 
 const root = document.getElementById("app")!;
+setupSceneElements();
 createRoot(root).render(<RouterProvider router={router} />);
+

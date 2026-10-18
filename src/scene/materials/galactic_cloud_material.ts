@@ -129,11 +129,4 @@ export class GalacticCloudMaterial extends Material {
             params: { ...this._params },
         });
     }
-
-    /**
-     * CPU disposal hook for deterministic resource release.
-     */
-    public dispose(): void {
-        // Pure CPU material descriptor; no hardware handles to delete directly.
-    }
 }

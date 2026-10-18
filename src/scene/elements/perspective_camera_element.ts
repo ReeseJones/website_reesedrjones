@@ -1,5 +1,4 @@
 import { LitElement, type PropertyValues } from "lit";
-import { property } from "lit/decorators.js";
 import { ContextConsumer, ContextProvider } from "@lit/context";
 import { PerspectiveCamera } from "../camera/perspective_camera";
 import { vector3Converter } from "../../lit/converters/vector3_converter";
@@ -33,32 +32,27 @@ import {
  * enclosing scene and parent node contexts via @lit/context.
  */
 export class PerspectiveCameraElement extends LitElement {
-    @property({ type: Number, reflect: true })
-    public accessor fov: number = DEFAULT_CAMERA_FOV;
+    public static override properties = {
+        fov: { type: Number, reflect: true },
+        near: { type: Number, reflect: true },
+        far: { type: Number, reflect: true },
+        aspect: { type: Number, reflect: true },
+        makeDefault: { type: Boolean, attribute: "make-default", reflect: true },
+        position: { converter: vector3Converter, reflect: true },
+        rotation: { converter: vector3Converter, reflect: true },
+        scale: { converter: vector3Converter, reflect: true },
+        visible: { type: Boolean, reflect: true },
+    };
 
-    @property({ type: Number, reflect: true })
-    public accessor near: number = DEFAULT_CAMERA_NEAR;
-
-    @property({ type: Number, reflect: true })
-    public accessor far: number = DEFAULT_CAMERA_FAR;
-
-    @property({ type: Number, reflect: true })
-    public accessor aspect: number | undefined = undefined;
-
-    @property({ type: Boolean, attribute: "make-default", reflect: true })
-    public accessor makeDefault: boolean = DEFAULT_CAMERA_MAKE_DEFAULT;
-
-    @property({ converter: vector3Converter, reflect: true })
-    public accessor position: Vector3Tuple = DEFAULT_CAMERA_POSITION;
-
-    @property({ converter: vector3Converter, reflect: true })
-    public accessor rotation: Vector3Tuple = DEFAULT_CAMERA_ROTATION;
-
-    @property({ converter: vector3Converter, reflect: true })
-    public accessor scale: Vector3Tuple = DEFAULT_CAMERA_SCALE;
-
-    @property({ type: Boolean, reflect: true })
-    public accessor visible: boolean = DEFAULT_CAMERA_VISIBLE;
+    public declare fov: number;
+    public declare near: number;
+    public declare far: number;
+    public declare aspect: number | undefined;
+    public declare makeDefault: boolean;
+    public declare position: Vector3Tuple;
+    public declare rotation: Vector3Tuple;
+    public declare scale: Vector3Tuple;
+    public declare visible: boolean;
 
     private readonly _camera: PerspectiveCamera = new PerspectiveCamera({
         fov: DEFAULT_CAMERA_FOV,
@@ -77,6 +71,15 @@ export class PerspectiveCameraElement extends LitElement {
 
     public constructor() {
         super();
+        this.fov = DEFAULT_CAMERA_FOV;
+        this.near = DEFAULT_CAMERA_NEAR;
+        this.far = DEFAULT_CAMERA_FAR;
+        this.aspect = undefined;
+        this.makeDefault = DEFAULT_CAMERA_MAKE_DEFAULT;
+        this.position = DEFAULT_CAMERA_POSITION;
+        this.rotation = DEFAULT_CAMERA_ROTATION;
+        this.scale = DEFAULT_CAMERA_SCALE;
+        this.visible = DEFAULT_CAMERA_VISIBLE;
 
         this._sceneConsumer = new ContextConsumer(this, {
             context: sceneContext,

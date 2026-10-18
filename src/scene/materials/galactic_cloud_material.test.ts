@@ -256,19 +256,6 @@ describe("GalacticCloudMaterial", () => {
         });
     });
 
-    describe(".dispose()", () => {
-        it("executes without error", () => {
-            const material = new GalacticCloudMaterial();
-            expect(() => material.dispose()).not.toThrow();
-        });
-
-        it("is idempotent when called multiple times", () => {
-            const material = new GalacticCloudMaterial();
-            material.dispose();
-            expect(() => material.dispose()).not.toThrow();
-        });
-    });
-
     describe("Material inherited contracts", () => {
         it("supports fluent setUniform chaining", () => {
             const material = new GalacticCloudMaterial();

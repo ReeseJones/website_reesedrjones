@@ -1,5 +1,4 @@
 import { LitElement, type PropertyValues } from "lit";
-import { property } from "lit/decorators.js";
 import { ContextConsumer, ContextProvider } from "@lit/context";
 import { SceneNode } from "../core/scene_node";
 import { vector3Converter } from "../../lit/converters/vector3_converter";
@@ -25,20 +24,19 @@ import {
  * wiring itself to parent and child nodes via @lit/context.
  */
 export class Node3DElement extends LitElement {
-    @property({ type: String, reflect: true })
-    public accessor name: string = DEFAULT_NODE_3D_NAME;
+    public static override properties = {
+        name: { type: String, reflect: true },
+        position: { converter: vector3Converter, reflect: true },
+        rotation: { converter: vector3Converter, reflect: true },
+        scale: { converter: vector3Converter, reflect: true },
+        visible: { type: Boolean, reflect: true },
+    };
 
-    @property({ converter: vector3Converter, reflect: true })
-    public accessor position: Vector3Tuple = DEFAULT_NODE_3D_POSITION;
-
-    @property({ converter: vector3Converter, reflect: true })
-    public accessor rotation: Vector3Tuple = DEFAULT_NODE_3D_ROTATION;
-
-    @property({ converter: vector3Converter, reflect: true })
-    public accessor scale: Vector3Tuple = DEFAULT_NODE_3D_SCALE;
-
-    @property({ type: Boolean, reflect: true })
-    public accessor visible: boolean = DEFAULT_NODE_3D_VISIBLE;
+    public declare name: string;
+    public declare position: Vector3Tuple;
+    public declare rotation: Vector3Tuple;
+    public declare scale: Vector3Tuple;
+    public declare visible: boolean;
 
     private readonly _node: SceneNode = new SceneNode();
     private readonly _parentConsumer: ContextConsumer<typeof parentNodeContext, Node3DElement>;
@@ -48,6 +46,11 @@ export class Node3DElement extends LitElement {
 
     public constructor() {
         super();
+        this.name = DEFAULT_NODE_3D_NAME;
+        this.position = DEFAULT_NODE_3D_POSITION;
+        this.rotation = DEFAULT_NODE_3D_ROTATION;
+        this.scale = DEFAULT_NODE_3D_SCALE;
+        this.visible = DEFAULT_NODE_3D_VISIBLE;
 
         this._parentConsumer = new ContextConsumer(this, {
             context: parentNodeContext,

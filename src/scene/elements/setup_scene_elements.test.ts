@@ -5,11 +5,15 @@ import { SceneElement } from "./scene_element";
 import { PerspectiveCameraElement } from "./perspective_camera_element";
 import { Node3DElement } from "./node_3d_element";
 import { ModelInstanceElement } from "./model_instance_element";
+import { GalacticCloudElement } from "../../galaxy_backdrop/elements/galactic_cloud_element";
+import { GalaxyStarsElement } from "../../galaxy_backdrop/elements/galaxy_stars_element";
 import { TAG_RJ_WEBGL_CANVAS } from "./webgl_canvas_element_constants";
 import { TAG_RJ_SCENE } from "./scene_element_constants";
 import { TAG_RJ_PERSPECTIVE_CAMERA } from "./perspective_camera_element_constants";
 import { TAG_RJ_NODE_3D } from "./node_3d_element_constants";
 import { TAG_RJ_MODEL_INSTANCE } from "./model_instance_element_constants";
+import { TAG_RJ_GALACTIC_CLOUD } from "../../galaxy_backdrop/elements/galactic_cloud_element_constants";
+import { TAG_RJ_GALAXY_STARS } from "../../galaxy_backdrop/elements/galaxy_stars_element_constants";
 
 describe("setupSceneElements()", () => {
     beforeEach(() => {
@@ -17,12 +21,14 @@ describe("setupSceneElements()", () => {
     });
 
     describe("custom element registration", () => {
-        it("should register all 5 custom element tag names with customElements", () => {
+        it("should register all 7 custom element tag names with customElements", () => {
             expect(customElements.get(TAG_RJ_WEBGL_CANVAS)).toBe(WebGLCanvasElement);
             expect(customElements.get(TAG_RJ_SCENE)).toBe(SceneElement);
             expect(customElements.get(TAG_RJ_PERSPECTIVE_CAMERA)).toBe(PerspectiveCameraElement);
             expect(customElements.get(TAG_RJ_NODE_3D)).toBe(Node3DElement);
             expect(customElements.get(TAG_RJ_MODEL_INSTANCE)).toBe(ModelInstanceElement);
+            expect(customElements.get(TAG_RJ_GALACTIC_CLOUD)).toBe(GalacticCloudElement);
+            expect(customElements.get(TAG_RJ_GALAXY_STARS)).toBe(GalaxyStarsElement);
         });
 
         it("should register TAG_RJ_WEBGL_CANVAS ('rj-webgl-canvas') to WebGLCanvasElement", () => {
@@ -49,6 +55,16 @@ describe("setupSceneElements()", () => {
             expect(TAG_RJ_MODEL_INSTANCE).toBe("rj-model-instance");
             expect(customElements.get(TAG_RJ_MODEL_INSTANCE)).toBe(ModelInstanceElement);
         });
+
+        it("should register TAG_RJ_GALACTIC_CLOUD ('rj-galactic-cloud') to GalacticCloudElement", () => {
+            expect(TAG_RJ_GALACTIC_CLOUD).toBe("rj-galactic-cloud");
+            expect(customElements.get(TAG_RJ_GALACTIC_CLOUD)).toBe(GalacticCloudElement);
+        });
+
+        it("should register TAG_RJ_GALAXY_STARS ('rj-galaxy-stars') to GalaxyStarsElement", () => {
+            expect(TAG_RJ_GALAXY_STARS).toBe("rj-galaxy-stars");
+            expect(customElements.get(TAG_RJ_GALAXY_STARS)).toBe(GalaxyStarsElement);
+        });
     });
 
     describe("idempotency", () => {
@@ -64,6 +80,8 @@ describe("setupSceneElements()", () => {
             expect(customElements.get(TAG_RJ_PERSPECTIVE_CAMERA)).toBe(PerspectiveCameraElement);
             expect(customElements.get(TAG_RJ_NODE_3D)).toBe(Node3DElement);
             expect(customElements.get(TAG_RJ_MODEL_INSTANCE)).toBe(ModelInstanceElement);
+            expect(customElements.get(TAG_RJ_GALACTIC_CLOUD)).toBe(GalacticCloudElement);
+            expect(customElements.get(TAG_RJ_GALAXY_STARS)).toBe(GalaxyStarsElement);
         });
     });
 
@@ -98,13 +116,27 @@ describe("setupSceneElements()", () => {
             expect(el.tagName.toLowerCase()).toBe(TAG_RJ_MODEL_INSTANCE);
         });
 
-        it("should instantiate each registered tag successfully across all 5 definitions", () => {
+        it("should instantiate GalacticCloudElement via document.createElement(TAG_RJ_GALACTIC_CLOUD)", () => {
+            const el = document.createElement(TAG_RJ_GALACTIC_CLOUD);
+            expect(el).toBeInstanceOf(GalacticCloudElement);
+            expect(el.tagName.toLowerCase()).toBe(TAG_RJ_GALACTIC_CLOUD);
+        });
+
+        it("should instantiate GalaxyStarsElement via document.createElement(TAG_RJ_GALAXY_STARS)", () => {
+            const el = document.createElement(TAG_RJ_GALAXY_STARS);
+            expect(el).toBeInstanceOf(GalaxyStarsElement);
+            expect(el.tagName.toLowerCase()).toBe(TAG_RJ_GALAXY_STARS);
+        });
+
+        it("should instantiate each registered tag successfully across all 7 definitions", () => {
             const definitions = [
                 { tag: TAG_RJ_WEBGL_CANVAS, constructorFn: WebGLCanvasElement },
                 { tag: TAG_RJ_SCENE, constructorFn: SceneElement },
                 { tag: TAG_RJ_PERSPECTIVE_CAMERA, constructorFn: PerspectiveCameraElement },
                 { tag: TAG_RJ_NODE_3D, constructorFn: Node3DElement },
                 { tag: TAG_RJ_MODEL_INSTANCE, constructorFn: ModelInstanceElement },
+                { tag: TAG_RJ_GALACTIC_CLOUD, constructorFn: GalacticCloudElement },
+                { tag: TAG_RJ_GALAXY_STARS, constructorFn: GalaxyStarsElement },
             ] as const;
 
             for (const { tag, constructorFn } of definitions) {

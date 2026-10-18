@@ -1,5 +1,4 @@
 import { LitElement, type PropertyValues } from "lit";
-import { property } from "lit/decorators.js";
 import { ContextConsumer, ContextProvider } from "@lit/context";
 import { Scene } from "../core/scene";
 import type { IScene, SceneFrameCallback } from "../core/scene_types";
@@ -29,11 +28,13 @@ import {
  * and providing hierarchical scene and parent node contexts via @lit/context.
  */
 export class SceneElement extends LitElement implements ISceneContext {
-    @property({ type: Number, reflect: true })
-    public accessor priority: number = DEFAULT_SCENE_PASS_PRIORITY;
+    public static override properties = {
+        priority: { type: Number, reflect: true },
+        clearDepth: { type: Boolean, attribute: "clear-depth", reflect: true },
+    };
 
-    @property({ type: Boolean, attribute: "clear-depth", reflect: true })
-    public accessor clearDepth: boolean = DEFAULT_SCENE_CLEAR_DEPTH;
+    public declare priority: number;
+    public declare clearDepth: boolean;
 
     private readonly _scene: Scene;
     private readonly _sceneProvider: ContextProvider<typeof sceneContext>;
@@ -46,6 +47,8 @@ export class SceneElement extends LitElement implements ISceneContext {
 
     public constructor() {
         super();
+        this.priority = DEFAULT_SCENE_PASS_PRIORITY;
+        this.clearDepth = DEFAULT_SCENE_CLEAR_DEPTH;
         this._scene = new Scene(DEFAULT_SCENE_ROOT_NAME);
 
         this._sceneProvider = new ContextProvider(this, {

@@ -1,5 +1,4 @@
 import { LitElement, type PropertyValues } from "lit";
-import { property } from "lit/decorators.js";
 import { ContextConsumer, ContextProvider } from "@lit/context";
 import { ModelInstance } from "../models/model_instance";
 import type { IMeshGeometry } from "../models/mesh_geometry_types";
@@ -28,29 +27,25 @@ import {
  * programmatic ModelInstance, wiring itself to parent and child nodes via @lit/context.
  */
 export class ModelInstanceElement extends LitElement {
-    @property({ type: String, reflect: true })
-    public accessor name: string = DEFAULT_MODEL_INSTANCE_NAME;
+    public static override properties = {
+        name: { type: String, reflect: true },
+        position: { converter: vector3Converter, reflect: true },
+        rotation: { converter: vector3Converter, reflect: true },
+        scale: { converter: vector3Converter, reflect: true },
+        visible: { type: Boolean, reflect: true },
+        renderOrder: { type: Number, attribute: "render-order", reflect: true },
+        geometry: { attribute: false },
+        material: { attribute: false },
+    };
 
-    @property({ converter: vector3Converter, reflect: true })
-    public accessor position: Vector3Tuple = DEFAULT_MODEL_INSTANCE_POSITION;
-
-    @property({ converter: vector3Converter, reflect: true })
-    public accessor rotation: Vector3Tuple = DEFAULT_MODEL_INSTANCE_ROTATION;
-
-    @property({ converter: vector3Converter, reflect: true })
-    public accessor scale: Vector3Tuple = DEFAULT_MODEL_INSTANCE_SCALE;
-
-    @property({ type: Boolean, reflect: true })
-    public accessor visible: boolean = DEFAULT_MODEL_INSTANCE_VISIBLE;
-
-    @property({ type: Number, attribute: "render-order", reflect: true })
-    public accessor renderOrder: number = DEFAULT_MODEL_INSTANCE_RENDER_ORDER;
-
-    @property({ attribute: false })
-    public accessor geometry: IMeshGeometry | undefined = undefined;
-
-    @property({ attribute: false })
-    public accessor material: IMaterial | undefined = undefined;
+    public declare name: string;
+    public declare position: Vector3Tuple;
+    public declare rotation: Vector3Tuple;
+    public declare scale: Vector3Tuple;
+    public declare visible: boolean;
+    public declare renderOrder: number;
+    public declare geometry: IMeshGeometry | undefined;
+    public declare material: IMaterial | undefined;
 
     private readonly _modelInstance: ModelInstance = new ModelInstance();
     private readonly _parentConsumer: ContextConsumer<typeof parentNodeContext, ModelInstanceElement>;
@@ -60,6 +55,14 @@ export class ModelInstanceElement extends LitElement {
 
     public constructor() {
         super();
+        this.name = DEFAULT_MODEL_INSTANCE_NAME;
+        this.position = DEFAULT_MODEL_INSTANCE_POSITION;
+        this.rotation = DEFAULT_MODEL_INSTANCE_ROTATION;
+        this.scale = DEFAULT_MODEL_INSTANCE_SCALE;
+        this.visible = DEFAULT_MODEL_INSTANCE_VISIBLE;
+        this.renderOrder = DEFAULT_MODEL_INSTANCE_RENDER_ORDER;
+        this.geometry = undefined;
+        this.material = undefined;
 
         this._parentConsumer = new ContextConsumer(this, {
             context: parentNodeContext,

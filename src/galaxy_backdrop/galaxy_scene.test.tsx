@@ -410,10 +410,9 @@ describe("Declarative Galaxy Backdrop Components", () => {
             }
         });
 
-        it("disposes ScreenQuadGeometry and GalacticCloudMaterial on unmount", () => {
+        it("disposes ScreenQuadGeometry on unmount", () => {
             const { contextValue } = createMockCanvasContext();
             const geoDisposeSpy = vi.spyOn(ScreenQuadGeometry.prototype, "dispose");
-            const matDisposeSpy = vi.spyOn(GalacticCloudMaterial.prototype, "dispose");
 
             try {
                 const params = createTestGalaxyParams();
@@ -430,10 +429,8 @@ describe("Declarative Galaxy Backdrop Components", () => {
                 unmount();
 
                 expect(geoDisposeSpy).toHaveBeenCalledTimes(1);
-                expect(matDisposeSpy).toHaveBeenCalled();
             } finally {
                 geoDisposeSpy.mockRestore();
-                matDisposeSpy.mockRestore();
             }
         });
     });
