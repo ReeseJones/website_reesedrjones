@@ -7,6 +7,7 @@ import {
 } from "./perspective_camera_element";
 import {
     TAG_RJ_PERSPECTIVE_CAMERA,
+    DEFAULT_CAMERA_NAME,
     DEFAULT_CAMERA_FOV,
     DEFAULT_CAMERA_NEAR,
     DEFAULT_CAMERA_FAR,
@@ -97,6 +98,7 @@ describe("PerspectiveCameraElement", () => {
             const cam = element.camera;
 
             expect(cam).toBeInstanceOf(PerspectiveCamera);
+            expect(cam.name).toBe(DEFAULT_CAMERA_NAME);
             expect(cam.fov).toBe(DEFAULT_CAMERA_FOV);
             expect(cam.near).toBe(DEFAULT_CAMERA_NEAR);
             expect(cam.far).toBe(DEFAULT_CAMERA_FAR);
@@ -108,6 +110,33 @@ describe("PerspectiveCameraElement", () => {
     });
 
     describe("properties", () => {
+        describe("name", () => {
+            it("should default to DEFAULT_CAMERA_NAME", async () => {
+                await element.updateComplete;
+                expect(element.name).toBe(DEFAULT_CAMERA_NAME);
+                expect(element.camera.name).toBe(DEFAULT_CAMERA_NAME);
+            });
+
+            it("should reconcile to camera.name and reflect to attribute on property change", async () => {
+                const targetName = "MainFollowCamera";
+                element.name = targetName;
+                await element.updateComplete;
+
+                expect(element.name).toBe(targetName);
+                expect(element.camera.name).toBe(targetName);
+                expect(element.getAttribute("name")).toBe(targetName);
+            });
+
+            it("should update property and camera.name on attribute change", async () => {
+                const attributeName = "CinematicCutsceneCamera";
+                element.setAttribute("name", attributeName);
+                await element.updateComplete;
+
+                expect(element.name).toBe(attributeName);
+                expect(element.camera.name).toBe(attributeName);
+            });
+        });
+
         describe("fov", () => {
             it("should default to DEFAULT_CAMERA_FOV", () => {
                 expect(element.fov).toBe(DEFAULT_CAMERA_FOV);

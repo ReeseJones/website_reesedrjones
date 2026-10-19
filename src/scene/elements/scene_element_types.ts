@@ -10,6 +10,7 @@ import type { SceneElement } from "./scene_element";
 export interface SceneElementProps {
     priority?: number;
     clearDepth?: boolean;
+    "clear-depth"?: boolean;
 }
 
 /**

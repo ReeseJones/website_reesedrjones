@@ -112,8 +112,8 @@ export class ModelInstanceElement extends LitElement {
         }
     }
 
-    protected override updated(changedProperties: PropertyValues<this>): void {
-        super.updated(changedProperties);
+    protected override willUpdate(changedProperties: PropertyValues<this>): void {
+        super.willUpdate(changedProperties);
 
         if (changedProperties.has("name")) {
             this._modelInstance.name = this.name;

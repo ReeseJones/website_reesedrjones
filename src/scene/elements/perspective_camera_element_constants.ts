@@ -6,6 +6,11 @@ import type { Vector3Tuple } from "../../lit/converters/vector3_converter_types"
 export const TAG_RJ_PERSPECTIVE_CAMERA = "rj-perspective-camera" as const;
 
 /**
+ * Default name for the underlying PerspectiveCamera instance node.
+ */
+export const DEFAULT_CAMERA_NAME = "PerspectiveCamera" as const;
+
+/**
  * Default camera vertical field of view in degrees.
  */
 export const DEFAULT_CAMERA_FOV = 60 as const;

@@ -5,11 +5,13 @@ import type { PerspectiveCameraElement } from "./perspective_camera_element";
  * Declarative property inputs for perspective camera elements (<rj-perspective-camera>).
  */
 export interface PerspectiveCameraElementProps {
+    name?: string;
     fov?: number;
     near?: number;
     far?: number;
     aspect?: number;
     makeDefault?: boolean;
+    "make-default"?: boolean;
     position?: Vector3Tuple;
     rotation?: Vector3Tuple;
     scale?: Vector3Tuple;

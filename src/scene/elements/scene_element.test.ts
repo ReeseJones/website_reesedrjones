@@ -93,6 +93,10 @@ function createMockCanvasContext(customCm?: IWebGLContextManager): MockCanvasCon
             aspect: 800 / 600,
         },
         isContextLost: false,
+        metrics: {
+            fps: 0,
+            frameTimeMs: 0,
+        },
         subscribe: subscribeSpy,
         requestRender: vi.fn(),
     };

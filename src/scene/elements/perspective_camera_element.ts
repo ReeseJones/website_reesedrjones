@@ -20,6 +20,7 @@ import {
     DEFAULT_CAMERA_POSITION,
     DEFAULT_CAMERA_ROTATION,
     DEFAULT_CAMERA_SCALE,
+    DEFAULT_CAMERA_NAME,
     VECTOR_INDEX_X,
     VECTOR_INDEX_Y,
     VECTOR_INDEX_Z,
@@ -33,6 +34,7 @@ import {
  */
 export class PerspectiveCameraElement extends LitElement {
     public static override properties = {
+        name: { type: String, reflect: true },
         fov: { type: Number, reflect: true },
         near: { type: Number, reflect: true },
         far: { type: Number, reflect: true },
@@ -44,6 +46,7 @@ export class PerspectiveCameraElement extends LitElement {
         visible: { type: Boolean, reflect: true },
     };
 
+    public declare name: string;
     public declare fov: number;
     public declare near: number;
     public declare far: number;
@@ -71,6 +74,7 @@ export class PerspectiveCameraElement extends LitElement {
 
     public constructor() {
         super();
+        this.name = DEFAULT_CAMERA_NAME;
         this.fov = DEFAULT_CAMERA_FOV;
         this.near = DEFAULT_CAMERA_NEAR;
         this.far = DEFAULT_CAMERA_FAR;
@@ -134,8 +138,12 @@ export class PerspectiveCameraElement extends LitElement {
         }
     }
 
-    protected override updated(changedProperties: PropertyValues<this>): void {
-        super.updated(changedProperties);
+    protected override willUpdate(changedProperties: PropertyValues<this>): void {
+        super.willUpdate(changedProperties);
+
+        if (changedProperties.has("name")) {
+            this._camera.name = this.name;
+        }
 
         if (
             changedProperties.has("fov") ||

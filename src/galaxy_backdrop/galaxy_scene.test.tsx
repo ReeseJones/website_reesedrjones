@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeAll, beforeEach, afterEach } from "vitest";
 import React, { createRef } from "react";
 import { render } from "@testing-library/react";
 import { Scene } from "../scene/react/scene_component";
@@ -42,6 +42,7 @@ import { GalaxyCameraRig } from "./galaxy_camera_rig";
 import { GalacticCloudModel } from "./galactic_cloud_model";
 import { GalaxyStarsModel } from "./galaxy_stars_model";
 import { GalaxyScene } from "./galaxy_scene";
+import { setupSceneElements } from "../scene/elements/setup_scene_elements";
 
 /**
  * Lightweight test parameter profile with a small starCount to keep pure-CPU geometry generation fast.
@@ -97,6 +98,10 @@ function createMockCanvasContext(aspect: number = 800 / 600) {
 describe("Declarative Galaxy Backdrop Components", () => {
     let scheduler: IMockAnimationFrameScheduler;
     let restoreGlobalScheduler: () => void;
+
+    beforeAll(() => {
+        setupSceneElements();
+    });
 
     beforeEach(() => {
         scheduler = createMockAnimationFrameScheduler(1000);
@@ -574,90 +579,82 @@ describe("Declarative Galaxy Backdrop Components", () => {
     });
 
     describe("<GalaxyScene />", () => {
-        it("composes <Scene />, <GalaxyCameraRig />, <GalacticCloudModel />, and <GalaxyStarsModel /> and registers pass at DEFAULT_GALAXY_SCENE_PRIORITY (0)", () => {
-            const { contextValue, subscribeSpy } = createMockCanvasContext();
+        it("composes <rj-scene>, <rj-galaxy-camera>, <rj-galactic-cloud>, and <rj-galaxy-stars> at DEFAULT_GALAXY_SCENE_PRIORITY (0)", () => {
             const params = createTestGalaxyParams({ fov: 65 });
 
-            render(
-                <WebGLCanvasContext.Provider value={contextValue}>
-                    <GalaxyScene params={params} />
-                </WebGLCanvasContext.Provider>
-            );
+            const { container } = render(<GalaxyScene params={params} />);
 
-            expect(subscribeSpy).toHaveBeenCalledTimes(1);
-            expect(subscribeSpy).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    priority: DEFAULT_GALAXY_SCENE_PRIORITY,
-                    render: expect.any(Function),
-                })
-            );
+            const sceneEl = container.querySelector("rj-scene") as (HTMLElement & { priority: number; clearDepth: boolean }) | null;
+            expect(sceneEl).not.toBeNull();
+            expect(sceneEl?.priority).toBe(DEFAULT_GALAXY_SCENE_PRIORITY);
+            expect(sceneEl?.hasAttribute("clear-depth")).toBe(false);
+
+            const cameraEl = container.querySelector("rj-galaxy-camera") as (HTMLElement & { fov: number; makeDefault: boolean; params: unknown }) | null;
+            expect(cameraEl).not.toBeNull();
+            expect(cameraEl?.fov).toBe(65);
+            expect(cameraEl?.makeDefault).toBe(true);
+            expect(cameraEl?.hasAttribute("make-default")).toBe(true);
+            expect(cameraEl?.params).toBe(params);
+
+            const cloudEl = container.querySelector("rj-galactic-cloud") as (HTMLElement & { params: unknown }) | null;
+            expect(cloudEl).not.toBeNull();
+            expect(cloudEl?.params).toBe(params);
+
+            const starsEl = container.querySelector("rj-galaxy-stars") as (HTMLElement & { params: unknown }) | null;
+            expect(starsEl).not.toBeNull();
+            expect(starsEl?.params).toBe(params);
+        });
+
+        it("forwards clearDepth prop to <rj-scene clear-depth>", () => {
+            const { container } = render(<GalaxyScene clearDepth={true} />);
+
+            const sceneEl = container.querySelector("rj-scene") as (HTMLElement & { clearDepth: boolean }) | null;
+            expect(sceneEl).not.toBeNull();
+            expect(sceneEl?.hasAttribute("clear-depth")).toBe(true);
         });
 
         it("resolves parameters with precedence: controller.params > params prop > DEFAULT_GALAXY_PARAMETERS, and forwards custom priority", () => {
-            const { contextValue, subscribeSpy } = createMockCanvasContext();
-            const cloudUpdateSpy = vi.spyOn(GalacticCloudMaterial.prototype, "updateParameters");
-            const starsUpdateSpy = vi.spyOn(GalaxyMaterial.prototype, "updateParameters");
+            const controllerParams = createTestGalaxyParams({ fov: 50, pointScale: 3.5 });
+            const propParams = createTestGalaxyParams({ fov: 80, pointScale: 1.5 });
 
-            try {
-                const controllerParams = createTestGalaxyParams({ fov: 50, pointScale: 3.5 });
-                const propParams = createTestGalaxyParams({ fov: 80, pointScale: 1.5 });
+            const mockController: GalaxyController = {
+                params: controllerParams,
+                updateParameters: vi.fn(),
+                resetParameters: vi.fn(),
+                applyPreset: vi.fn(),
+                currentPresetId: "custom",
+            };
 
-                const mockController: GalaxyController = {
-                    params: controllerParams,
-                    updateParameters: vi.fn(),
-                    resetParameters: vi.fn(),
-                    applyPreset: vi.fn(),
-                    currentPresetId: "custom",
-                };
+            // 1. controller.params takes precedence over params prop
+            const { container, rerender } = render(
+                <GalaxyScene
+                    controller={mockController}
+                    params={propParams}
+                    priority={15}
+                />
+            );
 
-                // 1. controller.params takes precedence over params prop
-                const { rerender } = render(
-                    <WebGLCanvasContext.Provider value={contextValue}>
-                        <GalaxyScene
-                            controller={mockController}
-                            params={propParams}
-                            priority={15}
-                        />
-                    </WebGLCanvasContext.Provider>
-                );
+            const sceneEl = container.querySelector("rj-scene") as (HTMLElement & { priority: number }) | null;
+            expect(sceneEl?.priority).toBe(15);
 
-                expect(subscribeSpy).toHaveBeenCalledWith(
-                    expect.objectContaining({
-                        priority: 15,
-                    })
-                );
-                expect(cloudUpdateSpy).toHaveBeenCalledWith(controllerParams);
-                expect(starsUpdateSpy).toHaveBeenCalledWith(controllerParams);
+            const cameraEl = container.querySelector("rj-galaxy-camera") as (HTMLElement & { params: unknown }) | null;
+            const cloudEl = container.querySelector("rj-galactic-cloud") as (HTMLElement & { params: unknown }) | null;
+            const starsEl = container.querySelector("rj-galaxy-stars") as (HTMLElement & { params: unknown }) | null;
+            expect(cameraEl?.params).toBe(controllerParams);
+            expect(cloudEl?.params).toBe(controllerParams);
+            expect(starsEl?.params).toBe(controllerParams);
 
-                // 2. params prop is used when controller is omitted
-                cloudUpdateSpy.mockClear();
-                starsUpdateSpy.mockClear();
+            // 2. params prop is used when controller is omitted
+            rerender(<GalaxyScene params={propParams} priority={15} />);
+            expect(cameraEl?.params).toBe(propParams);
+            expect(cloudEl?.params).toBe(propParams);
+            expect(starsEl?.params).toBe(propParams);
 
-                rerender(
-                    <WebGLCanvasContext.Provider value={contextValue}>
-                        <GalaxyScene params={propParams} priority={15} />
-                    </WebGLCanvasContext.Provider>
-                );
-
-                expect(cloudUpdateSpy).toHaveBeenCalledWith(propParams);
-                expect(starsUpdateSpy).toHaveBeenCalledWith(propParams);
-
-                // 3. DEFAULT_GALAXY_PARAMETERS is used when both controller and params are omitted
-                cloudUpdateSpy.mockClear();
-                starsUpdateSpy.mockClear();
-
-                rerender(
-                    <WebGLCanvasContext.Provider value={contextValue}>
-                        <GalaxyScene />
-                    </WebGLCanvasContext.Provider>
-                );
-
-                expect(cloudUpdateSpy).toHaveBeenCalledWith(DEFAULT_GALAXY_PARAMETERS);
-                expect(starsUpdateSpy).toHaveBeenCalledWith(DEFAULT_GALAXY_PARAMETERS);
-            } finally {
-                cloudUpdateSpy.mockRestore();
-                starsUpdateSpy.mockRestore();
-            }
+            // 3. DEFAULT_GALAXY_PARAMETERS is used when both controller and params are omitted
+            rerender(<GalaxyScene />);
+            expect(cameraEl?.params).toBe(DEFAULT_GALAXY_PARAMETERS);
+            expect(cloudEl?.params).toBe(DEFAULT_GALAXY_PARAMETERS);
+            expect(starsEl?.params).toBe(DEFAULT_GALAXY_PARAMETERS);
         });
     });
 });
