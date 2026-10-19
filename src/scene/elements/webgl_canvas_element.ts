@@ -15,6 +15,7 @@ import type { WebGLSubscriber } from "../../webgl/canvas/subscriber_types";
 import {
     webglCanvasContext,
     type IWebGLCanvasContext,
+    type WebGLCanvasMetrics,
     type WebGLCanvasRenderMode,
 } from "./webgl_canvas_element_types";
 import {
@@ -32,6 +33,8 @@ import {
     DEFAULT_RESIZE_DEBOUNCE_MS,
     DEFAULT_WEBGL_CONTEXT_ATTRIBUTES,
     CONTEXT_SIMULATE_LOSS_DEFAULT_DELAY_MS,
+    DEFAULT_METRICS_INTERVAL_SEC,
+    MS_PER_SECOND,
 } from "./webgl_canvas_element_constants";
 import { ResizeController } from "../../controllers/resize_controller";
 import { defaultResizeObserverFactory } from "../../controllers/resize_observer_factory";
@@ -100,6 +103,10 @@ export class WebGLCanvasElement extends LitElement implements IWebGLCanvasContex
     private _isContextLost: boolean = false;
     private _frameUnsubscribe: (() => void) | null = null;
     private _lastTimeInfo: TimeInfo = { time: 0, dt: 0, frameCount: 0 };
+    private _metricsFrameCount: number = 0;
+    private _metricsAccumulatedTime: number = 0;
+    private _fps: number = 0;
+    private _frameTimeMs: number = 0;
 
     private _dimensions: CanvasDimensions = {
         width: DEFAULT_FALLBACK_DIMENSION,
@@ -214,6 +221,13 @@ export class WebGLCanvasElement extends LitElement implements IWebGLCanvasContex
         return this._isContextLost;
     }
 
+    public get metrics(): WebGLCanvasMetrics {
+        return {
+            fps: this._fps,
+            frameTimeMs: this._frameTimeMs,
+        };
+    }
+
     public subscribe(subscriber: WebGLSubscriber): () => void {
         const unsubscribe = this._subscriberManager.subscribe(subscriber);
 
@@ -254,6 +268,11 @@ export class WebGLCanvasElement extends LitElement implements IWebGLCanvasContex
         this._frameUnsubscribe?.();
         this._frameUnsubscribe = null;
         this._animManager.destroy();
+
+        this._metricsFrameCount = 0;
+        this._metricsAccumulatedTime = 0;
+        this._fps = 0;
+        this._frameTimeMs = 0;
 
         const canvas = this._canvasRef.value;
         if (canvas) {
@@ -352,6 +371,19 @@ export class WebGLCanvasElement extends LitElement implements IWebGLCanvasContex
     }
 
     private _renderFrame(timeInfo: TimeInfo): void {
+        this._metricsFrameCount++;
+        this._metricsAccumulatedTime += timeInfo.dt;
+
+        if (this._metricsAccumulatedTime >= DEFAULT_METRICS_INTERVAL_SEC) {
+            if (this._metricsFrameCount > 0 && this._metricsAccumulatedTime > 0) {
+                this._fps = this._metricsFrameCount / this._metricsAccumulatedTime;
+                this._frameTimeMs =
+                    (this._metricsAccumulatedTime * MS_PER_SECOND) / this._metricsFrameCount;
+            }
+            this._metricsFrameCount = 0;
+            this._metricsAccumulatedTime = 0;
+        }
+
         if (this._gl && !this._isContextLost) {
             this._lastTimeInfo = timeInfo;
             this._subscriberManager.notifyRender(this._gl, timeInfo, this._dimensions);

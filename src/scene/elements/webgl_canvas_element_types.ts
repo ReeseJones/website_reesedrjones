@@ -11,9 +11,21 @@ export type WebGLCanvasRenderMode = "continuous" | "on-demand";
  */
 export interface WebGLCanvasElementProps {
     dprCap?: number;
+    "dpr-cap"?: number;
     renderMode?: WebGLCanvasRenderMode;
+    "render-mode"?: WebGLCanvasRenderMode;
     pauseWhenOffscreen?: boolean;
+    "pause-when-offscreen"?: boolean;
     pauseWhenHidden?: boolean;
+    "pause-when-hidden"?: boolean;
+}
+
+/**
+ * Real-time performance telemetry metrics captured by the WebGL canvas host element.
+ */
+export interface WebGLCanvasMetrics {
+    fps: number;
+    frameTimeMs: number;
 }
 
 /**
@@ -24,6 +36,7 @@ export interface IWebGLCanvasContext {
     readonly contextManager: IWebGLContextManager;
     readonly dimensions: CanvasDimensions;
     readonly isContextLost: boolean;
+    readonly metrics: WebGLCanvasMetrics;
     subscribe(subscriber: WebGLSubscriber): () => void;
     requestRender(): void;
 }

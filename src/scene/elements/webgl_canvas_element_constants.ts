@@ -33,3 +33,14 @@ export const DEFAULT_WEBGL_CONTEXT_ATTRIBUTES: WebGLContextAttributes = {
  * Debug context simulator default delay.
  */
 export const CONTEXT_SIMULATE_LOSS_DEFAULT_DELAY_MS = 1500;
+
+/**
+ * Throttle interval in seconds for calculating FPS telemetry metrics.
+ */
+export const DEFAULT_METRICS_INTERVAL_SEC = 0.25;
+
+/**
+ * Milliseconds per second conversion constant.
+ */
+export const MS_PER_SECOND = 1000;
+

@@ -265,6 +265,71 @@ describe("WebGLCanvasElement", () => {
                 expect(element.isContextLost).toBe(false);
             });
         });
+
+        describe(".metrics", () => {
+            it("should return initial metrics with fps: 0 and frameTimeMs: 0", () => {
+                expect(element.metrics).toEqual({
+                    fps: 0,
+                    frameTimeMs: 0,
+                });
+            });
+
+            it("should update metrics after simulated frames exceed metrics sample interval (0.25s)", () => {
+                const scheduler = createMockAnimationFrameScheduler(1000);
+                const uninstallScheduler = scheduler.installGlobal();
+
+                const metricsElement = document.createElement(TAG_RJ_WEBGL_CANVAS) as WebGLCanvasElement;
+                document.body.appendChild(metricsElement);
+
+                try {
+                    expect(metricsElement.metrics).toEqual({ fps: 0, frameTimeMs: 0 });
+
+                    // Simulate 5 frames of 16ms = 80ms (< 0.25s threshold)
+                    for (let i = 0; i < 5; i++) {
+                        scheduler.stepFrame(16);
+                    }
+                    expect(metricsElement.metrics).toEqual({ fps: 0, frameTimeMs: 0 });
+
+                    // Simulate 11 more frames of 16ms (total 16 frames * 16ms = 256ms > 250ms = 0.25s)
+                    for (let i = 0; i < 11; i++) {
+                        scheduler.stepFrame(16);
+                    }
+
+                    const metrics = metricsElement.metrics;
+                    expect(metrics.fps).toBeGreaterThan(0);
+                    expect(metrics.frameTimeMs).toBeGreaterThan(0);
+                    // 16 frames over 0.256s is 62.5 FPS, 16.0ms per frame
+                    expect(metrics.fps).toBeCloseTo(62.5, 1);
+                    expect(metrics.frameTimeMs).toBeCloseTo(16.0, 1);
+                } finally {
+                    metricsElement.destroy();
+                    metricsElement.remove();
+                    uninstallScheduler();
+                }
+            });
+
+            it("should reset metrics to fps: 0 and frameTimeMs: 0 on destroy()", () => {
+                const scheduler = createMockAnimationFrameScheduler(1000);
+                const uninstallScheduler = scheduler.installGlobal();
+
+                const metricsElement = document.createElement(TAG_RJ_WEBGL_CANVAS) as WebGLCanvasElement;
+                document.body.appendChild(metricsElement);
+
+                try {
+                    // Exceed 0.25s threshold (16 frames of 16ms = 256ms)
+                    for (let i = 0; i < 16; i++) {
+                        scheduler.stepFrame(16);
+                    }
+                    expect(metricsElement.metrics.fps).toBeGreaterThan(0);
+
+                    metricsElement.destroy();
+                    expect(metricsElement.metrics).toEqual({ fps: 0, frameTimeMs: 0 });
+                } finally {
+                    metricsElement.remove();
+                    uninstallScheduler();
+                }
+            });
+        });
     });
 
     describe(".subscribe()", () => {

@@ -3,7 +3,6 @@ import { useState, type ReactNode, useCallback } from "react";
 import { Footer } from "../components/footer";
 import { Header } from "../components/header";
 import { useGalaxyController } from "../galaxy_backdrop/use_galaxy_controller";
-import { WebGLCanvas } from "../components/webgl_canvas/webgl_canvas";
 import { GalaxyScene } from "../galaxy_backdrop/galaxy_scene";
 import { SettingsDialog } from "../components/settings_dialog/settings_dialog";
 import { SettingsTab } from "../components/settings_dialog/settings_tab";
@@ -13,7 +12,6 @@ import { Outlet } from "react-router-dom";
 import { useResizeCallbackRef } from "../hooks/use_resize_callback_ref";
 import type { Dimensions } from "../hooks/use_resize_callback_ref_types";
 import { classNameMap } from "../lib/classNameMap";
-import { FpsCounter } from "../components/webgl_canvas/fps_counter";
 import {
     SiteSettingsProvider,
     useSiteSettingsContext,
@@ -54,13 +52,10 @@ function LayoutContent(props: LayoutProps): React.JSX.Element {
 
     return (
         <div className={classMap} ref={setObserveTarget}>
-            <WebGLCanvas
-                options={{
-                    version: "webgl2",
-                    dprCap: backdropGalaxy.params.dprCap ?? 1.5,
-                    pauseWhenOffscreen: true,
-                    pauseWhenHidden: true,
-                }}
+            <rj-webgl-canvas
+                dpr-cap={backdropGalaxy.params.dprCap ?? 1.5}
+                pause-when-offscreen
+                pause-when-hidden
                 className="hero-effect"
                 style={{
                     position: "absolute",
@@ -72,8 +67,8 @@ function LayoutContent(props: LayoutProps): React.JSX.Element {
                 }}
             >
                 <GalaxyScene controller={backdropGalaxy} />
-                {settings.debug.showFps && <FpsCounter position="top-left" />}
-            </WebGLCanvas>
+                {settings.debug.showFps && <rj-webgl-fps-counter position="top-left" />}
+            </rj-webgl-canvas>
 
             <Header onOpenSettings={() => setIsSettingsOpen(true)} />
             <div className="scroll-region">
