@@ -1,8 +1,6 @@
 import { LitElement, type PropertyValues } from "lit";
 import { ContextConsumer, ContextProvider } from "@lit/context";
 import { ModelInstance } from "../../scene/models/model_instance";
-import type { IMeshGeometry } from "../../scene/models/mesh_geometry_types";
-import type { IMaterial } from "../../scene/materials/material_types";
 import type { ISceneNode } from "../../scene/core/scene_node_types";
 import {
     parentNodeContext,
@@ -23,7 +21,6 @@ import {
 } from "../../scene/materials/galactic_cloud_material_constants";
 import { DEFAULT_GALAXY_PARAMETERS } from "../parameters/index";
 import type { GalacticCloudParameters, GalaxyParameters } from "../parameters/types";
-import type { GalaxyParallaxState } from "../galaxy_scene_types";
 import {
     DEFAULT_GALACTIC_CLOUD_NAME,
     DEFAULT_PARALLAX_PITCH_OFFSET,
@@ -41,21 +38,13 @@ import { getSharedCloudGeometry, getSharedCloudMaterial } from "../resources/gal
 export class GalacticCloudElement extends LitElement {
     public static override properties = {
         params: { attribute: false },
-        parallaxState: { attribute: false },
-        name: { type: String, reflect: true },
         renderOrder: { type: Number, attribute: "render-order", reflect: true },
         visible: { type: Boolean, reflect: true },
-        geometry: { attribute: false },
-        material: { attribute: false },
     };
 
     public declare params: GalacticCloudParameters | GalaxyParameters;
-    public declare parallaxState: GalaxyParallaxState;
-    public declare name: string;
     public declare renderOrder: number;
     public declare visible: boolean;
-    public declare geometry: IMeshGeometry | undefined;
-    public declare material: IMaterial | undefined;
 
     private readonly _modelInstance: ModelInstance = new ModelInstance();
     private readonly _sceneConsumer: ContextConsumer<typeof sceneContext, GalacticCloudElement>;
@@ -69,20 +58,13 @@ export class GalacticCloudElement extends LitElement {
     public constructor() {
         super();
         this.params = DEFAULT_GALAXY_PARAMETERS;
-        this.parallaxState = {
-            pitchOffset: DEFAULT_PARALLAX_PITCH_OFFSET,
-            yawOffset: DEFAULT_PARALLAX_YAW_OFFSET,
-        };
-        this.name = DEFAULT_GALACTIC_CLOUD_NAME;
         this.renderOrder = GALACTIC_CLOUD_RENDER_ORDER;
-        this.geometry = getSharedCloudGeometry();
-        this.material = getSharedCloudMaterial(this.params);
         this.visible = this.params.cloudEnabled ?? true;
 
-        this._modelInstance.name = this.name;
+        this._modelInstance.name = DEFAULT_GALACTIC_CLOUD_NAME;
         this._modelInstance.renderOrder = this.renderOrder;
-        this._modelInstance.geometry = this.geometry;
-        this._modelInstance.material = this.material;
+        this._modelInstance.geometry = getSharedCloudGeometry();
+        this._modelInstance.material = getSharedCloudMaterial(this.params);
         this._modelInstance.visible = this.visible;
 
         this._sceneConsumer = new ContextConsumer(this, {
@@ -150,17 +132,11 @@ export class GalacticCloudElement extends LitElement {
     }
 
     protected override willUpdate(changedProperties: PropertyValues<this>): void {
+        super.willUpdate(changedProperties);
+
         if (changedProperties.has("params")) {
             this.visible = this.params.cloudEnabled ?? true;
-            this.material = getSharedCloudMaterial(this.params);
-        }
-    }
-
-    protected override updated(changedProperties: PropertyValues<this>): void {
-        super.updated(changedProperties);
-
-        if (changedProperties.has("name")) {
-            this._modelInstance.name = this.name;
+            this._modelInstance.material = getSharedCloudMaterial(this.params);
         }
 
         if (changedProperties.has("renderOrder")) {
@@ -169,14 +145,6 @@ export class GalacticCloudElement extends LitElement {
 
         if (changedProperties.has("visible") || changedProperties.has("params")) {
             this._modelInstance.visible = this.visible;
-        }
-
-        if (changedProperties.has("geometry")) {
-            this._modelInstance.geometry = this.geometry;
-        }
-
-        if (changedProperties.has("material") || changedProperties.has("params")) {
-            this._modelInstance.material = this.material;
         }
     }
 
@@ -216,7 +184,7 @@ export class GalacticCloudElement extends LitElement {
     }
 
     private _onFrame(frameState: SceneFrameState): void {
-        const material = this.material;
+        const material = this._modelInstance.material;
         if (!(material instanceof GalacticCloudMaterial)) {
             return;
         }
@@ -226,25 +194,24 @@ export class GalacticCloudElement extends LitElement {
         let pitch = DEFAULT_CLOUD_PITCH;
         let yaw = DEFAULT_CLOUD_YAW;
         let roll = DEFAULT_CLOUD_ROLL;
-        let mouseSensitivity = DEFAULT_GALAXY_PARAMETERS.mouseSensitivity;
 
         if ("fov" in params) {
             fov = params.fov;
             pitch = params.pitchAngle;
             yaw = params.yawAngle;
             roll = params.rollAngle;
-            mouseSensitivity = params.mouseSensitivity;
         }
 
         const fovRad = fov * DEG_TO_RAD;
         const fovScale = Math.tan(fovRad * HALF_FOV_FACTOR);
 
         const parallaxFactor = this.params.cloudParallaxFactor ?? DEFAULT_CLOUD_PARALLAX_FACTOR;
-        const pitchOffset = this.parallaxState?.pitchOffset ?? DEFAULT_PARALLAX_PITCH_OFFSET;
-        const yawOffset = this.parallaxState?.yawOffset ?? DEFAULT_PARALLAX_YAW_OFFSET;
+        const cameraAngles = frameState.activeCamera?.transform.getEulerAngles();
+        const pitchOffset = cameraAngles ? cameraAngles.pitch - pitch : DEFAULT_PARALLAX_PITCH_OFFSET;
+        const yawOffset = cameraAngles ? cameraAngles.yaw - yaw : DEFAULT_PARALLAX_YAW_OFFSET;
 
-        const effectivePitchOffset = pitchOffset * mouseSensitivity * parallaxFactor;
-        const effectiveYawOffset = yawOffset * mouseSensitivity * parallaxFactor;
+        const effectivePitchOffset = pitchOffset * parallaxFactor;
+        const effectiveYawOffset = yawOffset * parallaxFactor;
 
         material.updateFrameUniforms({
             aspect: frameState.activeCamera?.aspect ?? DEFAULT_CLOUD_ASPECT,

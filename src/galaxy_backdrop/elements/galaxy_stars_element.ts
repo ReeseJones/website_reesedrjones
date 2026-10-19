@@ -1,8 +1,6 @@
 import { LitElement, type PropertyValues } from "lit";
 import { ContextConsumer, ContextProvider } from "@lit/context";
 import { ModelInstance } from "../../scene/models/model_instance";
-import type { IMeshGeometry } from "../../scene/models/mesh_geometry_types";
-import type { IMaterial } from "../../scene/materials/material_types";
 import type { ISceneNode } from "../../scene/core/scene_node_types";
 import { parentNodeContext } from "../../scene/elements/scene_element_types";
 import { DEFAULT_GALAXY_PARAMETERS } from "../parameters/index";
@@ -15,21 +13,15 @@ import { getSharedGalaxyGeometry, getSharedGalaxyMaterial } from "../resources/g
 
 /**
  * Declarative spiral galaxy starfield model element (<rj-galaxy-stars>).
- * Composes an internal programmatic ModelInstance and synchronizes procedural
- * GalaxyGeometry and GalaxyMaterial lifecycles with reactive GalaxyParameters inputs.
+ * Composes an internal programmatic ModelInstance, synchronizing procedural
+ * GalaxyGeometry and GalaxyMaterial lifecycles with the scene graph hierarchy.
  */
 export class GalaxyStarsElement extends LitElement {
     public static override properties = {
         params: { attribute: false },
-        name: { type: String, reflect: true },
-        geometry: { attribute: false },
-        material: { attribute: false },
     };
 
     public declare params: GalaxyParameters;
-    public declare name: string;
-    public declare geometry: IMeshGeometry | undefined;
-    public declare material: IMaterial | undefined;
 
     private readonly _modelInstance: ModelInstance = new ModelInstance();
     private readonly _parentConsumer: ContextConsumer<typeof parentNodeContext, GalaxyStarsElement>;
@@ -40,13 +32,10 @@ export class GalaxyStarsElement extends LitElement {
     public constructor() {
         super();
         this.params = DEFAULT_GALAXY_PARAMETERS;
-        this.name = DEFAULT_GALAXY_STARS_NAME;
-        this.geometry = getSharedGalaxyGeometry(this.params);
-        this.material = getSharedGalaxyMaterial(this.params);
 
-        this._modelInstance.name = this.name;
-        this._modelInstance.geometry = this.geometry;
-        this._modelInstance.material = this.material;
+        this._modelInstance.name = DEFAULT_GALAXY_STARS_NAME;
+        this._modelInstance.geometry = getSharedGalaxyGeometry(this.params);
+        this._modelInstance.material = getSharedGalaxyMaterial(this.params);
 
         this._parentConsumer = new ContextConsumer(this, {
             context: parentNodeContext,
@@ -97,25 +86,11 @@ export class GalaxyStarsElement extends LitElement {
     }
 
     protected override willUpdate(changedProperties: PropertyValues<this>): void {
+        super.willUpdate(changedProperties);
+
         if (changedProperties.has("params")) {
-            this.geometry = getSharedGalaxyGeometry(this.params);
-            this.material = getSharedGalaxyMaterial(this.params);
-        }
-    }
-
-    protected override updated(changedProperties: PropertyValues<this>): void {
-        super.updated(changedProperties);
-
-        if (changedProperties.has("name")) {
-            this._modelInstance.name = this.name;
-        }
-
-        if (changedProperties.has("geometry") || changedProperties.has("params")) {
-            this._modelInstance.geometry = this.geometry;
-        }
-
-        if (changedProperties.has("material") || changedProperties.has("params")) {
-            this._modelInstance.material = this.material;
+            this._modelInstance.geometry = getSharedGalaxyGeometry(this.params);
+            this._modelInstance.material = getSharedGalaxyMaterial(this.params);
         }
     }
 

@@ -1,5 +1,4 @@
 import type { GalacticCloudParameters, GalaxyParameters } from "../parameters/types";
-import type { GalaxyParallaxState } from "../galaxy_scene_types";
 import type { GalacticCloudElement } from "./galactic_cloud_element";
 
 /**
@@ -7,10 +6,9 @@ import type { GalacticCloudElement } from "./galactic_cloud_element";
  */
 export interface GalacticCloudElementProps {
     params?: GalacticCloudParameters | GalaxyParameters;
-    parallaxState?: GalaxyParallaxState;
-    name?: string;
     visible?: boolean;
     renderOrder?: number;
+    "render-order"?: number;
 }
 
 declare global {

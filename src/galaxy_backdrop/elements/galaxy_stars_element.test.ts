@@ -60,29 +60,28 @@ describe("GalaxyStarsElement", () => {
     });
 
     describe("defaults", () => {
-        it("should initialize with default name matching DEFAULT_GALAXY_STARS_NAME", async () => {
+        it("should initialize internal model instance name matching DEFAULT_GALAXY_STARS_NAME", async () => {
             await element.updateComplete;
 
-            expect(element.name).toBe(DEFAULT_GALAXY_STARS_NAME);
+            expect(element.node.name).toBe(DEFAULT_GALAXY_STARS_NAME);
             expect(element.modelInstance.name).toBe(DEFAULT_GALAXY_STARS_NAME);
+            expect(element.node).toBe(element.modelInstance);
         });
 
         it("should initialize with geometry matching getSharedGalaxyGeometry(params) singleton", async () => {
             await element.updateComplete;
 
             const expectedGeometry = getSharedGalaxyGeometry(element.params);
-            expect(element.geometry).toBe(expectedGeometry);
             expect(element.modelInstance.geometry).toBe(expectedGeometry);
-            expect(element.geometry).toBeInstanceOf(GalaxyGeometry);
+            expect(element.modelInstance.geometry).toBeInstanceOf(GalaxyGeometry);
         });
 
         it("should initialize with material matching getSharedGalaxyMaterial(params) singleton", async () => {
             await element.updateComplete;
 
             const expectedMaterial = getSharedGalaxyMaterial(element.params);
-            expect(element.material).toBe(expectedMaterial);
             expect(element.modelInstance.material).toBe(expectedMaterial);
-            expect(element.material).toBeInstanceOf(GalaxyMaterial);
+            expect(element.modelInstance.material).toBeInstanceOf(GalaxyMaterial);
         });
 
         it("should initialize params with DEFAULT_GALAXY_PARAMETERS", async () => {
@@ -96,7 +95,7 @@ describe("GalaxyStarsElement", () => {
         it("should synchronize geometry when morphology parameters are updated", async () => {
             await element.updateComplete;
 
-            const initialGeometry = element.geometry;
+            const initialGeometry = element.modelInstance.geometry;
             const updatedStarCount = 500;
 
             element.params = {
@@ -105,11 +104,11 @@ describe("GalaxyStarsElement", () => {
             };
             await element.updateComplete;
 
-            expect(element.geometry).toBe(initialGeometry);
-            expect(element.geometry).toBeInstanceOf(GalaxyGeometry);
-            const galaxyGeo = element.geometry as GalaxyGeometry;
+            expect(element.modelInstance.geometry).toBe(initialGeometry);
+            expect(element.modelInstance.geometry).toBeInstanceOf(GalaxyGeometry);
+            const galaxyGeo = element.modelInstance.geometry as GalaxyGeometry;
             expect(galaxyGeo.vertexCount).toBe(updatedStarCount);
-            expect(element.modelInstance.geometry).toBe(galaxyGeo);
+            expect(element.modelInstance.geometry).toBe(getSharedGalaxyGeometry(element.params));
         });
 
         it("should synchronize material when simulation parameters are updated", async () => {
@@ -125,7 +124,7 @@ describe("GalaxyStarsElement", () => {
             };
             await element.updateComplete;
 
-            const material = element.material as GalaxyMaterial;
+            const material = element.modelInstance.material as GalaxyMaterial;
             expect(material).toBeInstanceOf(GalaxyMaterial);
             expect(material.galaxyParams.rotationSpeed).toBe(targetRotationSpeed);
             expect(material.galaxyParams.pointScale).toBe(targetPointScale);
@@ -137,7 +136,7 @@ describe("GalaxyStarsElement", () => {
         it("should preserve geometry reference across non-morphology updates", async () => {
             await element.updateComplete;
 
-            const geometryBefore = element.geometry;
+            const geometryBefore = element.modelInstance.geometry;
 
             element.params = {
                 ...element.params,
@@ -145,7 +144,6 @@ describe("GalaxyStarsElement", () => {
             };
             await element.updateComplete;
 
-            expect(element.geometry).toBe(geometryBefore);
             expect(element.modelInstance.geometry).toBe(geometryBefore);
         });
     });

@@ -6,7 +6,6 @@ import type { GalaxyStarsElement } from "./galaxy_stars_element";
  */
 export interface GalaxyStarsElementProps {
     params?: GalaxyParameters;
-    name?: string;
     visible?: boolean;
 }
 

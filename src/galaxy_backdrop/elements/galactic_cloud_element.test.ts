@@ -76,11 +76,12 @@ describe("GalacticCloudElement", () => {
     });
 
     describe("defaults", () => {
-        it("should initialize with default name matching DEFAULT_GALACTIC_CLOUD_NAME", async () => {
+        it("should initialize internal model instance name matching DEFAULT_GALACTIC_CLOUD_NAME", async () => {
             await element.updateComplete;
 
-            expect(element.name).toBe(DEFAULT_GALACTIC_CLOUD_NAME);
+            expect(element.node.name).toBe(DEFAULT_GALACTIC_CLOUD_NAME);
             expect(element.modelInstance.name).toBe(DEFAULT_GALACTIC_CLOUD_NAME);
+            expect(element.node).toBe(element.modelInstance);
         });
 
         it("should initialize with default renderOrder matching GALACTIC_CLOUD_RENDER_ORDER", async () => {
@@ -94,18 +95,16 @@ describe("GalacticCloudElement", () => {
             await element.updateComplete;
 
             const expectedGeometry = getSharedCloudGeometry();
-            expect(element.geometry).toBe(expectedGeometry);
             expect(element.modelInstance.geometry).toBe(expectedGeometry);
-            expect(element.geometry).toBeInstanceOf(ScreenQuadGeometry);
+            expect(element.modelInstance.geometry).toBeInstanceOf(ScreenQuadGeometry);
         });
 
         it("should initialize with material matching getSharedCloudMaterial(params)", async () => {
             await element.updateComplete;
 
             const expectedMaterial = getSharedCloudMaterial(element.params);
-            expect(element.material).toBe(expectedMaterial);
             expect(element.modelInstance.material).toBe(expectedMaterial);
-            expect(element.material).toBeInstanceOf(GalacticCloudMaterial);
+            expect(element.modelInstance.material).toBeInstanceOf(GalacticCloudMaterial);
         });
 
         it("should initialize visible matching params.cloudEnabled", async () => {
@@ -116,14 +115,6 @@ describe("GalacticCloudElement", () => {
             expect(element.modelInstance.visible).toBe(expectedVisible);
         });
 
-        it("should initialize parallaxState with default offsets", async () => {
-            await element.updateComplete;
-
-            expect(element.parallaxState).toEqual({
-                pitchOffset: DEFAULT_PARALLAX_PITCH_OFFSET,
-                yawOffset: DEFAULT_PARALLAX_YAW_OFFSET,
-            });
-        });
 
         it("should initialize params with DEFAULT_GALAXY_PARAMETERS", async () => {
             await element.updateComplete;
@@ -201,7 +192,7 @@ describe("GalacticCloudElement", () => {
             };
             await element.updateComplete;
 
-            const material = element.material as GalacticCloudMaterial;
+            const material = element.modelInstance.material as GalacticCloudMaterial;
             expect(material).toBeInstanceOf(GalacticCloudMaterial);
             const uniforms = material.getUniforms();
             expect(uniforms.uHorizonIntensity).toBe(targetIntensity);
@@ -210,18 +201,8 @@ describe("GalacticCloudElement", () => {
         });
     });
 
-    describe("parallaxState reactivity", () => {
-        it("should update parallaxState property", async () => {
-            await element.updateComplete;
-
-            const nextState = { pitchOffset: 0.35, yawOffset: -0.15 };
-            element.parallaxState = nextState;
-            await element.updateComplete;
-
-            expect(element.parallaxState).toEqual(nextState);
-        });
-
-        it("should alter effective pitch and yaw offsets computed during frame tick", () => {
+    describe("camera orientation parallax reactivity", () => {
+        it("should derive effective pitch and yaw offsets from active camera transform during frame tick", () => {
             const sceneElement = document.createElement(TAG_RJ_SCENE) as SceneElement;
             document.body.appendChild(sceneElement);
 
@@ -237,34 +218,119 @@ describe("GalacticCloudElement", () => {
 
             expect(registeredFrameCallback).toBeDefined();
 
-            const cloudMaterial = element.material as GalacticCloudMaterial;
+            const cloudMaterial = element.modelInstance.material as GalacticCloudMaterial;
             const updateSpy = vi.spyOn(cloudMaterial, "updateFrameUniforms");
 
             const camera = new PerspectiveCamera({ fov: 45, aspect: 16 / 9 });
+            const cameraPitch = 0.5;
+            const cameraYaw = -0.4;
+            const cameraRoll = 0.0;
+            camera.transform.setRotationEuler(cameraPitch, cameraYaw, cameraRoll);
+
             const frameState: SceneFrameState = {
                 scene: sceneElement.scene,
                 activeCamera: camera,
                 timeInfo: { time: 1.0, dt: 0.016, frameCount: 1 },
             };
 
-            const pitchOffset = 0.5;
-            const yawOffset = -0.4;
-            element.parallaxState = { pitchOffset, yawOffset };
-
-            const mouseSensitivity = (element.params as GalaxyParameters).mouseSensitivity;
+            const basePitch = (element.params as GalaxyParameters).pitchAngle;
+            const baseYaw = (element.params as GalaxyParameters).yawAngle;
             const parallaxFactor = element.params.cloudParallaxFactor ?? DEFAULT_CLOUD_PARALLAX_FACTOR;
-            const expectedPitchOffset = pitchOffset * mouseSensitivity * parallaxFactor;
-            const expectedYawOffset = yawOffset * mouseSensitivity * parallaxFactor;
+            const expectedPitchOffset = (cameraPitch - basePitch) * parallaxFactor;
+            const expectedYawOffset = (cameraYaw - baseYaw) * parallaxFactor;
 
             registeredFrameCallback!(frameState);
 
             expect(updateSpy).toHaveBeenCalledTimes(1);
-            expect(updateSpy).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    effectivePitchOffset: expectedPitchOffset,
-                    effectiveYawOffset: expectedYawOffset,
-                })
-            );
+            const callArgs = updateSpy.mock.calls[0][0];
+            expect(callArgs.effectivePitchOffset).toBeCloseTo(expectedPitchOffset, 4);
+            expect(callArgs.effectiveYawOffset).toBeCloseTo(expectedYawOffset, 4);
+
+            sceneElement.remove();
+        });
+
+        it("should scale offsets using custom params.cloudParallaxFactor", () => {
+            const sceneElement = document.createElement(TAG_RJ_SCENE) as SceneElement;
+            document.body.appendChild(sceneElement);
+
+            let registeredFrameCallback: SceneFrameCallback | undefined;
+            vi.spyOn(sceneElement, "subscribeFrame").mockImplementation((cb) => {
+                registeredFrameCallback = cb;
+                return () => {
+                    registeredFrameCallback = undefined;
+                };
+            });
+
+            const customParallaxFactor = 0.85;
+            element.params = {
+                ...DEFAULT_GALAXY_PARAMETERS,
+                cloudParallaxFactor: customParallaxFactor,
+            };
+
+            sceneElement.appendChild(element);
+
+            const cloudMaterial = element.modelInstance.material as GalacticCloudMaterial;
+            const updateSpy = vi.spyOn(cloudMaterial, "updateFrameUniforms");
+
+            const camera = new PerspectiveCamera({ fov: 45, aspect: 16 / 9 });
+            const cameraPitch = 0.3;
+            const cameraYaw = 0.6;
+            camera.transform.setRotationEuler(cameraPitch, cameraYaw, 0.0);
+
+            const frameState: SceneFrameState = {
+                scene: sceneElement.scene,
+                activeCamera: camera,
+                timeInfo: { time: 1.0, dt: 0.016, frameCount: 1 },
+            };
+
+            const basePitch = (element.params as GalaxyParameters).pitchAngle;
+            const baseYaw = (element.params as GalaxyParameters).yawAngle;
+            const expectedPitchOffset = (cameraPitch - basePitch) * customParallaxFactor;
+            const expectedYawOffset = (cameraYaw - baseYaw) * customParallaxFactor;
+
+            registeredFrameCallback!(frameState);
+
+            expect(updateSpy).toHaveBeenCalledTimes(1);
+            const callArgs = updateSpy.mock.calls[0][0];
+            expect(callArgs.effectivePitchOffset).toBeCloseTo(expectedPitchOffset, 4);
+            expect(callArgs.effectiveYawOffset).toBeCloseTo(expectedYawOffset, 4);
+
+            sceneElement.remove();
+        });
+
+        it("should fall back to DEFAULT_PARALLAX_PITCH_OFFSET and DEFAULT_PARALLAX_YAW_OFFSET when activeCamera is null", () => {
+            const sceneElement = document.createElement(TAG_RJ_SCENE) as SceneElement;
+            document.body.appendChild(sceneElement);
+
+            let registeredFrameCallback: SceneFrameCallback | undefined;
+            vi.spyOn(sceneElement, "subscribeFrame").mockImplementation((cb) => {
+                registeredFrameCallback = cb;
+                return () => {
+                    registeredFrameCallback = undefined;
+                };
+            });
+
+            sceneElement.appendChild(element);
+
+            const cloudMaterial = element.modelInstance.material as GalacticCloudMaterial;
+            const updateSpy = vi.spyOn(cloudMaterial, "updateFrameUniforms");
+
+            const frameState: SceneFrameState = {
+                scene: sceneElement.scene,
+                activeCamera: null,
+                timeInfo: { time: 1.0, dt: 0.016, frameCount: 1 },
+            };
+
+            registeredFrameCallback!(frameState);
+
+            const parallaxFactor = element.params.cloudParallaxFactor ?? DEFAULT_CLOUD_PARALLAX_FACTOR;
+            const expectedPitchOffset = DEFAULT_PARALLAX_PITCH_OFFSET * parallaxFactor;
+            const expectedYawOffset = DEFAULT_PARALLAX_YAW_OFFSET * parallaxFactor;
+
+            expect(updateSpy).toHaveBeenCalledTimes(1);
+            const callArgs = updateSpy.mock.calls[0][0];
+            expect(callArgs.effectivePitchOffset).toBeCloseTo(expectedPitchOffset, 4);
+            expect(callArgs.effectiveYawOffset).toBeCloseTo(expectedYawOffset, 4);
 
             sceneElement.remove();
         });
@@ -297,32 +363,32 @@ describe("GalacticCloudElement", () => {
 
             sceneElement.appendChild(element);
 
-            const cloudMaterial = element.material as GalacticCloudMaterial;
+            const cloudMaterial = element.modelInstance.material as GalacticCloudMaterial;
             const updateSpy = vi.spyOn(cloudMaterial, "updateFrameUniforms");
 
+            const params = element.params as GalaxyParameters;
             const customCamera = new PerspectiveCamera({ fov: 60, aspect: 2.0 });
+            customCamera.transform.setRotationEuler(params.pitchAngle, params.yawAngle, params.rollAngle);
             const frameState: SceneFrameState = {
                 scene: sceneElement.scene,
                 activeCamera: customCamera,
                 timeInfo: { time: 2.5, dt: 0.016, frameCount: 15 },
             };
 
-            const params = element.params as GalaxyParameters;
             const expectedFovRad = params.fov * DEG_TO_RAD;
             const expectedFovScale = Math.tan(expectedFovRad * HALF_FOV_FACTOR);
 
             frameCallback!(frameState);
 
             expect(updateSpy).toHaveBeenCalledTimes(1);
-            expect(updateSpy).toHaveBeenCalledWith({
-                aspect: 2.0,
-                fovScale: expectedFovScale,
-                pitch: params.pitchAngle,
-                yaw: params.yawAngle,
-                roll: params.rollAngle,
-                effectivePitchOffset: 0,
-                effectiveYawOffset: 0,
-            });
+            const callArgs = updateSpy.mock.calls[0][0];
+            expect(callArgs.aspect).toBe(2.0);
+            expect(callArgs.fovScale).toBe(expectedFovScale);
+            expect(callArgs.pitch).toBe(params.pitchAngle);
+            expect(callArgs.yaw).toBe(params.yawAngle);
+            expect(callArgs.roll).toBe(params.rollAngle);
+            expect(callArgs.effectivePitchOffset).toBeCloseTo(0, 4);
+            expect(callArgs.effectiveYawOffset).toBeCloseTo(0, 4);
 
             sceneElement.remove();
         });
@@ -341,7 +407,7 @@ describe("GalacticCloudElement", () => {
 
             sceneElement.appendChild(element);
 
-            const cloudMaterial = element.material as GalacticCloudMaterial;
+            const cloudMaterial = element.modelInstance.material as GalacticCloudMaterial;
             const updateSpy = vi.spyOn(cloudMaterial, "updateFrameUniforms");
 
             const frameState: SceneFrameState = {
@@ -391,7 +457,7 @@ describe("GalacticCloudElement", () => {
             };
             element.params = partialParams;
 
-            const cloudMaterial = element.material as GalacticCloudMaterial;
+            const cloudMaterial = element.modelInstance.material as GalacticCloudMaterial;
             const updateSpy = vi.spyOn(cloudMaterial, "updateFrameUniforms");
 
             const frameState: SceneFrameState = {
@@ -431,7 +497,7 @@ describe("GalacticCloudElement", () => {
 
             sceneElement.appendChild(element);
 
-            element.material = new UnlitMaterial();
+            element.modelInstance.material = new UnlitMaterial();
 
             const frameState: SceneFrameState = {
                 scene: sceneElement.scene,
