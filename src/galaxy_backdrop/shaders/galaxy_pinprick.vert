@@ -9,6 +9,7 @@ layout(location = 4) in float a_spectralType;
 layout(location = 5) in float a_driftPhase;
 
 uniform mat4 u_viewProjectionMatrix;
+uniform mat4 u_modelMatrix;
 uniform mat4 u_modelViewMatrix;
 uniform float u_time;
 uniform float u_rotationSpeed;
@@ -43,8 +44,9 @@ void main() {
     float posZ = r * sin(theta);
     float posY = a_zOffset + dz;
 
-    vec4 worldPos = vec4(posX, posY, posZ, 1.0);
-    vec4 viewPos = u_modelViewMatrix * worldPos;
+    vec4 localPos = vec4(posX, posY, posZ, 1.0);
+    vec4 worldPos = u_modelMatrix * localPos;
+    vec4 viewPos = u_modelViewMatrix * localPos;
     gl_Position = u_viewProjectionMatrix * worldPos;
 
     // 3. Pin-prick Point Sizing
