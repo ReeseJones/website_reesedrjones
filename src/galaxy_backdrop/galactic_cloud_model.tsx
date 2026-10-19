@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from "react";
+import { mat3, mat4, quat } from "gl-matrix";
 import { ModelInstance } from "../scene/react/model_instance_component";
 import { useSceneFrame } from "../scene/react/use_scene_frame";
 import { ScreenQuadGeometry } from "../scene/models/screen_quad_geometry";
@@ -11,6 +12,12 @@ import {
     HALF_FOV_FACTOR,
 } from "../scene/materials/galactic_cloud_material_constants";
 import type { GalacticCloudModelProps } from "./galaxy_scene_types";
+import type { QuaternionTuple } from "../scene/core/transform_types";
+
+const sBaseMat4 = mat4.create();
+const sBaseQuat = quat.create();
+const sCloudQuat = quat.create();
+const sCameraRotationMat3 = mat3.create();
 
 /**
  * Declarative background galactic cloud horizon quad component.
@@ -19,7 +26,7 @@ import type { GalacticCloudModelProps } from "./galaxy_scene_types";
  */
 export function GalacticCloudModel({
     params,
-    parallaxRef,
+    parallaxRef: _parallaxRef,
 }: GalacticCloudModelProps): React.JSX.Element {
     const cloudGeometryRef = useRef<ScreenQuadGeometry | null>(null);
     if (!cloudGeometryRef.current) {
@@ -49,21 +56,39 @@ export function GalacticCloudModel({
         const fovRad = params.fov * DEG_TO_RAD;
         const fovScale = Math.tan(fovRad * HALF_FOV_FACTOR);
 
-        const parallax = params.cloudParallaxFactor ?? DEFAULT_CLOUD_PARALLAX_FACTOR;
-        const pitchOffset = parallaxRef?.current?.pitchOffset ?? 0;
-        const yawOffset = parallaxRef?.current?.yawOffset ?? 0;
+        const baseMat = sBaseMat4;
+        mat4.identity(baseMat);
+        mat4.rotateX(baseMat, baseMat, params.pitchAngle);
+        mat4.rotateY(baseMat, baseMat, params.yawAngle);
+        mat4.rotateZ(baseMat, baseMat, params.rollAngle);
+        mat4.invert(baseMat, baseMat);
 
-        const effectivePitchOffset = pitchOffset * params.mouseSensitivity * parallax;
-        const effectiveYawOffset = yawOffset * params.mouseSensitivity * parallax;
+        const baseQuat = sBaseQuat;
+        mat4.getRotation(baseQuat, baseMat);
+
+        if (activeCamera) {
+            const camTransform = activeCamera.transform as unknown as {
+                rotation?: QuaternionTuple;
+                getQuaternion?: () => QuaternionTuple;
+            };
+            const camQuat = (camTransform.rotation ??
+                (typeof camTransform.getQuaternion === "function" ? camTransform.getQuaternion() : undefined)) as quat;
+            const parallax = params.cloudParallaxFactor ?? DEFAULT_CLOUD_PARALLAX_FACTOR;
+
+            if (camQuat) {
+                quat.slerp(sCloudQuat, baseQuat, camQuat, parallax);
+                mat3.fromQuat(sCameraRotationMat3, sCloudQuat);
+            } else {
+                mat3.fromQuat(sCameraRotationMat3, baseQuat);
+            }
+        } else {
+            mat3.fromQuat(sCameraRotationMat3, baseQuat);
+        }
 
         cloudMaterial.updateFrameUniforms({
             aspect: activeCamera?.aspect ?? DEFAULT_CLOUD_ASPECT,
             fovScale,
-            pitch: params.pitchAngle,
-            yaw: params.yawAngle,
-            roll: params.rollAngle,
-            effectivePitchOffset,
-            effectiveYawOffset,
+            cameraRotation: sCameraRotationMat3,
         });
     });
 

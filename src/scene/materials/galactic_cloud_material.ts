@@ -9,11 +9,7 @@ import {
     DEFAULT_HORIZON_COLOR_OUTER,
     DEFAULT_CLOUD_ASPECT,
     DEFAULT_CLOUD_FOV_SCALE,
-    DEFAULT_CLOUD_PITCH,
-    DEFAULT_CLOUD_YAW,
-    DEFAULT_CLOUD_ROLL,
-    DEFAULT_CLOUD_PITCH_OFFSET,
-    DEFAULT_CLOUD_YAW_OFFSET,
+    DEFAULT_CLOUD_CAMERA_ROTATION,
 } from "./galactic_cloud_material_constants";
 import type {
     GalacticCloudFrameUniforms,
@@ -44,11 +40,7 @@ export class GalacticCloudMaterial extends Material {
             uHorizonColorOuter: outerColor,
             uAspect: DEFAULT_CLOUD_ASPECT,
             uFovScale: DEFAULT_CLOUD_FOV_SCALE,
-            uPitch: DEFAULT_CLOUD_PITCH,
-            uYaw: DEFAULT_CLOUD_YAW,
-            uRoll: DEFAULT_CLOUD_ROLL,
-            uPitchOffset: DEFAULT_CLOUD_PITCH_OFFSET,
-            uYawOffset: DEFAULT_CLOUD_YAW_OFFSET,
+            uCameraRotation: DEFAULT_CLOUD_CAMERA_ROTATION,
             ...options?.uniforms,
         };
 
@@ -109,11 +101,7 @@ export class GalacticCloudMaterial extends Material {
         this.setUniforms({
             uAspect: uniforms.aspect,
             uFovScale: uniforms.fovScale,
-            uPitch: uniforms.pitch,
-            uYaw: uniforms.yaw,
-            uRoll: uniforms.roll,
-            uPitchOffset: uniforms.effectivePitchOffset,
-            uYawOffset: uniforms.effectiveYawOffset,
+            uCameraRotation: uniforms.cameraRotation,
         });
     }
 

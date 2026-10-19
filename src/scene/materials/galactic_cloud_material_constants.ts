@@ -40,17 +40,13 @@ export const DEFAULT_CLOUD_ASPECT = 1.0;
 export const DEFAULT_CLOUD_FOV_SCALE = 1.0;
 
 /**
- * Default Euler angles (pitch, yaw, roll) in radians.
+ * Default 3x3 identity matrix for camera orientation.
  */
-export const DEFAULT_CLOUD_PITCH = 0.0;
-export const DEFAULT_CLOUD_YAW = 0.0;
-export const DEFAULT_CLOUD_ROLL = 0.0;
-
-/**
- * Default pitch and yaw offset angles in radians.
- */
-export const DEFAULT_CLOUD_PITCH_OFFSET = 0.0;
-export const DEFAULT_CLOUD_YAW_OFFSET = 0.0;
+export const DEFAULT_CLOUD_CAMERA_ROTATION: Float32Array = new Float32Array([
+    1, 0, 0,
+    0, 1, 0,
+    0, 0, 1,
+]);
 
 /**
  * Degree to radian conversion factor.

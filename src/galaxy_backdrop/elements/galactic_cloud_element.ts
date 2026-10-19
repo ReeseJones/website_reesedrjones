@@ -1,5 +1,6 @@
 import { LitElement, type PropertyValues } from "lit";
 import { ContextConsumer, ContextProvider } from "@lit/context";
+import { mat3, mat4, quat } from "gl-matrix";
 import { ModelInstance } from "../../scene/models/model_instance";
 import type { ISceneNode } from "../../scene/core/scene_node_types";
 import {
@@ -8,13 +9,12 @@ import {
     type ISceneContext,
 } from "../../scene/elements/scene_element_types";
 import type { SceneFrameState } from "../../scene/core/scene_types";
+import type { QuaternionTuple } from "../../scene/core/transform_types";
 import { GalacticCloudMaterial } from "../../scene/materials/galactic_cloud_material";
 import {
     DEFAULT_CLOUD_ASPECT,
+    DEFAULT_CLOUD_CAMERA_ROTATION,
     DEFAULT_CLOUD_PARALLAX_FACTOR,
-    DEFAULT_CLOUD_PITCH,
-    DEFAULT_CLOUD_ROLL,
-    DEFAULT_CLOUD_YAW,
     DEG_TO_RAD,
     GALACTIC_CLOUD_RENDER_ORDER,
     HALF_FOV_FACTOR,
@@ -23,8 +23,6 @@ import { DEFAULT_GALAXY_PARAMETERS } from "../parameters/index";
 import type { GalacticCloudParameters, GalaxyParameters } from "../parameters/types";
 import {
     DEFAULT_GALACTIC_CLOUD_NAME,
-    DEFAULT_PARALLAX_PITCH_OFFSET,
-    DEFAULT_PARALLAX_YAW_OFFSET,
     TAG_RJ_GALACTIC_CLOUD,
 } from "./galactic_cloud_element_constants";
 import { getSharedCloudGeometry, getSharedCloudMaterial } from "../resources/galaxy_resources";
@@ -45,6 +43,11 @@ export class GalacticCloudElement extends LitElement {
     public declare params: GalacticCloudParameters | GalaxyParameters;
     public declare renderOrder: number;
     public declare visible: boolean;
+
+    private static readonly _sBaseMat4 = mat4.create();
+    private static readonly _sBaseQuat = quat.create();
+    private static readonly _sCloudQuat = quat.create();
+    private static readonly _sCameraRotationMat3 = mat3.create();
 
     private readonly _modelInstance: ModelInstance = new ModelInstance();
     private readonly _sceneConsumer: ContextConsumer<typeof sceneContext, GalacticCloudElement>;
@@ -189,38 +192,54 @@ export class GalacticCloudElement extends LitElement {
             return;
         }
 
-        const params = this.params;
-        let fov = DEFAULT_GALAXY_PARAMETERS.fov;
-        let pitch = DEFAULT_CLOUD_PITCH;
-        let yaw = DEFAULT_CLOUD_YAW;
-        let roll = DEFAULT_CLOUD_ROLL;
-
-        if ("fov" in params) {
-            fov = params.fov;
-            pitch = params.pitchAngle;
-            yaw = params.yawAngle;
-            roll = params.rollAngle;
-        }
-
+        const camera = frameState.activeCamera;
+        const aspect = camera?.aspect ?? DEFAULT_CLOUD_ASPECT;
+        const fov = (camera as { fov?: number } | null)?.fov ?? ("fov" in this.params ? this.params.fov : DEFAULT_GALAXY_PARAMETERS.fov);
         const fovRad = fov * DEG_TO_RAD;
         const fovScale = Math.tan(fovRad * HALF_FOV_FACTOR);
 
-        const parallaxFactor = this.params.cloudParallaxFactor ?? DEFAULT_CLOUD_PARALLAX_FACTOR;
-        const cameraAngles = frameState.activeCamera?.transform.getEulerAngles();
-        const pitchOffset = cameraAngles ? cameraAngles.pitch - pitch : DEFAULT_PARALLAX_PITCH_OFFSET;
-        const yawOffset = cameraAngles ? cameraAngles.yaw - yaw : DEFAULT_PARALLAX_YAW_OFFSET;
+        let pitch = DEFAULT_GALAXY_PARAMETERS.pitchAngle;
+        let yaw = DEFAULT_GALAXY_PARAMETERS.yawAngle;
+        let roll = DEFAULT_GALAXY_PARAMETERS.rollAngle;
+        if ("pitchAngle" in this.params) {
+            pitch = this.params.pitchAngle;
+            yaw = this.params.yawAngle;
+            roll = this.params.rollAngle;
+        }
 
-        const effectivePitchOffset = pitchOffset * parallaxFactor;
-        const effectiveYawOffset = yawOffset * parallaxFactor;
+        const baseMat = GalacticCloudElement._sBaseMat4;
+        mat4.identity(baseMat);
+        mat4.rotateX(baseMat, baseMat, pitch);
+        mat4.rotateY(baseMat, baseMat, yaw);
+        mat4.rotateZ(baseMat, baseMat, roll);
+        mat4.invert(baseMat, baseMat);
+
+        const baseQuat = GalacticCloudElement._sBaseQuat;
+        mat4.getRotation(baseQuat, baseMat);
+
+        if (camera) {
+            const camTransform = camera.transform as unknown as {
+                rotation?: QuaternionTuple;
+                getQuaternion?: () => QuaternionTuple;
+            };
+            const camQuat = (camTransform.rotation ??
+                (typeof camTransform.getQuaternion === "function" ? camTransform.getQuaternion() : undefined)) as quat;
+            const parallaxFactor = this.params.cloudParallaxFactor ?? DEFAULT_CLOUD_PARALLAX_FACTOR;
+
+            if (camQuat) {
+                quat.slerp(GalacticCloudElement._sCloudQuat, baseQuat, camQuat, parallaxFactor);
+                mat3.fromQuat(GalacticCloudElement._sCameraRotationMat3, GalacticCloudElement._sCloudQuat);
+            } else {
+                mat3.fromQuat(GalacticCloudElement._sCameraRotationMat3, baseQuat);
+            }
+        } else {
+            mat3.fromQuat(GalacticCloudElement._sCameraRotationMat3, baseQuat);
+        }
 
         material.updateFrameUniforms({
-            aspect: frameState.activeCamera?.aspect ?? DEFAULT_CLOUD_ASPECT,
+            aspect,
             fovScale,
-            pitch,
-            yaw,
-            roll,
-            effectivePitchOffset,
-            effectiveYawOffset,
+            cameraRotation: GalacticCloudElement._sCameraRotationMat3,
         });
     }
 }

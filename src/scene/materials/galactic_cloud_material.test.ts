@@ -8,11 +8,7 @@ import {
     DEFAULT_HORIZON_COLOR_OUTER,
     DEFAULT_CLOUD_ASPECT,
     DEFAULT_CLOUD_FOV_SCALE,
-    DEFAULT_CLOUD_PITCH,
-    DEFAULT_CLOUD_YAW,
-    DEFAULT_CLOUD_ROLL,
-    DEFAULT_CLOUD_PITCH_OFFSET,
-    DEFAULT_CLOUD_YAW_OFFSET,
+    DEFAULT_CLOUD_CAMERA_ROTATION,
 } from "./galactic_cloud_material_constants";
 import type { GalacticCloudFrameUniforms } from "./galactic_cloud_material_types";
 
@@ -43,11 +39,7 @@ describe("GalacticCloudMaterial", () => {
             expect(uniforms.uHorizonColorOuter).toEqual(DEFAULT_HORIZON_COLOR_OUTER);
             expect(uniforms.uAspect).toBe(DEFAULT_CLOUD_ASPECT);
             expect(uniforms.uFovScale).toBe(DEFAULT_CLOUD_FOV_SCALE);
-            expect(uniforms.uPitch).toBe(DEFAULT_CLOUD_PITCH);
-            expect(uniforms.uYaw).toBe(DEFAULT_CLOUD_YAW);
-            expect(uniforms.uRoll).toBe(DEFAULT_CLOUD_ROLL);
-            expect(uniforms.uPitchOffset).toBe(DEFAULT_CLOUD_PITCH_OFFSET);
-            expect(uniforms.uYawOffset).toBe(DEFAULT_CLOUD_YAW_OFFSET);
+            expect(uniforms.uCameraRotation).toEqual(DEFAULT_CLOUD_CAMERA_ROTATION);
         });
     });
 
@@ -214,14 +206,15 @@ describe("GalacticCloudMaterial", () => {
     describe(".updateFrameUniforms()", () => {
         it("updates all dynamic per-frame uniforms in a single call", () => {
             const material = new GalacticCloudMaterial();
+            const dummyRotation = new Float32Array([
+                1, 0, 0,
+                0, 1, 0,
+                0, 0, 1,
+            ]);
             const frameUniforms: GalacticCloudFrameUniforms = {
                 aspect: 1.777,
                 fovScale: 0.466,
-                pitch: 0.35,
-                yaw: 1.2,
-                roll: -0.1,
-                effectivePitchOffset: 0.05,
-                effectiveYawOffset: -0.08,
+                cameraRotation: dummyRotation,
             };
 
             material.updateFrameUniforms(frameUniforms);
@@ -229,11 +222,7 @@ describe("GalacticCloudMaterial", () => {
             const uniforms = material.getUniforms();
             expect(uniforms.uAspect).toBe(1.777);
             expect(uniforms.uFovScale).toBe(0.466);
-            expect(uniforms.uPitch).toBe(0.35);
-            expect(uniforms.uYaw).toBe(1.2);
-            expect(uniforms.uRoll).toBe(-0.1);
-            expect(uniforms.uPitchOffset).toBe(0.05);
-            expect(uniforms.uYawOffset).toBe(-0.08);
+            expect(uniforms.uCameraRotation).toBe(dummyRotation);
         });
 
         it("preserves static horizon styling uniforms when updating frame uniforms", () => {
@@ -241,18 +230,16 @@ describe("GalacticCloudMaterial", () => {
                 params: { horizonIntensity: 1.8 },
             });
 
+            const dummyRotation = new Float32Array(9);
             material.updateFrameUniforms({
                 aspect: 2.0,
                 fovScale: 0.5,
-                pitch: 0.1,
-                yaw: 0.2,
-                roll: 0.0,
-                effectivePitchOffset: 0.01,
-                effectiveYawOffset: 0.02,
+                cameraRotation: dummyRotation,
             });
 
             expect(material.getUniforms().uHorizonIntensity).toBe(1.8);
             expect(material.getUniforms().uAspect).toBe(2.0);
+            expect(material.getUniforms().uCameraRotation).toBe(dummyRotation);
         });
     });
 

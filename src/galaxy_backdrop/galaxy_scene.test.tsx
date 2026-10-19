@@ -351,7 +351,7 @@ describe("Declarative Galaxy Backdrop Components", () => {
             }
         });
 
-        it("calls GalacticCloudMaterial.prototype.updateFrameUniforms on simulation tick using activeCamera.aspect and parallaxRef.current offsets", () => {
+        it("calls GalacticCloudMaterial.prototype.updateFrameUniforms on simulation tick using activeCamera.aspect and camera orientation", () => {
             const { contextValue } = createMockCanvasContext();
             const sceneRef = createRef<ProgrammaticScene>();
             const updateFrameSpy = vi.spyOn(GalacticCloudMaterial.prototype, "updateFrameUniforms");
@@ -384,21 +384,16 @@ describe("Declarative Galaxy Backdrop Components", () => {
                 scheduler.stepFrame(16);
 
                 const expectedFovScale = Math.tan(params.fov * DEG_TO_RAD * HALF_FOV_FACTOR);
-                const expectedParallaxFactor =
-                    params.cloudParallaxFactor ?? DEFAULT_CLOUD_PARALLAX_FACTOR;
 
                 expect(updateFrameSpy).toHaveBeenCalledTimes(1);
                 expect(updateFrameSpy).toHaveBeenCalledWith({
                     aspect: 1.75,
                     fovScale: expectedFovScale,
-                    pitch: params.pitchAngle,
-                    yaw: params.yawAngle,
-                    roll: params.rollAngle,
-                    effectivePitchOffset:
-                        0.25 * params.mouseSensitivity * expectedParallaxFactor,
-                    effectiveYawOffset:
-                        -0.4 * params.mouseSensitivity * expectedParallaxFactor,
+                    cameraRotation: expect.any(Float32Array),
                 });
+                const firstCallRotation = updateFrameSpy.mock.calls[0][0].cameraRotation;
+                expect(firstCallRotation).toBeInstanceOf(Float32Array);
+                expect(firstCallRotation).toHaveLength(9);
 
                 // Falls back to DEFAULT_CLOUD_ASPECT when activeCamera is null
                 sceneRef.current!.activeCamera = null;
@@ -408,6 +403,8 @@ describe("Declarative Galaxy Backdrop Components", () => {
                 expect(updateFrameSpy).toHaveBeenCalledWith(
                     expect.objectContaining({
                         aspect: DEFAULT_CLOUD_ASPECT,
+                        fovScale: expectedFovScale,
+                        cameraRotation: expect.any(Float32Array),
                     })
                 );
             } finally {

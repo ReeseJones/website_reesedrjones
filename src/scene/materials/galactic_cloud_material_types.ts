@@ -10,16 +10,8 @@ export interface GalacticCloudFrameUniforms {
     aspect: number;
     /** Tangent of half vertical FOV (Math.tan(fovRad * 0.5)) */
     fovScale: number;
-    /** Base camera pitch angle (radians) */
-    pitch: number;
-    /** Base camera yaw angle (radians) */
-    yaw: number;
-    /** Base camera roll angle (radians) */
-    roll: number;
-    /** Effective interactive parallax pitch offset (radians) */
-    effectivePitchOffset: number;
-    /** Effective interactive parallax yaw offset (radians) */
-    effectiveYawOffset: number;
+    /** 3x3 orientation matrix transforming view ray from camera space to world space */
+    cameraRotation: Float32Array | number[];
 }
 
 /**
