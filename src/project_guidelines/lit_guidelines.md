@@ -103,21 +103,40 @@ Design principles, architecture standards, and authoring conventions for Lit Web
     ```
   - Always specify the property `type` (e.g., `Number`, `Boolean`, `String`, `Object`) for primitive attributes, and configure `reflect: true` only when the attribute needs to be mirrored to the DOM for CSS styling or external inspection. Complex objects, arrays, or non-serialized properties must specify `attribute: false`.
   - **Prohibition of Decorators:** Do not use experimental or Stage 3 decorators (`@property`, `@state`, or the `accessor` keyword). The project's build pipeline (Parcel 2 and SWC) is strictly standard ECMAScript without decorator transpilation.
-- **Property Mutation vs. Dirty Checking:**
-  - Leverage `updated(changedProperties: PropertyValues<this>)` for fine-grained change reaction.
-  - Check `changedProperties.has("propName")` to cascade changes into the underlying programmatic engine, updating only dirty flags or dirty uniform matrices.
+- **Scene Node Naming Scope:** Only components that inherit from scene node base classes (`PerspectiveCameraElement`, `ModelInstanceElement`, `Node3DElement`) should expose a `name` property. Do not declare `name` properties on specialized elements or composite components that do not inherit from scene node elements.
+- **Lifecycle Distinction: `willUpdate` vs. `updated` vs. `render`:**
+  - **`willUpdate(changedProperties)` (Model & State Synchronization):**
+    - **Timing:** Runs *before* `render()`.
+    - **Purpose:** Synchronizing reactive property changes to underlying non-DOM objects (3D scene graph nodes, transforms, materials, uniforms, cameras, physics engines) and computing derived reactive state.
+    - **Key Advantage:** Any internal state changes made here do *not* trigger a new update pass, avoiding double-rendering and Lit `change-in-update` warnings.
+    - In 3D bridge elements (which render into Light DOM with no visual shadow tree), model updates must always happen in `willUpdate()`. Check `changedProperties.has("propName")` to cascade changes into the underlying programmatic engine, updating only dirty flags or dirty uniform matrices.
+  - **`render()` (Declarative DOM Templates):**
+    - **Timing:** Returns Lit `html` templates.
+    - **Purpose:** Pure presentational DOM rendering. Pure UI components must bind reactive properties directly in template expressions rather than using imperative lifecycle hooks.
+  - **`updated(changedProperties)` (Post-Render DOM Operations Only):**
+    - **Timing:** Runs *after* the component's DOM has been rendered and committed to the document.
+    - **Purpose:** Strictly reserved for DOM layout measurements (`getBoundingClientRect()`, `offsetWidth`), focus management, canvas resizing, or integrating 3rd-party non-Lit DOM libraries that require real rendered DOM nodes to exist.
+    - **Prohibition:** Never synchronize non-DOM data or mutate reactive properties in `updated()`, as doing so risks scheduling inefficient second update passes or infinite cycles.
 - **Lifecycle Cleanup Integrity:**
   - In `connectedCallback()`, attach the underlying programmatic engine node to its parent or register with the enclosing scene controller. Always call `super.connectedCallback()`.
   - In `disconnectedCallback()`, unregister from the scene, detach from parent nodes, and release GPU listeners. Always call `super.disconnectedCallback()`.
   - Ensure lifecycle cleanup is idempotent: re-attaching a detached element must seamlessly re-integrate into the scene without resource leaking or state corruption.
-- **Prohibition of Empty / No-Op Lifecycle Overrides:**
-  - Do NOT declare lifecycle hooks (`updated`, `connectedCallback`, `disconnectedCallback`, `firstUpdated`) if the element does not perform active work, state changes, or cleanup.
-  - Never author methods that solely delegate to `super.<lifecycle>()`. Adhere to [typescript_guidelines.md](typescript_guidelines.md#10-prohibition-of-superfluous--no-op-method-overrides).
+- **Idiomatic Reactive Property Mutation:**
+  - Expose component state and inputs through standard Lit reactive properties declared in `static properties`.
+  - Consumers interact with the component naturally by setting reactive properties directly (`element.value = ...`), mirroring standard HTML element conventions (like `input.value` or `video.currentTime`). Lit batches property updates on a microtask queue and efficiently updates only the affected template bindings.
+- **Minimal Lifecycle Hooks:**
+  - Only declare lifecycle hooks (`willUpdate`, `updated`, `connectedCallback`, `disconnectedCallback`, `firstUpdated`) when active work, state transitions, or resource cleanup is needed. Adhere to [typescript_guidelines.md](typescript_guidelines.md#10-prohibition-of-superfluous--no-op-method-overrides).
 
 ---
 
 ## 4. DOM Hierarchy & Rendering Hygiene
 
+- **Declarative Template Rendering:**
+  - Lit components declare their rendering tree declaratively inside `render()` using `html` tagged template literals. Lit manages DOM node creation, attribute interpolation, and sub-tree synchronization efficiently.
+  - Keep template rendering declarative; let Lit handle DOM updates based on reactive property state rather than performing manual DOM mutations.
+- **Template Element References via Lit's `ref()` Directive:**
+  - When an element rendered inside `render()` needs to be referenced in code (e.g. for imperative browser APIs like `canvas.getContext()`, `showPopover()`, `hidePopover()`, or `focus()`), use Lit's standard `ref()` directive (`createRef<T>()` and `${ref(this._elementRef)}` from `lit/directives/ref.js`).
+  - Accessing elements via typed refs (`this._elementRef.value`) is clean, strongly typed, and decoupled from CSS selector queries.
 - **Light DOM for Scene Graph Hierarchy:**
   - For non-visual structural components (e.g., `<scene-node>`, `<perspective-camera>`, `<scene-group>`) that exist solely to construct a scene hierarchy, override `createRenderRoot()` to return `this` (rendering into the Light DOM rather than creating a Shadow Root).
   - **Rationale:** Light DOM rendering allows child elements to traverse the DOM hierarchy via standard methods (`this.parentElement`, `this.closest("scene-element")`) without fighting Shadow DOM boundary encapsulation.
@@ -199,6 +218,8 @@ Design principles, architecture standards, and authoring conventions for Lit Web
 ---
 
 ## 8. Testing Lit Elements
+
+For comprehensive unit testing standards, query patterns, and asynchronous assertion examples, refer to the dedicated [Making Lit Unit Tests Guidelines](making_lit_unit_tests_guidelines.md).
 
 - **Pure TypeScript File Naming:**
   - Name test files with pure TypeScript extensions matching `*element*.test.ts` (e.g., `scene_element.test.ts`, `perspective_camera_element.test.ts`). Do not use `.tsx` as Lit components do not use JSX syntax.

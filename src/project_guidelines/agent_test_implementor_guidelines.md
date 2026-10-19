@@ -21,6 +21,8 @@ Before writing any test code:
    - Read the target's explicit interface file (`*_types.ts`) and implementation file.
 2. **Review General Guidelines:**
    - Read [`src/project_guidelines/unit_testing_guidelines.md`](unit_testing_guidelines.md) for custom matchers, math tolerances, and return value assertion rules.
+   - Read [`src/project_guidelines/making_react_unit_tests_guidelines.md`](making_react_unit_tests_guidelines.md) when authoring React component or custom hook tests.
+   - Read [`src/project_guidelines/making_lit_unit_tests_guidelines.md`](making_lit_unit_tests_guidelines.md) when authoring Lit web component tests.
    - Read [`src/project_guidelines/running_tests_guidelines.md`](running_tests_guidelines.md) for execution workflows and token-efficient testing standards.
 3. **Identify Pure-CPU vs. Hardware Dependencies:**
    - For scene nodes, cameras, materials, geometries, and transforms: instantiate the **real classes**.
@@ -43,6 +45,7 @@ Before writing any test code:
 - **Zero Magic Numbers:** Decode buffers with helpers (e.g. `getVertex()` from [`src/testing/geometry_test_helpers.ts`](../testing/geometry_test_helpers.ts)); never assert raw index offsets like `expect(attrs[0])`.
 - **Pure CPU Execution:** Tests must run in Node.js without initializing real WebGL2 browser contexts.
 - **Idempotency & Lifecycle:** Verify that disposal/destruction methods are idempotent and detach all registered listeners.
+- **Lit Element Asynchronous Updates:** Lit property updates batch asynchronously on microtasks. When asserting on rendered DOM output or attribute reflection, always `await element.updateComplete` (see [making_lit_unit_tests_guidelines.md](making_lit_unit_tests_guidelines.md)).
 
 ---
 

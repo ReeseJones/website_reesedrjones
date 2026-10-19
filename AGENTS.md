@@ -45,6 +45,7 @@
   - TypeScript & typing standards: [typescript_guidelines.md](src/project_guidelines/typescript_guidelines.md)
   - Parcel imports & asset indexing: [using_parcel_guideline.md](src/project_guidelines/using_parcel_guideline.md)
   - Lit & Web Components: [lit_guidelines.md](src/project_guidelines/lit_guidelines.md) (and [Lit Cheat Sheet](src/project_guidelines/lit_cheat_sheet.md), [Tutorial Series](src/project_guidelines/lit_guidelines_tasklist.md))
+  - Lit component unit testing: [making_lit_unit_tests_guidelines.md](src/project_guidelines/making_lit_unit_tests_guidelines.md)
   - Unit testing standards & mocking: [unit_testing_guidelines.md](src/project_guidelines/unit_testing_guidelines.md)
   - Running tests & token-efficient debugging: [running_tests_guidelines.md](src/project_guidelines/running_tests_guidelines.md)
   - Agent test authoring & subagent protocol: [agent_test_implementor_guidelines.md](src/project_guidelines/agent_test_implementor_guidelines.md)
@@ -62,7 +63,7 @@
 - **Develop on Staging:** Always perform active development and feature edits on the `staging` branch. Never edit or commit directly on `main`. Only merge `staging` into `main` when ready for production release.
 - **Never Commit Unless Explicitly Asked:** Agents must NEVER run `git commit` (or push) unless explicitly instructed to do so by the user (e.g., "commit these changes", "make a commit"). Completing an edit or implementation task does NOT imply authorization to commit.
 - **No Backwards Compatibility Aliases:** Never retain deprecated methods, properties, transitional types, or alias wrappers (such as `dispose()` delegating to `destroy()` or vice versa) for backwards compatibility. This codebase is a personal application, not a public library or third-party SDK. When a method, function, property, or interface is renamed, replaced, or redesigned, replace it cleanly across the entire codebase and remove all obsolete aliases immediately.
-- **Lit Component Static Properties Standard:** All Lit web components must use Lit's standard decoratorless property definition via `public static override properties = { ... }` with `public declare prop: type;` (and constructor default initializations). Do not use experimental or Stage 3 decorators (`@property`, `@state`, or `accessor`), as the project's build pipeline (Parcel 2 and SWC) is strictly standard ES without decorator transpilation.
+- **Lit Web Components:** When developing or modifying Lit web components, always read and follow [lit_guidelines.md](src/project_guidelines/lit_guidelines.md) and [making_lit_unit_tests_guidelines.md](src/project_guidelines/making_lit_unit_tests_guidelines.md). All Lit components must adhere to the decoratorless static properties standard (`public static override properties = { ... }`).
 - **File & Inspection Tools:** Always use native inspection tools (`view_file`) and file edit tools (`replace_file_content`, `write_to_file`) instead of running terminal shell commands (`cat`, `type`, `dir`, `Get-Content`, `echo`) to read or write files.
 
 ## Design Document Implementation Protocol
