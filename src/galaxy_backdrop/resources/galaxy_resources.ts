@@ -84,7 +84,9 @@ export function getSharedGalaxyGeometry(params?: Partial<GalaxyParameters>): Gal
  */
 export function getSharedGalaxyMaterial(params?: Partial<GalaxyParameters>): GalaxyMaterial {
     if (!_sharedGalaxyMaterial) {
+        const shaderKey = params?.style === "pinprick" ? "galaxy_pinprick" : "galaxy_orb";
         _sharedGalaxyMaterial = new GalaxyMaterial({
+            shaderKey,
             params,
             pipelineState: {
                 blendMode: BlendMode.Additive,

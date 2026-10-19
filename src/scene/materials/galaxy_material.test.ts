@@ -90,6 +90,33 @@ describe("GalaxyMaterial", () => {
             expect(material.getUniforms()["u_pointScale"]).toBe(DEFAULT_ORB_PARAMETERS.pointScale);
         });
 
+        it("resolves shaderKey to 'galaxy_pinprick' and galaxyParams to DEFAULT_PINPRICK_PARAMETERS when params.style is 'pinprick'", () => {
+            const material = new GalaxyMaterial({
+                params: { style: "pinprick" },
+            });
+
+            expect(material.shaderKey).toBe("galaxy_pinprick");
+            expect(material.galaxyParams).toEqual(DEFAULT_PINPRICK_PARAMETERS);
+        });
+
+        it("resolves shaderKey to 'galaxy_orb' and galaxyParams to DEFAULT_ORB_PARAMETERS when params.style is 'orb'", () => {
+            const material = new GalaxyMaterial({
+                params: { style: "orb" },
+            });
+
+            expect(material.shaderKey).toBe("galaxy_orb");
+            expect(material.galaxyParams).toEqual(DEFAULT_ORB_PARAMETERS);
+        });
+
+        it("prioritizes explicit shaderKey option over params.style if provided", () => {
+            const material = new GalaxyMaterial({
+                shaderKey: "galaxy_orb",
+                params: { style: "pinprick" },
+            });
+
+            expect(material.shaderKey).toBe("galaxy_orb");
+        });
+
         it("overrides individual partial params while preserving remaining default values", () => {
             const customCoreColor: [number, number, number] = [0.2, 0.8, 0.4];
             const material = new GalaxyMaterial({
@@ -231,6 +258,24 @@ describe("GalaxyMaterial", () => {
 
             material.updateParameters({ pointScale: 7.0, rotationSpeed: -0.15 });
             expect(material.shaderKey).toBe("galaxy_pinprick");
+        });
+
+        it("dynamically switches shaderKey to 'galaxy_pinprick' when updating style to 'pinprick'", () => {
+            const material = new GalaxyMaterial({ params: { style: "orb" } });
+            expect(material.shaderKey).toBe("galaxy_orb");
+
+            material.updateParameters({ style: "pinprick" });
+            expect(material.shaderKey).toBe("galaxy_pinprick");
+            expect(material.galaxyParams.style).toBe("pinprick");
+        });
+
+        it("dynamically switches shaderKey to 'galaxy_orb' when updating style to 'orb'", () => {
+            const material = new GalaxyMaterial({ params: { style: "pinprick" } });
+            expect(material.shaderKey).toBe("galaxy_pinprick");
+
+            material.updateParameters({ style: "orb" });
+            expect(material.shaderKey).toBe("galaxy_orb");
+            expect(material.galaxyParams.style).toBe("orb");
         });
 
         it("updates galaxyParams object in-place with new values", () => {

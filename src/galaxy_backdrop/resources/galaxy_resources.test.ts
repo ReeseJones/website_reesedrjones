@@ -248,6 +248,25 @@ describe("galaxy_resources", () => {
             expect(returned).toBe(material);
             expect(updateSpy).not.toHaveBeenCalled();
         });
+
+        it("creates a material with shaderKey 'galaxy_pinprick' when initialized with style 'pinprick'", () => {
+            const material = getSharedGalaxyMaterial({ style: "pinprick" });
+
+            expect(material).toBeInstanceOf(GalaxyMaterial);
+            expect(material.shaderKey).toBe("galaxy_pinprick");
+            expect(material.galaxyParams.style).toBe("pinprick");
+        });
+
+        it("updates shaderKey to 'galaxy_orb' when subsequent call provides style 'orb'", () => {
+            const material = getSharedGalaxyMaterial({ style: "pinprick" });
+            expect(material.shaderKey).toBe("galaxy_pinprick");
+
+            const updatedMaterial = getSharedGalaxyMaterial({ style: "orb" });
+
+            expect(updatedMaterial).toBe(material);
+            expect(material.shaderKey).toBe("galaxy_orb");
+            expect(material.galaxyParams.style).toBe("orb");
+        });
     });
 
     describe("disposeSharedGalaxyResources()", () => {

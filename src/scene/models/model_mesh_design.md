@@ -70,7 +70,7 @@ Geometries are passive CPU data generation routines that allocate a contiguous `
 ### Why the Material Is What Enables the Galaxy
 
 The reason the galaxy renders correctly is that it is paired with a **`GalaxyMaterial`** that cooperates with `GalaxyGeometry`:
-- Its vertex shader (`galaxy_pinprick.vert`) expects input locations $0 \to 5$ matching `GALAXY_VERTEX_LAYOUT`.
+- Its vertex shader expects input locations $0 \to 5$ matching `GALAXY_VERTEX_LAYOUT`.
 - It performs the differential spiral rotation and drift inside the vertex shader on the GPU.
 - It supplies the galaxy domain uniforms (`u_rotationSpeed`, `u_driftSpeed`, `u_pointScale`, `u_coreColor`, `u_armInnerColor`).
 - Its fragment shader evaluates Gaussian point-sprite needle falloff and photometric luminosity.
@@ -161,7 +161,7 @@ All geometry, material, and instance classes reside in `src/scene/models/` and `
   - [`src/scene/materials/material_types.ts`](../materials/material_types.ts): Core interfaces (`IMaterial`, `MaterialOptions`, `BlendMode`, `PipelineState`).
   - [`src/scene/materials/material.ts`](../materials/material.ts): Base material class managing shader keys, uniforms, and WebGL state assertion.
   - [`src/scene/materials/unlit_material.ts`](../materials/unlit_material.ts): Default material pairing with Cartesian `MeshGeometry`.
-  - [`src/scene/materials/galaxy_material.ts`](../materials/galaxy_material.ts): Domain material pairing with `GalaxyGeometry` (pinprick shaders + additive blend state + parameters).
+  - [`src/scene/materials/galaxy_material.ts`](../materials/galaxy_material.ts): Domain material pairing with `GalaxyGeometry` (point-cloud shaders + additive blend state + parameters).
 - **Model Instance Layer (`src/scene/models/`):**
   - [`src/scene/models/model_instance_types.ts`](model_instance_types.ts): Contracts for renderable scene graph entities.
   - [`src/scene/models/model_instance.ts`](model_instance.ts): Class extending `SceneNode`, holding `geometry` and `material`.
@@ -334,7 +334,7 @@ scene.add(damagedAsteroid);
 // =========================================================================
 const galaxyGeo = new GalaxyGeometry(galaxyParams);
 const galaxyMat = new GalaxyMaterial({
-    // Automatically selects "galaxy_orb" or "galaxy_pinprick" based on galaxyParams.style
+    // Automatically selects point-cloud shaders based on galaxyParams.style
     params: galaxyParams,
     pipelineState: {
         blendMode: BlendMode.Additive,
