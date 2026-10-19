@@ -7,13 +7,22 @@ import { Node3DElement } from "./node_3d_element";
 import { ModelInstanceElement } from "./model_instance_element";
 import { GalacticCloudElement } from "../../galaxy_backdrop/elements/galactic_cloud_element";
 import { GalaxyStarsElement } from "../../galaxy_backdrop/elements/galaxy_stars_element";
+import { GalaxyCameraElement, setupGalaxyCameraElement } from "../../galaxy_backdrop/elements/galaxy_camera_element";
+import { FpsCounterElement } from "../../components/webgl_canvas/fps_counter_element";
+import {
+    WebGLFpsCounterElement,
+    setupWebGLFpsCounterElement,
+} from "../../components/webgl_canvas/webgl_fps_counter_element";
 import { TAG_RJ_WEBGL_CANVAS } from "./webgl_canvas_element_constants";
 import { TAG_RJ_SCENE } from "./scene_element_constants";
 import { TAG_RJ_PERSPECTIVE_CAMERA } from "./perspective_camera_element_constants";
+import { TAG_RJ_GALAXY_CAMERA } from "../../galaxy_backdrop/elements/galaxy_camera_element_constants";
 import { TAG_RJ_NODE_3D } from "./node_3d_element_constants";
 import { TAG_RJ_MODEL_INSTANCE } from "./model_instance_element_constants";
 import { TAG_RJ_GALACTIC_CLOUD } from "../../galaxy_backdrop/elements/galactic_cloud_element_constants";
 import { TAG_RJ_GALAXY_STARS } from "../../galaxy_backdrop/elements/galaxy_stars_element_constants";
+import { TAG_RJ_FPS_COUNTER } from "../../components/webgl_canvas/fps_counter_element_constants";
+import { TAG_RJ_WEBGL_FPS_COUNTER } from "../../components/webgl_canvas/webgl_fps_counter_element_constants";
 
 describe("setupSceneElements()", () => {
     beforeEach(() => {
@@ -21,14 +30,17 @@ describe("setupSceneElements()", () => {
     });
 
     describe("custom element registration", () => {
-        it("should register all 7 custom element tag names with customElements", () => {
+        it("should register all 10 custom element tag names with customElements", () => {
             expect(customElements.get(TAG_RJ_WEBGL_CANVAS)).toBe(WebGLCanvasElement);
             expect(customElements.get(TAG_RJ_SCENE)).toBe(SceneElement);
             expect(customElements.get(TAG_RJ_PERSPECTIVE_CAMERA)).toBe(PerspectiveCameraElement);
+            expect(customElements.get(TAG_RJ_GALAXY_CAMERA)).toBe(GalaxyCameraElement);
             expect(customElements.get(TAG_RJ_NODE_3D)).toBe(Node3DElement);
             expect(customElements.get(TAG_RJ_MODEL_INSTANCE)).toBe(ModelInstanceElement);
             expect(customElements.get(TAG_RJ_GALACTIC_CLOUD)).toBe(GalacticCloudElement);
             expect(customElements.get(TAG_RJ_GALAXY_STARS)).toBe(GalaxyStarsElement);
+            expect(customElements.get(TAG_RJ_FPS_COUNTER)).toBe(FpsCounterElement);
+            expect(customElements.get(TAG_RJ_WEBGL_FPS_COUNTER)).toBe(WebGLFpsCounterElement);
         });
 
         it("should register TAG_RJ_WEBGL_CANVAS ('rj-webgl-canvas') to WebGLCanvasElement", () => {
@@ -44,6 +56,12 @@ describe("setupSceneElements()", () => {
         it("should register TAG_RJ_PERSPECTIVE_CAMERA ('rj-perspective-camera') to PerspectiveCameraElement", () => {
             expect(TAG_RJ_PERSPECTIVE_CAMERA).toBe("rj-perspective-camera");
             expect(customElements.get(TAG_RJ_PERSPECTIVE_CAMERA)).toBe(PerspectiveCameraElement);
+        });
+
+        it("should register TAG_RJ_GALAXY_CAMERA ('rj-galaxy-camera') to GalaxyCameraElement via setupGalaxyCameraElement", () => {
+            setupGalaxyCameraElement();
+            expect(TAG_RJ_GALAXY_CAMERA).toBe("rj-galaxy-camera");
+            expect(customElements.get(TAG_RJ_GALAXY_CAMERA)).toBe(GalaxyCameraElement);
         });
 
         it("should register TAG_RJ_NODE_3D ('rj-node-3d') to Node3DElement", () => {
@@ -65,6 +83,17 @@ describe("setupSceneElements()", () => {
             expect(TAG_RJ_GALAXY_STARS).toBe("rj-galaxy-stars");
             expect(customElements.get(TAG_RJ_GALAXY_STARS)).toBe(GalaxyStarsElement);
         });
+
+        it("should register TAG_RJ_FPS_COUNTER ('rj-fps-counter') to FpsCounterElement", () => {
+            expect(TAG_RJ_FPS_COUNTER).toBe("rj-fps-counter");
+            expect(customElements.get(TAG_RJ_FPS_COUNTER)).toBe(FpsCounterElement);
+        });
+
+        it("should register TAG_RJ_WEBGL_FPS_COUNTER ('rj-webgl-fps-counter') to WebGLFpsCounterElement via setupWebGLFpsCounterElement", () => {
+            setupWebGLFpsCounterElement();
+            expect(TAG_RJ_WEBGL_FPS_COUNTER).toBe("rj-webgl-fps-counter");
+            expect(customElements.get(TAG_RJ_WEBGL_FPS_COUNTER)).toBe(WebGLFpsCounterElement);
+        });
     });
 
     describe("idempotency", () => {
@@ -78,10 +107,13 @@ describe("setupSceneElements()", () => {
             expect(customElements.get(TAG_RJ_WEBGL_CANVAS)).toBe(WebGLCanvasElement);
             expect(customElements.get(TAG_RJ_SCENE)).toBe(SceneElement);
             expect(customElements.get(TAG_RJ_PERSPECTIVE_CAMERA)).toBe(PerspectiveCameraElement);
+            expect(customElements.get(TAG_RJ_GALAXY_CAMERA)).toBe(GalaxyCameraElement);
             expect(customElements.get(TAG_RJ_NODE_3D)).toBe(Node3DElement);
             expect(customElements.get(TAG_RJ_MODEL_INSTANCE)).toBe(ModelInstanceElement);
             expect(customElements.get(TAG_RJ_GALACTIC_CLOUD)).toBe(GalacticCloudElement);
             expect(customElements.get(TAG_RJ_GALAXY_STARS)).toBe(GalaxyStarsElement);
+            expect(customElements.get(TAG_RJ_FPS_COUNTER)).toBe(FpsCounterElement);
+            expect(customElements.get(TAG_RJ_WEBGL_FPS_COUNTER)).toBe(WebGLFpsCounterElement);
         });
     });
 
@@ -102,6 +134,12 @@ describe("setupSceneElements()", () => {
             const el = document.createElement(TAG_RJ_PERSPECTIVE_CAMERA);
             expect(el).toBeInstanceOf(PerspectiveCameraElement);
             expect(el.tagName.toLowerCase()).toBe(TAG_RJ_PERSPECTIVE_CAMERA);
+        });
+
+        it("should instantiate GalaxyCameraElement via document.createElement(TAG_RJ_GALAXY_CAMERA)", () => {
+            const el = document.createElement(TAG_RJ_GALAXY_CAMERA);
+            expect(el).toBeInstanceOf(GalaxyCameraElement);
+            expect(el.tagName.toLowerCase()).toBe(TAG_RJ_GALAXY_CAMERA);
         });
 
         it("should instantiate Node3DElement via document.createElement(TAG_RJ_NODE_3D)", () => {
@@ -128,15 +166,30 @@ describe("setupSceneElements()", () => {
             expect(el.tagName.toLowerCase()).toBe(TAG_RJ_GALAXY_STARS);
         });
 
-        it("should instantiate each registered tag successfully across all 7 definitions", () => {
+        it("should instantiate FpsCounterElement via document.createElement(TAG_RJ_FPS_COUNTER)", () => {
+            const el = document.createElement(TAG_RJ_FPS_COUNTER);
+            expect(el).toBeInstanceOf(FpsCounterElement);
+            expect(el.tagName.toLowerCase()).toBe(TAG_RJ_FPS_COUNTER);
+        });
+
+        it("should instantiate WebGLFpsCounterElement via document.createElement(TAG_RJ_WEBGL_FPS_COUNTER)", () => {
+            const el = document.createElement(TAG_RJ_WEBGL_FPS_COUNTER);
+            expect(el).toBeInstanceOf(WebGLFpsCounterElement);
+            expect(el.tagName.toLowerCase()).toBe(TAG_RJ_WEBGL_FPS_COUNTER);
+        });
+
+        it("should instantiate each registered tag successfully across all 10 definitions", () => {
             const definitions = [
                 { tag: TAG_RJ_WEBGL_CANVAS, constructorFn: WebGLCanvasElement },
                 { tag: TAG_RJ_SCENE, constructorFn: SceneElement },
                 { tag: TAG_RJ_PERSPECTIVE_CAMERA, constructorFn: PerspectiveCameraElement },
+                { tag: TAG_RJ_GALAXY_CAMERA, constructorFn: GalaxyCameraElement },
                 { tag: TAG_RJ_NODE_3D, constructorFn: Node3DElement },
                 { tag: TAG_RJ_MODEL_INSTANCE, constructorFn: ModelInstanceElement },
                 { tag: TAG_RJ_GALACTIC_CLOUD, constructorFn: GalacticCloudElement },
                 { tag: TAG_RJ_GALAXY_STARS, constructorFn: GalaxyStarsElement },
+                { tag: TAG_RJ_FPS_COUNTER, constructorFn: FpsCounterElement },
+                { tag: TAG_RJ_WEBGL_FPS_COUNTER, constructorFn: WebGLFpsCounterElement },
             ] as const;
 
             for (const { tag, constructorFn } of definitions) {
