@@ -9,7 +9,7 @@
     "prepare": "npm run generate:shaders && npm run generate:version",
     "start": "npm run generate:shaders && npm run generate:version && rimraf dist && parcel",
     "clean": "rimraf .parcel-cache dist",
-    "build": "npm run generate:shaders && npm run generate:version && parcel build src/index.html --public-url /",
+    "build": "rimraf dist && npm run generate:shaders && npm run generate:version && parcel build src/index.html --public-url /",
     "deploy": "npm run build && wrangler deploy",
     "preview": "npm run build && wrangler dev",
     "lint": "eslint src",
