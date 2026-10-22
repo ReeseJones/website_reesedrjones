@@ -1,0 +1,173 @@
+# Vector and Color Interface Migration Tasklist
+
+This checklist tracks the incremental refactoring to standardize vector and color interfaces across the codebase, per [Working with Vectors and Colors Guidelines](working_with_vectors_and_colors_guidelines.md).
+
+The migration decouples internal typed array storage (`Float32Array`) from public semantic interfaces (`Vector2Like`, `Vector3Like`, `Vector4Like`, `RgbLike`, `RgbaLike`), eliminating component confusion and strengthening compile-time safety.
+
+---
+
+## Phase 1: Foundational Math & Color Types
+
+- [ ] **Vector Types ([`src/maths/vector_types.ts`](../maths/vector_types.ts))**
+  - [ ] Add `Vector4Like { x: number; y: number; z: number; w: number; }` and `ReadonlyVector4Like`.
+  - [ ] Remove deprecated backwards-compatibility alias `export type Vector2 = Vector2Like;`.
+  - [ ] Update any consumers importing `Vector2` to import `Vector2Like`.
+- [ ] **Color Types ([`src/helpers/colors_types.ts`](../helpers/colors_types.ts))**
+  - [ ] Add `RgbLike { r: number; g: number; b: number; }` and `ReadonlyRgbLike`.
+  - [ ] Add `RgbaLike { r: number; g: number; b: number; a: number; }` and `ReadonlyRgbaLike`.
+  - [ ] Preserve `NormalizedRgbTuple` and `NormalizedRgbaTuple` strictly for internal buffer serialization.
+- [ ] **Color Helpers & Utilities ([`src/helpers/colors.ts`](../helpers/colors.ts))**
+  - [ ] Implement `rgbLikeToHex(rgb: RgbLike): string`.
+  - [ ] Implement `rgbaLikeToHex(rgba: RgbaLike): string`.
+  - [ ] Implement `hexToRgbLike(hex: string): RgbLike`.
+  - [ ] Implement `hexToRgbaLike(hex: string): RgbaLike`.
+  - [ ] Implement `rgbLikeToTuple(rgb: RgbLike): NormalizedRgbTuple`.
+  - [ ] Implement `rgbaLikeToTuple(rgba: RgbaLike): NormalizedRgbaTuple`.
+  - [ ] Implement `tupleToRgbLike(tuple: NormalizedRgbTuple): RgbLike`.
+  - [ ] Implement `tupleToRgbaLike(tuple: NormalizedRgbaTuple): RgbaLike`.
+  - [ ] Author comprehensive unit tests in [`src/helpers/colors.test.ts`](../helpers/colors.test.ts).
+- [ ] **Canvas Context Configuration ([`src/webgl/canvas/canvas_types.ts`](../webgl/canvas/canvas_types.ts))**
+  - [ ] Update `WebGLContextOptions.clearColor` to accept `RgbaLike` alongside `[number, number, number, number]`.
+  - [ ] Update clear color unpacking in [`src/components/webgl_canvas/use_webgl_canvas.ts`](../components/webgl_canvas/use_webgl_canvas.ts).
+
+---
+
+## Phase 2: Attribute Converters & Lit Web Components
+
+- [ ] **Vector3 Converter ([`src/lit/converters/vector3_converter.ts`](../lit/converters/vector3_converter.ts))**
+  - [ ] Update converter interface in [`vector3_converter_types.ts`](../lit/converters/vector3_converter_types.ts) to `Vector3Like`.
+  - [ ] Refactor `vector3Converter.fromAttribute` to return `Vector3Like` (`{ x, y, z }`).
+  - [ ] Refactor `vector3Converter.toAttribute` to accept `Vector3Like`.
+  - [ ] Update unit tests in [`src/lit/converters/vector3_converter.test.ts`](../lit/converters/vector3_converter.test.ts).
+- [ ] **RGBA Color Converter ([`src/lit/converters/rgba_color_converter.ts`](../lit/converters/rgba_color_converter.ts))**
+  - [ ] Refactor `rgbaColorConverter.fromAttribute` to return `RgbaLike` (`{ r, g, b, a }`).
+  - [ ] Refactor `rgbaColorConverter.toAttribute` to accept `RgbaLike`.
+  - [ ] Update unit tests in [`src/lit/converters/rgba_color_converter.test.ts`](../lit/converters/rgba_color_converter.test.ts).
+- [ ] **3D Node Element ([`src/scene/elements/node_3d_element.ts`](../scene/elements/node_3d_element.ts))**
+  - [ ] Update `Node3DElementProps` in [`node_3d_element_types.ts`](../scene/elements/node_3d_element_types.ts) to use `Vector3Like`.
+  - [ ] Update `DEFAULT_NODE_3D_POSITION`, `DEFAULT_NODE_3D_ROTATION`, `DEFAULT_NODE_3D_SCALE` in [`node_3d_element_constants.ts`](../scene/elements/node_3d_element_constants.ts) to `Vector3Like`.
+  - [ ] Remove obsolete index constants `VECTOR_INDEX_X`, `VECTOR_INDEX_Y`, `VECTOR_INDEX_Z`.
+  - [ ] Refactor property handlers in `node_3d_element.ts`.
+  - [ ] Update unit tests in [`node_3d_element.test.ts`](../scene/elements/node_3d_element.test.ts).
+- [ ] **Perspective Camera Element ([`src/scene/elements/perspective_camera_element.ts`](../scene/elements/perspective_camera_element.ts))**
+  - [ ] Update `PerspectiveCameraElementProps` in [`perspective_camera_element_types.ts`](../scene/elements/perspective_camera_element_types.ts) to use `Vector3Like`.
+  - [ ] Update `DEFAULT_CAMERA_POSITION`, `DEFAULT_CAMERA_ROTATION`, `DEFAULT_CAMERA_SCALE` in [`perspective_camera_element_constants.ts`](../scene/elements/perspective_camera_element_constants.ts) to `Vector3Like`.
+  - [ ] Remove obsolete index constants `VECTOR_INDEX_*`.
+  - [ ] Refactor property handlers in `perspective_camera_element.ts`.
+  - [ ] Update unit tests in [`perspective_camera_element.test.ts`](../scene/elements/perspective_camera_element.test.ts).
+- [ ] **Model Instance Element ([`src/scene/elements/model_instance_element.ts`](../scene/elements/model_instance_element.ts))**
+  - [ ] Update `ModelInstanceElementProps` in [`model_instance_element_types.ts`](../scene/elements/model_instance_element_types.ts) to use `Vector3Like`.
+  - [ ] Update `DEFAULT_MODEL_INSTANCE_POSITION`, `DEFAULT_MODEL_INSTANCE_ROTATION`, `DEFAULT_MODEL_INSTANCE_SCALE` in [`model_instance_element_constants.ts`](../scene/elements/model_instance_element_constants.ts) to `Vector3Like`.
+  - [ ] Refactor property handlers in `model_instance_element.ts`.
+  - [ ] Update unit tests in [`model_instance_element.test.ts`](../scene/elements/model_instance_element.test.ts).
+- [ ] **Galaxy Elements ([`src/galaxy_backdrop/elements/`](../galaxy_backdrop/elements/))**
+  - [ ] Update `GalaxyCameraElement` in [`galaxy_camera_element.ts`](../galaxy_backdrop/elements/galaxy_camera_element.ts) to serialize/deserialize `position` and `rotation` as `Vector3Like`.
+  - [ ] Update unit tests in [`galaxy_camera_element.test.ts`](../galaxy_backdrop/elements/galaxy_camera_element.test.ts).
+  - [ ] Update [`galaxy_stars_element.test.ts`](../galaxy_backdrop/elements/galaxy_stars_element.test.ts) to assert `Vector3Like` properties on rendered model instances.
+
+---
+
+## Phase 3: React Declarative Scene Graph & Hooks
+
+- [ ] **React Scene Node Types ([`src/scene/react/scene_react_types.ts`](../scene/react/scene_react_types.ts))**
+  - [ ] Update `SceneNodeProps.position` to accept `Vector3Like`.
+  - [ ] Update `SceneNodeProps.rotation` to accept `EulerAngles` (from `transform_types.ts`) alongside `EulerTuple`.
+  - [ ] Update `SceneNodeProps.scale` to accept `Vector3Like | number`.
+- [ ] **Scene Node Hook ([`src/scene/react/use_scene_node.ts`](../scene/react/use_scene_node.ts))**
+  - [ ] Update property reconciliation logic to accept `Vector3Like` without tuple slicing.
+  - [ ] Cache previous position and rotation as `Vector3Like` and `EulerAngles`.
+- [ ] **Declarative Scene Tests ([`src/scene/react/declarative_scene.test.tsx`](../scene/react/declarative_scene.test.tsx))**
+  - [ ] Update tests to verify declarative JSX transform assignment with `{ x, y, z }` object literals.
+
+---
+
+## Phase 4: Scene Graph Core, Transforms & Cameras
+
+- [ ] **Transform Component ([`src/scene/core/transform.ts`](../scene/core/transform.ts))**
+  - [ ] Update [`transform_types.ts`](../scene/core/transform_types.ts) `ITransform` interface:
+    - [ ] Add `setPosition(pos: Vector3Like): this;` overload.
+    - [ ] Add optional target-out parameter to `getPosition(out?: Vector3Like): Vector3Like;`.
+    - [ ] Add `setScale(scale: Vector3Like): this;` overload.
+    - [ ] Add optional target-out parameter to `getScale(out?: Vector3Like): Vector3Like;`.
+  - [ ] Update `Transform` class implementation in [`transform.ts`](../scene/core/transform.ts).
+  - [ ] Update unit tests in [`src/scene/core/transform.test.ts`](../scene/core/transform.test.ts).
+- [ ] **Camera System ([`src/scene/camera/camera.ts`](../scene/camera/camera.ts))**
+  - [ ] Update `ICamera` interface in [`camera_types.ts`](../scene/camera/camera_types.ts) to accept `Vector3Like` for target and up vectors.
+  - [ ] Add optional target-out parameter to `getPosition(out?: Vector3Like): Vector3Like;`.
+  - [ ] Update `Camera` implementation and unit tests in [`camera.test.ts`](../scene/camera/camera.test.ts), [`perspective_camera.test.ts`](../scene/camera/perspective_camera.test.ts), and [`orthographic_camera.test.ts`](../scene/camera/orthographic_camera.test.ts).
+- [ ] **Skybox System ([`src/scene/environment/skybox.ts`](../scene/environment/skybox.ts))**
+  - [ ] Update `ISkybox` and `Skybox` `tint` property from `[number, number, number]` to `RgbLike`.
+  - [ ] Update [`skybox_types.ts`](../scene/environment/skybox_types.ts) and [`skybox_material_types.ts`](../scene/environment/skybox_material_types.ts).
+  - [ ] Update unit tests in [`skybox.test.ts`](../scene/environment/skybox.test.ts) and [`skybox_material.test.ts`](../scene/environment/skybox_material.test.ts).
+
+---
+
+## Phase 5: Materials, Textures, Shaders & Renderer Pipeline
+
+- [ ] **Shader Program Uniforms ([`src/webgl/shaders/shader_program.ts`](../webgl/shaders/shader_program.ts))**
+  - [ ] Update [`shader_program_types.ts`](../webgl/shaders/shader_program_types.ts) `setVec3` to accept `Vector3Like`.
+  - [ ] Update `setVec4` to accept `Vector4Like` or `RgbaLike`.
+  - [ ] Add `setColor(name: string, color: RgbLike | RgbaLike)` helper method.
+  - [ ] Update unit tests in [`shader_program.test.ts`](../webgl/shaders/shader_program.test.ts).
+- [ ] **Renderer Uniform Synchronization ([`src/scene/renderer/scene_renderer_types.ts`](../scene/renderer/scene_renderer_types.ts))**
+  - [ ] Update `StandardShaderUniforms.u_cameraPosition` to `Vector3Like | Float32Array`.
+  - [ ] Update scratch buffer handling in [`material_binder.ts`](../scene/materials/material_binder.ts).
+  - [ ] Update unit tests in [`scene_renderer.test.ts`](../scene/renderer/scene_renderer.test.ts) and [`material_binder.test.ts`](../scene/materials/material_binder.test.ts).
+- [ ] **Unlit Material ([`src/scene/materials/unlit_material.ts`](../scene/materials/unlit_material.ts))**
+  - [ ] Update [`unlit_material_types.ts`](../scene/materials/unlit_material_types.ts) `color` option to accept `RgbLike | RgbaLike`.
+  - [ ] Update `UnlitMaterial.setColor` and unit tests in [`unlit_material.test.ts`](../scene/materials/unlit_material.test.ts).
+- [ ] **Galactic Cloud Material & Constants ([`src/scene/materials/galactic_cloud_material.ts`](../scene/materials/galactic_cloud_material.ts))**
+  - [ ] Update `DEFAULT_HORIZON_COLOR_CENTER` and `DEFAULT_HORIZON_COLOR_OUTER` in [`galactic_cloud_material_constants.ts`](../scene/materials/galactic_cloud_material_constants.ts) to `RgbLike`.
+  - [ ] Update `horizonColorCenter`, `horizonColorOuter`, `cloudColorPrimary`, and `cloudColorSecondary` in [`galactic_cloud_material_types.ts`](../scene/materials/galactic_cloud_material_types.ts) to `RgbLike`.
+  - [ ] Update unit tests in [`galactic_cloud_material.test.ts`](../scene/materials/galactic_cloud_material.test.ts).
+- [ ] **Galaxy Material ([`src/scene/materials/galaxy_material.ts`](../scene/materials/galaxy_material.ts))**
+  - [ ] Update galaxy color uniform options to `RgbLike`.
+  - [ ] Update [`galaxy_material_types.ts`](../scene/materials/galaxy_material_types.ts) and unit tests in [`galaxy_material.test.ts`](../scene/materials/galaxy_material.test.ts).
+- [ ] **Textures ([`src/webgl/textures/`](../webgl/textures/))**
+  - [ ] Update [`solid_color_texture_types.ts`](../webgl/textures/solid_color_texture_types.ts) and [`solid_color_texture.ts`](../webgl/textures/solid_color_texture.ts) to accept `RgbaLike` or `RgbLike` in `setColor`.
+  - [ ] Update [`solid_color_cube_texture_types.ts`](../webgl/textures/solid_color_cube_texture_types.ts) and [`solid_color_cube_texture.ts`](../webgl/textures/solid_color_cube_texture.ts).
+  - [ ] Update unit tests in [`solid_color_texture.test.ts`](../webgl/textures/solid_color_texture.test.ts).
+
+---
+
+## Phase 6: Galaxy Backdrop Parameters & Controller
+
+- [ ] **Galaxy Parameter Types ([`src/galaxy_backdrop/parameters/types.ts`](../galaxy_backdrop/parameters/types.ts))**
+  - [ ] Refactor color properties from `[number, number, number]` to `RgbLike`:
+    - [ ] `horizonColorCenter: RgbLike`
+    - [ ] `horizonColorOuter: RgbLike`
+    - [ ] `cloudColorPrimary: RgbLike`
+    - [ ] `cloudColorSecondary: RgbLike`
+    - [ ] `coreColor: RgbLike`
+    - [ ] `coreBlazeColor: RgbLike`
+    - [ ] `armInnerColor: RgbLike`
+    - [ ] `armOuterColor: RgbLike`
+    - [ ] `accentColor: RgbLike`
+- [ ] **Defaults & Presets ([`src/galaxy_backdrop/parameters/index.ts`](../galaxy_backdrop/parameters/index.ts))**
+  - [ ] Update default parameter values to `{ r, g, b }` literals.
+  - [ ] Update presets in [`src/galaxy_backdrop/parameters/presets/`](../galaxy_backdrop/parameters/presets/).
+- [ ] **Galaxy Scene & Controller ([`src/galaxy_backdrop/galaxy_scene.tsx`](../galaxy_backdrop/galaxy_scene.tsx))**
+  - [ ] Align [`use_galaxy_controller.ts`](../galaxy_backdrop/use_galaxy_controller.ts) and scene uniform bindings with `RgbLike` parameters.
+  - [ ] Update unit tests in `src/galaxy_backdrop/`.
+
+---
+
+## Phase 7: UI Components & Settings Dialogs
+
+- [ ] **Color Item Component ([`src/components/color_item/color_item.tsx`](../components/color_item/color_item.tsx))**
+  - [ ] Update props to accept `color: RgbLike` and `onChange: (color: RgbLike) => void`.
+  - [ ] Update component implementation and design doc in [`design.md`](../components/color_item/design.md).
+  - [ ] Update unit tests in [`color_item.test.tsx`](../components/color_item/color_item.test.tsx).
+- [ ] **Galaxy Settings Dialog Sections ([`src/galaxy_backdrop/galaxy_settings_dialog/`](../galaxy_backdrop/galaxy_settings_dialog/))**
+  - [ ] Update [`colors_glow_section.tsx`](../galaxy_backdrop/galaxy_settings_dialog/colors_glow_section.tsx) to bind `ColorItem` directly to `RgbLike` parameters.
+  - [ ] Update [`galactic_cloud_section.tsx`](../galaxy_backdrop/galaxy_settings_dialog/galactic_cloud_section.tsx) to bind `ColorItem` directly to `RgbLike` horizon parameters.
+  - [ ] Update any settings dialog unit tests.
+
+---
+
+## Phase 8: Verification & Quality Gates
+
+- [ ] Run full lint suite: `npm run lint` (ensure zero ESLint or hook rule warnings).
+- [ ] Run TypeScript type checker: `npm run typecheck` (ensure zero type errors).
+- [ ] Run test suite: `npm test` (ensure all unit tests pass).
+- [ ] Run production build: `npm run build` (ensure clean Parcel bundle generation).

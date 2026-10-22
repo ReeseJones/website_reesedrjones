@@ -49,6 +49,7 @@
   - Unit testing standards & mocking: [unit_testing_guidelines.md](src/project_guidelines/unit_testing_guidelines.md)
   - Running tests & token-efficient debugging: [running_tests_guidelines.md](src/project_guidelines/running_tests_guidelines.md)
   - Agent test authoring & subagent protocol: [agent_test_implementor_guidelines.md](src/project_guidelines/agent_test_implementor_guidelines.md)
+  - Working with vectors & colors: [working_with_vectors_and_colors_guidelines.md](src/project_guidelines/working_with_vectors_and_colors_guidelines.md) (and [Migration Tasklist](src/project_guidelines/vector_and_color_interface_migration_tasklist.md))
 
 ## Rules
 - **Unit Testing Benchmark:** Agents must create, use, and run unit tests as the benchmark for compiling code and asserting behavior and returns. Adhere to [unit_testing_guidelines.md](src/project_guidelines/unit_testing_guidelines.md): map each explicit public interface method/property to a `describe` block, test input code paths and edge conditions in `it` specs, assert return values and chaining contracts, verify domain requirements (math invariants, matrix ordering, dirty-flag cascading, deterministic resource disposal), and mock dependencies with test fixtures rather than instantiating real WebGL contexts.
