@@ -5,6 +5,8 @@ import type { ICamera } from "../camera/camera_types";
 import type { IMeshGeometry } from "../models/mesh_geometry_types";
 import type { IMaterial } from "../materials/material_types";
 import type { IModelInstance } from "../models/model_instance_types";
+import type { Vector3Like } from "../../maths/vector_types";
+import type { EulerAngles } from "../core/transform_types";
 
 /**
  * 3-component spatial coordinate vector [x, y, z].
@@ -23,11 +25,11 @@ export interface SceneNodeProps {
     /** Label for debugging */
     name?: string;
     /** Position relative to parent [x, y, z] */
-    position?: Vector3Tuple;
+    position?: Vector3Like | Vector3Tuple;
     /** Euler rotation angles in radians [pitch, yaw, roll] */
-    rotation?: EulerTuple;
+    rotation?: EulerAngles | EulerTuple;
     /** Uniform scalar or 3-component scale [x, y, z] */
-    scale?: Vector3Tuple | number;
+    scale?: Vector3Like | Vector3Tuple | number;
     /** Local visibility toggle */
     visible?: boolean;
     /** Nested children scene nodes */

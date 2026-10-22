@@ -18,6 +18,8 @@ import {
     MIN_SIMULATION_DT_SEC,
 } from "../core/animation_frame_manager_constants";
 import type { ISceneContextValue, Vector3Tuple, EulerTuple } from "./scene_react_types";
+import type { Vector3Like } from "../../maths/vector_types";
+import type { EulerAngles } from "../core/transform_types";
 import type { SceneFrameState } from "../core/scene_types";
 import { Scene as ProgrammaticScene } from "../core/scene";
 import { SceneNode } from "../core/scene_node";
@@ -500,6 +502,64 @@ describe("Declarative Scene Architecture", () => {
             expect(destroySpy).toHaveBeenCalledTimes(1);
             expect(parentNode.children).not.toContain(groupNode);
         });
+
+        it("synchronizes declarative JSX transforms with Vector3Like and EulerAngles props", () => {
+            const { contextValue } = createMockCanvasContext();
+            const groupRef = createRef<SceneNode>();
+
+            function App({
+                pos,
+                rot,
+                scl,
+            }: {
+                pos: Vector3Like;
+                rot: EulerAngles;
+                scl: Vector3Like;
+            }) {
+                return (
+                    <WebGLCanvasContext.Provider value={contextValue}>
+                        <Scene>
+                            <Group
+                                ref={groupRef}
+                                name="TransformGroup"
+                                position={pos}
+                                rotation={rot}
+                                scale={scl}
+                            />
+                        </Scene>
+                    </WebGLCanvasContext.Provider>
+                );
+            }
+
+            const { rerender } = render(
+                <App
+                    pos={{ x: 1, y: 2, z: 3 }}
+                    rot={{ pitch: 0.1, yaw: 0.2, roll: 0.3 }}
+                    scl={{ x: 4, y: 5, z: 6 }}
+                />
+            );
+
+            const group = groupRef.current!;
+            expect(group.transform.getPosition()).toEqual({ x: 1, y: 2, z: 3 });
+            expect(group.transform.getEulerAngles().pitch).toBeCloseTo(0.1, 5);
+            expect(group.transform.getEulerAngles().yaw).toBeCloseTo(0.2, 5);
+            expect(group.transform.getEulerAngles().roll).toBeCloseTo(0.3, 5);
+            expect(group.transform.getScale()).toEqual({ x: 4, y: 5, z: 6 });
+
+            rerender(
+                <App
+                    pos={{ x: 10, y: 20, z: 30 }}
+                    rot={{ pitch: 0.4, yaw: 0.5, roll: 0.6 }}
+                    scl={{ x: 7, y: 8, z: 9 }}
+                />
+            );
+
+            expect(group.transform.getPosition()).toEqual({ x: 10, y: 20, z: 30 });
+            expect(group.transform.getEulerAngles().pitch).toBeCloseTo(0.4, 5);
+            expect(group.transform.getEulerAngles().yaw).toBeCloseTo(0.5, 5);
+            expect(group.transform.getEulerAngles().roll).toBeCloseTo(0.6, 5);
+            expect(group.transform.getScale()).toEqual({ x: 7, y: 8, z: 9 });
+        });
     });
 
     describe("<PerspectiveCamera />", () => {
@@ -916,6 +976,165 @@ describe("Declarative Scene Architecture", () => {
             setScaleSpy.mockClear();
             rerender(<NodeConsumer scale={[2, 3, 4]} />);
             expect(setScaleSpy).not.toHaveBeenCalled();
+
+            // Fallback when scale becomes undefined
+            setUniformScaleSpy.mockClear();
+            rerender(<NodeConsumer scale={undefined} />);
+            expect(setUniformScaleSpy).toHaveBeenCalledWith(DEFAULT_TRANSFORM_UNIT_SCALE);
+            expect(child.transform.getScale().x).toBe(1);
+            expect(child.transform.getScale().y).toBe(1);
+            expect(child.transform.getScale().z).toBe(1);
+        });
+
+        it("reconciles position updates using Vector3Like objects ({ x, y, z }) and falls back to origin when undefined", () => {
+            const parent = new SceneNode("Parent");
+            const child = new SceneNode("Child");
+
+            const setPosSpy = vi.spyOn(child.transform, "setPosition");
+
+            function NodeConsumer({ position }: { position?: Vector3Like | Vector3Tuple }) {
+                useSceneNode(child, { position });
+                return null;
+            }
+
+            const wrapper = ({ children }: { children: React.ReactNode }) => (
+                <ParentNodeContext.Provider value={{ parent }}>
+                    {children}
+                </ParentNodeContext.Provider>
+            );
+
+            const { rerender } = render(<NodeConsumer position={{ x: 10, y: 20, z: 30 }} />, { wrapper });
+
+            expect(setPosSpy).toHaveBeenCalledWith(10, 20, 30);
+            const pos1 = child.transform.getPosition();
+            expect(pos1.x).toBe(10);
+            expect(pos1.y).toBe(20);
+            expect(pos1.z).toBe(30);
+
+            // Re-render with new object instance but identical values shouldn't call setPosition again
+            setPosSpy.mockClear();
+            rerender(<NodeConsumer position={{ x: 10, y: 20, z: 30 }} />);
+            expect(setPosSpy).not.toHaveBeenCalled();
+
+            // Re-render with updated Vector3Like coordinates
+            rerender(<NodeConsumer position={{ x: 40, y: 50, z: 60 }} />);
+            expect(setPosSpy).toHaveBeenCalledWith(40, 50, 60);
+            const pos2 = child.transform.getPosition();
+            expect(pos2.x).toBe(40);
+            expect(pos2.y).toBe(50);
+            expect(pos2.z).toBe(60);
+
+            // Switch to Vector3Tuple format
+            setPosSpy.mockClear();
+            rerender(<NodeConsumer position={[70, 80, 90]} />);
+            expect(setPosSpy).toHaveBeenCalledWith(70, 80, 90);
+            const pos3 = child.transform.getPosition();
+            expect(pos3.x).toBe(70);
+            expect(pos3.y).toBe(80);
+            expect(pos3.z).toBe(90);
+
+            // Fallback when position becomes undefined
+            setPosSpy.mockClear();
+            rerender(<NodeConsumer position={undefined} />);
+            expect(setPosSpy).toHaveBeenCalledWith(
+                DEFAULT_TRANSFORM_ORIGIN,
+                DEFAULT_TRANSFORM_ORIGIN,
+                DEFAULT_TRANSFORM_ORIGIN
+            );
+            const pos4 = child.transform.getPosition();
+            expect(pos4.x).toBe(0);
+            expect(pos4.y).toBe(0);
+            expect(pos4.z).toBe(0);
+        });
+
+        it("reconciles rotation updates using EulerAngles objects ({ pitch, yaw, roll }) and falls back to origin when undefined", () => {
+            const parent = new SceneNode("Parent");
+            const child = new SceneNode("Child");
+
+            const setRotSpy = vi.spyOn(child.transform, "setRotationEuler");
+
+            function NodeConsumer({ rotation }: { rotation?: EulerAngles | EulerTuple }) {
+                useSceneNode(child, { rotation });
+                return null;
+            }
+
+            const wrapper = ({ children }: { children: React.ReactNode }) => (
+                <ParentNodeContext.Provider value={{ parent }}>
+                    {children}
+                </ParentNodeContext.Provider>
+            );
+
+            const { rerender } = render(<NodeConsumer rotation={{ pitch: 0.1, yaw: 0.2, roll: 0.3 }} />, { wrapper });
+
+            expect(setRotSpy).toHaveBeenCalledWith(0.1, 0.2, 0.3);
+
+            // Re-render with new object instance but identical values shouldn't invoke setter again
+            setRotSpy.mockClear();
+            rerender(<NodeConsumer rotation={{ pitch: 0.1, yaw: 0.2, roll: 0.3 }} />);
+            expect(setRotSpy).not.toHaveBeenCalled();
+
+            // Update rotation with EulerAngles
+            rerender(<NodeConsumer rotation={{ pitch: 0.4, yaw: 0.5, roll: 0.6 }} />);
+            expect(setRotSpy).toHaveBeenCalledWith(0.4, 0.5, 0.6);
+
+            // Switch to EulerTuple format
+            setRotSpy.mockClear();
+            rerender(<NodeConsumer rotation={[0.7, 0.8, 0.9]} />);
+            expect(setRotSpy).toHaveBeenCalledWith(0.7, 0.8, 0.9);
+
+            // Fallback when rotation becomes undefined
+            setRotSpy.mockClear();
+            rerender(<NodeConsumer rotation={undefined} />);
+            expect(setRotSpy).toHaveBeenCalledWith(
+                DEFAULT_TRANSFORM_ORIGIN,
+                DEFAULT_TRANSFORM_ORIGIN,
+                DEFAULT_TRANSFORM_ORIGIN
+            );
+        });
+
+        it("reconciles scale updates using Vector3Like objects ({ x, y, z }) and falls back to unit scale when undefined", () => {
+            const parent = new SceneNode("Parent");
+            const child = new SceneNode("Child");
+
+            const setScaleSpy = vi.spyOn(child.transform, "setScale");
+            const setUniformScaleSpy = vi.spyOn(child.transform, "setUniformScale");
+
+            function NodeConsumer({ scale }: { scale?: Vector3Like | Vector3Tuple | number }) {
+                useSceneNode(child, { scale });
+                return null;
+            }
+
+            const wrapper = ({ children }: { children: React.ReactNode }) => (
+                <ParentNodeContext.Provider value={{ parent }}>
+                    {children}
+                </ParentNodeContext.Provider>
+            );
+
+            // Vector3Like object scale
+            const { rerender } = render(<NodeConsumer scale={{ x: 2, y: 3, z: 4 }} />, { wrapper });
+            expect(setScaleSpy).toHaveBeenCalledWith(2, 3, 4);
+            const scaleVec1 = child.transform.getScale();
+            expect(scaleVec1.x).toBe(2);
+            expect(scaleVec1.y).toBe(3);
+            expect(scaleVec1.z).toBe(4);
+
+            // Identical Vector3Like scale (new reference)
+            setScaleSpy.mockClear();
+            rerender(<NodeConsumer scale={{ x: 2, y: 3, z: 4 }} />);
+            expect(setScaleSpy).not.toHaveBeenCalled();
+
+            // Update Vector3Like scale
+            rerender(<NodeConsumer scale={{ x: 5, y: 6, z: 7 }} />);
+            expect(setScaleSpy).toHaveBeenCalledWith(5, 6, 7);
+
+            // Switch to uniform number scale
+            rerender(<NodeConsumer scale={8} />);
+            expect(setUniformScaleSpy).toHaveBeenCalledWith(8);
+
+            // Switch to Vector3Tuple scale
+            setScaleSpy.mockClear();
+            rerender(<NodeConsumer scale={[9, 10, 11]} />);
+            expect(setScaleSpy).toHaveBeenCalledWith(9, 10, 11);
 
             // Fallback when scale becomes undefined
             setUniformScaleSpy.mockClear();

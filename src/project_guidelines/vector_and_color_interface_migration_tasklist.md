@@ -69,15 +69,15 @@ The migration decouples internal typed array storage (`Float32Array`) from publi
 
 ## Phase 3: React Declarative Scene Graph & Hooks
 
-- [ ] **React Scene Node Types ([`src/scene/react/scene_react_types.ts`](../scene/react/scene_react_types.ts))**
-  - [ ] Update `SceneNodeProps.position` to accept `Vector3Like`.
-  - [ ] Update `SceneNodeProps.rotation` to accept `EulerAngles` (from `transform_types.ts`) alongside `EulerTuple`.
-  - [ ] Update `SceneNodeProps.scale` to accept `Vector3Like | number`.
-- [ ] **Scene Node Hook ([`src/scene/react/use_scene_node.ts`](../scene/react/use_scene_node.ts))**
-  - [ ] Update property reconciliation logic to accept `Vector3Like` without tuple slicing.
-  - [ ] Cache previous position and rotation as `Vector3Like` and `EulerAngles`.
-- [ ] **Declarative Scene Tests ([`src/scene/react/declarative_scene.test.tsx`](../scene/react/declarative_scene.test.tsx))**
-  - [ ] Update tests to verify declarative JSX transform assignment with `{ x, y, z }` object literals.
+- [x] **React Scene Node Types ([`src/scene/react/scene_react_types.ts`](../scene/react/scene_react_types.ts))**
+  - [x] Update `SceneNodeProps.position` to accept `Vector3Like`.
+  - [x] Update `SceneNodeProps.rotation` to accept `EulerAngles` (from `transform_types.ts`) alongside `EulerTuple`.
+  - [x] Update `SceneNodeProps.scale` to accept `Vector3Like | number`.
+- [x] **Scene Node Hook ([`src/scene/react/use_scene_node.ts`](../scene/react/use_scene_node.ts))**
+  - [x] Update property reconciliation logic to accept `Vector3Like` without tuple slicing.
+  - [x] Cache previous position and rotation as `Vector3Like` and `EulerAngles`.
+- [x] **Declarative Scene Tests ([`src/scene/react/declarative_scene.test.tsx`](../scene/react/declarative_scene.test.tsx))**
+  - [x] Update tests to verify declarative JSX transform assignment with `{ x, y, z }` object literals.
 
 ---
 

@@ -3,7 +3,9 @@ import type React from "react";
 import { useParentNode } from "./scene_context";
 import { DEFAULT_TRANSFORM_ORIGIN, DEFAULT_TRANSFORM_UNIT_SCALE } from "./scene_react_constants";
 import type { ISceneNode } from "../core/scene_node_types";
-import type { EulerTuple, SceneNodeProps, Vector3Tuple } from "./scene_react_types";
+import type { Vector3Like } from "../../maths/vector_types";
+import type { EulerAngles } from "../core/transform_types";
+import type { SceneNodeProps } from "./scene_react_types";
 
 export interface UseSceneNodeProps<TNode extends ISceneNode = ISceneNode> extends Omit<SceneNodeProps, "ref"> {
     ref?: React.Ref<TNode>;
@@ -33,9 +35,9 @@ export function useSceneNode<TNode extends ISceneNode = ISceneNode>(
     }, [parent, node]);
 
     // 3. Non-allocating transform & property reconciliation
-    const prevPositionRef = useRef<Vector3Tuple | null>(null);
-    const prevRotationRef = useRef<EulerTuple | null>(null);
-    const prevScaleRef = useRef<Vector3Tuple | number | null>(null);
+    const prevPositionRef = useRef<Vector3Like | null>(null);
+    const prevRotationRef = useRef<EulerAngles | null>(null);
+    const prevScaleRef = useRef<Vector3Like | number | null>(null);
 
     useEffect(() => {
         // Name reconciliation
@@ -50,16 +52,18 @@ export function useSceneNode<TNode extends ISceneNode = ISceneNode>(
 
         // Position reconciliation
         if (props.position !== undefined) {
-            const [x, y, z] = props.position;
+            const x = Array.isArray(props.position) ? props.position[0] : props.position.x;
+            const y = Array.isArray(props.position) ? props.position[1] : props.position.y;
+            const z = Array.isArray(props.position) ? props.position[2] : props.position.z;
             const prev = prevPositionRef.current;
-            if (!prev || prev[0] !== x || prev[1] !== y || prev[2] !== z) {
+            if (!prev || prev.x !== x || prev.y !== y || prev.z !== z) {
                 node.transform.setPosition(x, y, z);
                 if (!prev) {
-                    prevPositionRef.current = [x, y, z];
+                    prevPositionRef.current = { x, y, z };
                 } else {
-                    prev[0] = x;
-                    prev[1] = y;
-                    prev[2] = z;
+                    prev.x = x;
+                    prev.y = y;
+                    prev.z = z;
                 }
             }
         } else if (prevPositionRef.current !== null) {
@@ -69,16 +73,18 @@ export function useSceneNode<TNode extends ISceneNode = ISceneNode>(
 
         // Rotation reconciliation (Euler angles: pitch, yaw, roll)
         if (props.rotation !== undefined) {
-            const [pitch, yaw, roll] = props.rotation;
+            const pitch = Array.isArray(props.rotation) ? props.rotation[0] : props.rotation.pitch;
+            const yaw = Array.isArray(props.rotation) ? props.rotation[1] : props.rotation.yaw;
+            const roll = Array.isArray(props.rotation) ? props.rotation[2] : props.rotation.roll;
             const prev = prevRotationRef.current;
-            if (!prev || prev[0] !== pitch || prev[1] !== yaw || prev[2] !== roll) {
+            if (!prev || prev.pitch !== pitch || prev.yaw !== yaw || prev.roll !== roll) {
                 node.transform.setRotationEuler(pitch, yaw, roll);
                 if (!prev) {
-                    prevRotationRef.current = [pitch, yaw, roll];
+                    prevRotationRef.current = { pitch, yaw, roll };
                 } else {
-                    prev[0] = pitch;
-                    prev[1] = yaw;
-                    prev[2] = roll;
+                    prev.pitch = pitch;
+                    prev.yaw = yaw;
+                    prev.roll = roll;
                 }
             }
         } else if (prevRotationRef.current !== null) {
@@ -86,7 +92,7 @@ export function useSceneNode<TNode extends ISceneNode = ISceneNode>(
             prevRotationRef.current = null;
         }
 
-        // Scale reconciliation (scalar or 3-component tuple)
+        // Scale reconciliation (scalar, Vector3Like, or 3-component tuple)
         if (props.scale !== undefined) {
             if (typeof props.scale === "number") {
                 const prev = prevScaleRef.current;
@@ -95,16 +101,18 @@ export function useSceneNode<TNode extends ISceneNode = ISceneNode>(
                     prevScaleRef.current = props.scale;
                 }
             } else {
-                const [sx, sy, sz] = props.scale;
+                const sx = Array.isArray(props.scale) ? props.scale[0] : props.scale.x;
+                const sy = Array.isArray(props.scale) ? props.scale[1] : props.scale.y;
+                const sz = Array.isArray(props.scale) ? props.scale[2] : props.scale.z;
                 const prev = prevScaleRef.current;
-                if (!Array.isArray(prev) || prev[0] !== sx || prev[1] !== sy || prev[2] !== sz) {
+                if (typeof prev === "number" || !prev || prev.x !== sx || prev.y !== sy || prev.z !== sz) {
                     node.transform.setScale(sx, sy, sz);
-                    if (!Array.isArray(prev)) {
-                        prevScaleRef.current = [sx, sy, sz];
+                    if (!prev || typeof prev === "number") {
+                        prevScaleRef.current = { x: sx, y: sy, z: sz };
                     } else {
-                        prev[0] = sx;
-                        prev[1] = sy;
-                        prev[2] = sz;
+                        prev.x = sx;
+                        prev.y = sy;
+                        prev.z = sz;
                     }
                 }
             }
