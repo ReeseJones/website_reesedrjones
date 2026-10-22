@@ -5,11 +5,6 @@ export interface Vector2Like {
 
 export type ReadonlyVector2Like = Readonly<Vector2Like>;
 
-/**
- * Backward compatibility alias for Vector2Like
- */
-export type Vector2 = Vector2Like;
-
 export interface Vector3Like {
     x: number;
     y: number;
@@ -17,3 +12,12 @@ export interface Vector3Like {
 }
 
 export type ReadonlyVector3Like = Readonly<Vector3Like>;
+
+export interface Vector4Like {
+    x: number;
+    y: number;
+    z: number;
+    w: number;
+}
+
+export type ReadonlyVector4Like = Readonly<Vector4Like>;

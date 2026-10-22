@@ -8,27 +8,27 @@ The migration decouples internal typed array storage (`Float32Array`) from publi
 
 ## Phase 1: Foundational Math & Color Types
 
-- [ ] **Vector Types ([`src/maths/vector_types.ts`](../maths/vector_types.ts))**
-  - [ ] Add `Vector4Like { x: number; y: number; z: number; w: number; }` and `ReadonlyVector4Like`.
-  - [ ] Remove deprecated backwards-compatibility alias `export type Vector2 = Vector2Like;`.
-  - [ ] Update any consumers importing `Vector2` to import `Vector2Like`.
-- [ ] **Color Types ([`src/helpers/colors_types.ts`](../helpers/colors_types.ts))**
-  - [ ] Add `RgbLike { r: number; g: number; b: number; }` and `ReadonlyRgbLike`.
-  - [ ] Add `RgbaLike { r: number; g: number; b: number; a: number; }` and `ReadonlyRgbaLike`.
-  - [ ] Preserve `NormalizedRgbTuple` and `NormalizedRgbaTuple` strictly for internal buffer serialization.
-- [ ] **Color Helpers & Utilities ([`src/helpers/colors.ts`](../helpers/colors.ts))**
-  - [ ] Implement `rgbLikeToHex(rgb: RgbLike): string`.
-  - [ ] Implement `rgbaLikeToHex(rgba: RgbaLike): string`.
-  - [ ] Implement `hexToRgbLike(hex: string): RgbLike`.
-  - [ ] Implement `hexToRgbaLike(hex: string): RgbaLike`.
-  - [ ] Implement `rgbLikeToTuple(rgb: RgbLike): NormalizedRgbTuple`.
-  - [ ] Implement `rgbaLikeToTuple(rgba: RgbaLike): NormalizedRgbaTuple`.
-  - [ ] Implement `tupleToRgbLike(tuple: NormalizedRgbTuple): RgbLike`.
-  - [ ] Implement `tupleToRgbaLike(tuple: NormalizedRgbaTuple): RgbaLike`.
-  - [ ] Author comprehensive unit tests in [`src/helpers/colors.test.ts`](../helpers/colors.test.ts).
-- [ ] **Canvas Context Configuration ([`src/webgl/canvas/canvas_types.ts`](../webgl/canvas/canvas_types.ts))**
-  - [ ] Update `WebGLContextOptions.clearColor` to accept `RgbaLike` alongside `[number, number, number, number]`.
-  - [ ] Update clear color unpacking in [`src/components/webgl_canvas/use_webgl_canvas.ts`](../components/webgl_canvas/use_webgl_canvas.ts).
+- [x] **Vector Types ([`src/maths/vector_types.ts`](../maths/vector_types.ts))**
+  - [x] Add `Vector4Like { x: number; y: number; z: number; w: number; }` and `ReadonlyVector4Like`.
+  - [x] Remove deprecated backwards-compatibility alias `export type Vector2 = Vector2Like;`.
+  - [x] Update any consumers importing `Vector2` to import `Vector2Like`.
+- [x] **Color Types ([`src/helpers/colors_types.ts`](../helpers/colors_types.ts))**
+  - [x] Add `RgbLike { r: number; g: number; b: number; }` and `ReadonlyRgbLike`.
+  - [x] Add `RgbaLike { r: number; g: number; b: number; a: number; }` and `ReadonlyRgbaLike`.
+  - [x] Preserve `NormalizedRgbTuple` and `NormalizedRgbaTuple` strictly for internal buffer serialization.
+- [x] **Color Helpers & Utilities ([`src/helpers/colors.ts`](../helpers/colors.ts))**
+  - [x] Implement `rgbLikeToHex(rgb: RgbLike): string`.
+  - [x] Implement `rgbaLikeToHex(rgba: RgbaLike): string`.
+  - [x] Implement `hexToRgbLike(hex: string): RgbLike`.
+  - [x] Implement `hexToRgbaLike(hex: string): RgbaLike`.
+  - [x] Implement `rgbLikeToTuple(rgb: RgbLike): NormalizedRgbTuple`.
+  - [x] Implement `rgbaLikeToTuple(rgba: RgbaLike): NormalizedRgbaTuple`.
+  - [x] Implement `tupleToRgbLike(tuple: NormalizedRgbTuple): RgbLike`.
+  - [x] Implement `tupleToRgbaLike(tuple: NormalizedRgbaTuple): RgbaLike`.
+  - [x] Author comprehensive unit tests in [`src/helpers/colors.test.ts`](../helpers/colors.test.ts).
+- [x] **Canvas Context Configuration ([`src/webgl/canvas/canvas_types.ts`](../webgl/canvas/canvas_types.ts))**
+  - [x] Update `WebGLContextOptions.clearColor` to accept `RgbaLike` alongside `[number, number, number, number]`.
+  - [x] Update clear color unpacking in [`src/components/webgl_canvas/use_webgl_canvas.ts`](../components/webgl_canvas/use_webgl_canvas.ts).
 
 ---
 

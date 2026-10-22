@@ -1,3 +1,5 @@
+import type { RgbaLike } from "../../helpers/colors_types";
+
 /**
  * Backing store and CSS viewport dimensions of a WebGL canvas.
  */
@@ -46,6 +48,6 @@ export interface WebGLContextOptions {
     pauseWhenHidden?: boolean;
     /** Automatically clear the color buffer before executing passes every frame. Defaults to true. */
     autoClear?: boolean;
-    /** Clear color RGBA tuple (0.0 to 1.0) used when autoClear is enabled. Defaults to [0, 0, 0, 0]. */
-    clearColor?: [number, number, number, number];
+    /** Clear color RGBA tuple or RgbaLike object (0.0 to 1.0) used when autoClear is enabled. Defaults to [0, 0, 0, 0]. */
+    clearColor?: RgbaLike | [number, number, number, number];
 }

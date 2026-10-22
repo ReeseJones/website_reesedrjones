@@ -136,7 +136,11 @@ export function useWebGLCanvas(config?: UseWebGLCanvasOptions) {
 
         if (optionsRef.current.autoClear) {
             const cc = optionsRef.current.clearColor;
-            gl.clearColor(cc[0], cc[1], cc[2], cc[3]);
+            if (Array.isArray(cc)) {
+                gl.clearColor(cc[0], cc[1], cc[2], cc[3]);
+            } else if (cc) {
+                gl.clearColor(cc.r, cc.g, cc.b, cc.a);
+            }
             gl.clear(gl.COLOR_BUFFER_BIT);
         }
 
