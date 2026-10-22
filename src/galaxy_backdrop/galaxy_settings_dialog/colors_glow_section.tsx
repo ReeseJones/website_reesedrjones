@@ -18,28 +18,28 @@ export function ColorsGlowSection({ params, onChange }: SectionProps) {
                 <div className="colors-grid">
                     <ColorItem
                         label="Core Bulge"
-                        rgb={params.coreColor}
-                        onChange={(rgb) => onChange({ coreColor: rgb })}
+                        color={params.coreColor}
+                        onChange={(color) => onChange({ coreColor: color })}
                     />
                     <ColorItem
                         label="Core Blaze"
-                        rgb={params.coreBlazeColor}
-                        onChange={(rgb) => onChange({ coreBlazeColor: rgb })}
+                        color={params.coreBlazeColor}
+                        onChange={(color) => onChange({ coreBlazeColor: color })}
                     />
                     <ColorItem
                         label="Inner Arms"
-                        rgb={params.armInnerColor}
-                        onChange={(rgb) => onChange({ armInnerColor: rgb })}
+                        color={params.armInnerColor}
+                        onChange={(color) => onChange({ armInnerColor: color })}
                     />
                     <ColorItem
                         label="Outer Arms"
-                        rgb={params.armOuterColor}
-                        onChange={(rgb) => onChange({ armOuterColor: rgb })}
+                        color={params.armOuterColor}
+                        onChange={(color) => onChange({ armOuterColor: color })}
                     />
                     <ColorItem
                         label="Interstellar Dust"
-                        rgb={params.accentColor}
-                        onChange={(rgb) => onChange({ accentColor: rgb })}
+                        color={params.accentColor}
+                        onChange={(color) => onChange({ accentColor: color })}
                     />
                 </div>
                 <SliderRow

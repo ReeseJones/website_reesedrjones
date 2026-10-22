@@ -56,13 +56,13 @@ export function GalacticCloudSection({ params, onChange }: SectionProps) {
                 <div className="colors-grid" style={{ marginTop: "0.75rem" }}>
                     <ColorItem
                         label="Center Line Color"
-                        rgb={params.horizonColorCenter ?? [1.0, 0.84, 0.66]}
-                        onChange={(rgb) => onChange({ horizonColorCenter: rgb })}
+                        color={params.horizonColorCenter ?? { r: 1.0, g: 0.84, b: 0.66 }}
+                        onChange={(color) => onChange({ horizonColorCenter: color })}
                     />
                     <ColorItem
                         label="Outer Band Color"
-                        rgb={params.horizonColorOuter ?? [0.15, 0.25, 0.85]}
-                        onChange={(rgb) => onChange({ horizonColorOuter: rgb })}
+                        color={params.horizonColorOuter ?? { r: 0.15, g: 0.25, b: 0.85 }}
+                        onChange={(color) => onChange({ horizonColorOuter: color })}
                     />
                 </div>
             </div>

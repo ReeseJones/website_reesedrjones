@@ -44,10 +44,11 @@ Design specification for the reusable `ColorItem` interactive color picker and s
 ## 4. Component Interface & Types
 
 ```typescript
-export interface ColorItemProps extends Omit<React.HTMLAttributes<HTMLDivElement>, "onChange"> {
+export interface ColorItemProps extends Omit<React.HTMLAttributes<HTMLDivElement>, "onChange" | "color"> {
     label: string;
-    rgb: [number, number, number];
-    onChange: (rgb: [number, number, number]) => void;
+    color?: RgbLike;
+    rgb?: RgbLike | [number, number, number];
+    onChange: (color: RgbLike) => void;
     inputProps?: Omit<
         React.InputHTMLAttributes<HTMLInputElement>,
         "type" | "value" | "onChange"
@@ -57,8 +58,9 @@ export interface ColorItemProps extends Omit<React.HTMLAttributes<HTMLDivElement
 
 - **Props Specification:**
   - `label`: Descriptive label for the color setting.
-  - `rgb`: Normalized 3-element tuple `[r, g, b]` with values in the range `[0.0, 1.0]`.
-  - `onChange`: Callback fired on every color change, supplying the updated normalized RGB tuple `[r, g, b]`.
+  - `color`: Semantic normalized `RgbLike` object `{ r, g, b }` with values in the range `[0.0, 1.0]`.
+  - `rgb`: Optional normalized RGB input, supporting `RgbLike` or 3-element tuple `[r, g, b]`.
+  - `onChange`: Callback fired on every color change, supplying the updated normalized `RgbLike` object `{ r, g, b }`.
   - `inputProps`: Optional attributes forwarded directly to the `<input type="color">` element.
   - `...rest`: Standard HTML attributes forwarded to the outer `.color-item` `<div>`.
 
@@ -69,13 +71,13 @@ export interface ColorItemProps extends Omit<React.HTMLAttributes<HTMLDivElement
 The component integrates with [../../helpers/colors.ts](../../helpers/colors.ts) to execute two-way color mapping:
 
 - **State to Display (RGB -> Hex):**
-  - Uses `rgbToHex(rgb)`.
+  - Uses `rgbLikeToHex(color)` or `rgbToHex(rgb)`.
   - Maps floating-point channel values $c \in [0, 1]$ to 8-bit integers $\lfloor c \times 255 \rceil$.
   - Formats as `#RRGGBB` hex string for `<input type="color">` value and displays in uppercase.
 - **Input to State (Hex -> RGB):**
-  - On input event (`e.target.value`), invokes `hexToRgb(hexString)`.
+  - On input event (`e.target.value`), invokes `hexToRgbLike(hexString)`.
   - Parses two-digit hex segments into 8-bit integers and divides by 255 to yield normalized floats.
-  - Passes the resulting `[number, number, number]` to `onChange`.
+  - Passes the resulting `RgbLike` object to `onChange`.
 
 ---
 

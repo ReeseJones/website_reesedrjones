@@ -1,3 +1,5 @@
+import type { RgbLike } from "../../helpers/colors_types";
+
 export type StarRenderStyle = "pinprick" | "orb";
 
 export interface GalacticCloudParameters {
@@ -16,15 +18,15 @@ export interface GalacticCloudParameters {
     /** Vertical spread/thickness of the celestial horizon glow */
     horizonThickness: number;
     /** RGB triplet for the central equator horizon line */
-    horizonColorCenter: [number, number, number];
+    horizonColorCenter: RgbLike;
     /** RGB triplet for the outer horizon atmospheric band */
-    horizonColorOuter: [number, number, number];
-    /** Legacy RGB triplet for backward compatibility */
-    horizonColor?: [number, number, number];
+    horizonColorOuter: RgbLike;
+
+
     /** RGB triplet for dense inner nebula clouds */
-    cloudColorPrimary: [number, number, number];
+    cloudColorPrimary: RgbLike;
     /** RGB triplet for outer diffuse dust clouds */
-    cloudColorSecondary: [number, number, number];
+    cloudColorSecondary: RgbLike;
 }
 
 export interface GalaxyParameters extends GalacticCloudParameters {
@@ -47,11 +49,11 @@ export interface GalaxyParameters extends GalacticCloudParameters {
     coreDensityRatio: number;
 
     // Colors (RGB normalized 0.0 - 1.0)
-    coreColor: [number, number, number];
-    coreBlazeColor: [number, number, number];
-    armInnerColor: [number, number, number];
-    armOuterColor: [number, number, number];
-    accentColor: [number, number, number];
+    coreColor: RgbLike;
+    coreBlazeColor: RgbLike;
+    armInnerColor: RgbLike;
+    armOuterColor: RgbLike;
+    accentColor: RgbLike;
 
     // Luminosity & Point Sizes
     minPointSize: number;

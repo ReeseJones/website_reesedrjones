@@ -166,8 +166,8 @@ describe("galaxy_resources", () => {
             const nonMorphologyUpdates: Partial<GalaxyParameters> = {
                 rotationSpeed: 0.8,
                 pointScale: 10.0,
-                coreColor: [1, 0, 0],
-                accentColor: [0, 1, 0],
+                coreColor: { r: 1, g: 0, b: 0 },
+                accentColor: { r: 0, g: 1, b: 0 },
             };
 
             const returned = getSharedGalaxyGeometry(nonMorphologyUpdates);

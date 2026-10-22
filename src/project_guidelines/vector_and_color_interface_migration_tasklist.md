@@ -132,36 +132,36 @@ The migration decouples internal typed array storage (`Float32Array`) from publi
 
 ## Phase 6: Galaxy Backdrop Parameters & Controller
 
-- [ ] **Galaxy Parameter Types ([`src/galaxy_backdrop/parameters/types.ts`](../galaxy_backdrop/parameters/types.ts))**
-  - [ ] Refactor color properties from `[number, number, number]` to `RgbLike`:
-    - [ ] `horizonColorCenter: RgbLike`
-    - [ ] `horizonColorOuter: RgbLike`
-    - [ ] `cloudColorPrimary: RgbLike`
-    - [ ] `cloudColorSecondary: RgbLike`
-    - [ ] `coreColor: RgbLike`
-    - [ ] `coreBlazeColor: RgbLike`
-    - [ ] `armInnerColor: RgbLike`
-    - [ ] `armOuterColor: RgbLike`
-    - [ ] `accentColor: RgbLike`
-- [ ] **Defaults & Presets ([`src/galaxy_backdrop/parameters/index.ts`](../galaxy_backdrop/parameters/index.ts))**
-  - [ ] Update default parameter values to `{ r, g, b }` literals.
-  - [ ] Update presets in [`src/galaxy_backdrop/parameters/presets/`](../galaxy_backdrop/parameters/presets/).
-- [ ] **Galaxy Scene & Controller ([`src/galaxy_backdrop/galaxy_scene.tsx`](../galaxy_backdrop/galaxy_scene.tsx))**
-  - [ ] Align [`use_galaxy_controller.ts`](../galaxy_backdrop/use_galaxy_controller.ts) and scene uniform bindings with `RgbLike` parameters.
-  - [ ] Update unit tests in `src/galaxy_backdrop/`.
+- [x] **Galaxy Parameter Types ([`src/galaxy_backdrop/parameters/types.ts`](../galaxy_backdrop/parameters/types.ts))**
+  - [x] Refactor color properties from `[number, number, number]` to `RgbLike`:
+    - [x] `horizonColorCenter: RgbLike`
+    - [x] `horizonColorOuter: RgbLike`
+    - [x] `cloudColorPrimary: RgbLike`
+    - [x] `cloudColorSecondary: RgbLike`
+    - [x] `coreColor: RgbLike`
+    - [x] `coreBlazeColor: RgbLike`
+    - [x] `armInnerColor: RgbLike`
+    - [x] `armOuterColor: RgbLike`
+    - [x] `accentColor: RgbLike`
+- [x] **Defaults & Presets ([`src/galaxy_backdrop/parameters/index.ts`](../galaxy_backdrop/parameters/index.ts))**
+  - [x] Update default parameter values to `{ r, g, b }` literals.
+  - [x] Update presets in [`src/galaxy_backdrop/parameters/presets/`](../galaxy_backdrop/parameters/presets/).
+- [x] **Galaxy Scene & Controller ([`src/galaxy_backdrop/galaxy_scene.tsx`](../galaxy_backdrop/galaxy_scene.tsx))**
+  - [x] Align [`use_galaxy_controller.ts`](../galaxy_backdrop/use_galaxy_controller.ts) and scene uniform bindings with `RgbLike` parameters.
+  - [x] Update unit tests in `src/galaxy_backdrop/`.
 
 ---
 
 ## Phase 7: UI Components & Settings Dialogs
 
-- [ ] **Color Item Component ([`src/components/color_item/color_item.tsx`](../components/color_item/color_item.tsx))**
-  - [ ] Update props to accept `color: RgbLike` and `onChange: (color: RgbLike) => void`.
-  - [ ] Update component implementation and design doc in [`design.md`](../components/color_item/design.md).
-  - [ ] Update unit tests in [`color_item.test.tsx`](../components/color_item/color_item.test.tsx).
-- [ ] **Galaxy Settings Dialog Sections ([`src/galaxy_backdrop/galaxy_settings_dialog/`](../galaxy_backdrop/galaxy_settings_dialog/))**
-  - [ ] Update [`colors_glow_section.tsx`](../galaxy_backdrop/galaxy_settings_dialog/colors_glow_section.tsx) to bind `ColorItem` directly to `RgbLike` parameters.
-  - [ ] Update [`galactic_cloud_section.tsx`](../galaxy_backdrop/galaxy_settings_dialog/galactic_cloud_section.tsx) to bind `ColorItem` directly to `RgbLike` horizon parameters.
-  - [ ] Update any settings dialog unit tests.
+- [x] **Color Item Component ([`src/components/color_item/color_item.tsx`](../components/color_item/color_item.tsx))**
+  - [x] Update props to accept `color: RgbLike` and `onChange: (color: RgbLike) => void`.
+  - [x] Update component implementation and design doc in [`design.md`](../components/color_item/design.md).
+  - [x] Update unit tests in [`color_item.test.tsx`](../components/color_item/color_item.test.tsx).
+- [x] **Galaxy Settings Dialog Sections ([`src/galaxy_backdrop/galaxy_settings_dialog/`](../galaxy_backdrop/galaxy_settings_dialog/))**
+  - [x] Update [`colors_glow_section.tsx`](../galaxy_backdrop/galaxy_settings_dialog/colors_glow_section.tsx) to bind `ColorItem` directly to `RgbLike` parameters.
+  - [x] Update [`galactic_cloud_section.tsx`](../galaxy_backdrop/galaxy_settings_dialog/galactic_cloud_section.tsx) to bind `ColorItem` directly to `RgbLike` horizon parameters.
+  - [x] Update any settings dialog unit tests.
 
 ---
 

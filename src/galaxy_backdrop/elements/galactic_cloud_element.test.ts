@@ -199,11 +199,11 @@ describe("GalacticCloudElement", () => {
                 cloudParallaxFactor: 0.3,
                 horizonIntensity: 1.2,
                 horizonThickness: 0.35,
-                horizonColorCenter: [1, 1, 1],
-                horizonColorOuter: [0, 0, 1],
-                horizonColor: [0, 0, 1],
-                cloudColorPrimary: [0.1, 0.2, 0.3],
-                cloudColorSecondary: [0.3, 0.2, 0.1],
+                horizonColorCenter: { r: 1, g: 1, b: 1 },
+                horizonColorOuter: { r: 0, g: 0, b: 1 },
+
+                cloudColorPrimary: { r: 0.1, g: 0.2, b: 0.3 },
+                cloudColorSecondary: { r: 0.3, g: 0.2, b: 0.1 },
             };
 
             element.params = partialParams as GalacticCloudParameters;
@@ -571,11 +571,11 @@ describe("GalacticCloudElement", () => {
                 cloudParallaxFactor: 0.25,
                 horizonIntensity: 1.0,
                 horizonThickness: 0.2,
-                horizonColorCenter: [1, 1, 1],
-                horizonColorOuter: [0, 0, 1],
-                horizonColor: [0, 0, 1],
-                cloudColorPrimary: [0.1, 0.2, 0.3],
-                cloudColorSecondary: [0.3, 0.2, 0.1],
+                horizonColorCenter: { r: 1, g: 1, b: 1 },
+                horizonColorOuter: { r: 0, g: 0, b: 1 },
+
+                cloudColorPrimary: { r: 0.1, g: 0.2, b: 0.3 },
+                cloudColorSecondary: { r: 0.3, g: 0.2, b: 0.1 },
             };
             element.params = partialParams;
 

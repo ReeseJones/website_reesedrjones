@@ -6,10 +6,10 @@ export const deepNebulaPreset: GalaxyPreset = {
     name: "Deep Interstellar Nebula",
     params: {
         ...DEFAULT_ORB_PARAMETERS,
-        accentColor: [0.85, 0.18, 0.78],
-        armInnerColor: [0.15, 0.95, 0.88],
-        armOuterColor: [0.08, 0.22, 0.88],
-        coreBlazeColor: [1.0, 0.95, 0.75],
+        accentColor: { r: 0.85, g: 0.18, b: 0.78 },
+        armInnerColor: { r: 0.15, g: 0.95, b: 0.88 },
+        armOuterColor: { r: 0.08, g: 0.22, b: 0.88 },
+        coreBlazeColor: { r: 1.0, g: 0.95, b: 0.75 },
         pointScale: 48.0,
     },
 };

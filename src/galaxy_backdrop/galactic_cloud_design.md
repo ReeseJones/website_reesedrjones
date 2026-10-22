@@ -72,11 +72,12 @@ export interface GalacticCloudParameters {
     /** Vertical spread/thickness of the celestial horizon glow */
     horizonThickness: number;
     /** RGB triplet for the glowing horizon band */
-    horizonColor: [number, number, number];
+    horizonColorCenter: RgbLike;
+    horizonColorOuter: RgbLike;
     /** RGB triplet for dense inner nebula clouds */
-    cloudColorPrimary: [number, number, number];
+    cloudColorPrimary: RgbLike;
     /** RGB triplet for outer diffuse dust clouds */
-    cloudColorSecondary: [number, number, number];
+    cloudColorSecondary: RgbLike;
 }
 ```
 
