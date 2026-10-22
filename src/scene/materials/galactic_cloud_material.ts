@@ -14,6 +14,7 @@ import {
 import type {
     GalacticCloudFrameUniforms,
     GalacticCloudMaterialOptions,
+    GalacticCloudMaterialParameters,
 } from "./galactic_cloud_material_types";
 
 /**
@@ -22,7 +23,7 @@ import type {
  * and manages horizon color gradient and dynamic view-ray reconstruction uniforms.
  */
 export class GalacticCloudMaterial extends Material {
-    private readonly _params: Partial<GalaxyParameters>;
+    private readonly _params: GalacticCloudMaterialParameters;
 
     constructor(options?: GalacticCloudMaterialOptions) {
         const resolvedShaderKey: GenerativeShaderKey = options?.shaderKey ?? "galactic_cloud";
@@ -69,7 +70,7 @@ export class GalacticCloudMaterial extends Material {
     /**
      * Dynamically updates static horizon styling uniforms when galaxy parameters change.
      */
-    public updateParameters(params: Partial<GalaxyParameters>): void {
+    public updateParameters(params: GalacticCloudMaterialParameters): void {
         const uniforms: Record<string, unknown> = {};
 
         if (params.horizonIntensity !== undefined) {
@@ -87,6 +88,14 @@ export class GalacticCloudMaterial extends Material {
         if (params.horizonColorOuter !== undefined) {
             uniforms.uHorizonColorOuter = params.horizonColorOuter;
             this._params.horizonColorOuter = params.horizonColorOuter;
+        }
+        if (params.cloudColorPrimary !== undefined) {
+            uniforms.uCloudColorPrimary = params.cloudColorPrimary;
+            this._params.cloudColorPrimary = params.cloudColorPrimary;
+        }
+        if (params.cloudColorSecondary !== undefined) {
+            uniforms.uCloudColorSecondary = params.cloudColorSecondary;
+            this._params.cloudColorSecondary = params.cloudColorSecondary;
         }
 
         if (Object.keys(uniforms).length > 0) {

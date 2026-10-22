@@ -1,5 +1,7 @@
 import type { IVertexShader, IFragmentShader } from "./shader_stage_types";
 import type { IWebGLResource } from "../core/resource_types";
+import type { Vector3Like, Vector4Like } from "../../maths/vector_types";
+import type { RgbLike, RgbaLike } from "../../helpers/colors_types";
 
 export type UniformValue =
     | number
@@ -8,7 +10,11 @@ export type UniformValue =
     | [number, number, number]
     | [number, number, number, number]
     | Float32Array
-    | number[];
+    | number[]
+    | Vector3Like
+    | Vector4Like
+    | RgbLike
+    | RgbaLike;
 
 export type UniformRecord = Record<string, UniformValue>;
 
@@ -60,8 +66,20 @@ export interface IShaderProgram<TUniforms extends object = Record<string, unknow
     setFloat(name: string, value: number): void;
     setInt(name: string, value: number): void;
     setVec2(name: string, x: number, y: number): void;
-    setVec3(name: string, xOrArray: number | [number, number, number] | Float32Array, y?: number, z?: number): void;
-    setVec4(name: string, xOrArray: number | [number, number, number, number] | Float32Array, y?: number, z?: number, w?: number): void;
+    setVec3(
+        name: string,
+        xOrVector: number | [number, number, number] | Float32Array | Vector3Like,
+        y?: number,
+        z?: number
+    ): void;
+    setVec4(
+        name: string,
+        xOrVector: number | [number, number, number, number] | Float32Array | Vector4Like | RgbaLike,
+        y?: number,
+        z?: number,
+        w?: number
+    ): void;
+    setColor(name: string, color: RgbLike | RgbaLike): void;
     setMat3(name: string, data: Float32Array | number[]): void;
     setMat4(name: string, data: Float32Array | number[]): void;
 

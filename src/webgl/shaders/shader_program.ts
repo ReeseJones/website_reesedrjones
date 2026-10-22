@@ -7,6 +7,8 @@ import type { IVertexShader, IFragmentShader } from "./shader_stage_types";
 import type { IWebGLContextManager } from "../core/context_manager_types";
 import { compileShader, linkProgram } from "./shader_compiler";
 import { DEFAULT_TEXTURE_UNIT_MAP } from "../textures/texture_types";
+import type { Vector3Like, Vector4Like } from "../../maths/vector_types";
+import type { RgbLike, RgbaLike } from "../../helpers/colors_types";
 
 /**
  * Robust WebGL2 Shader Program wrapper.
@@ -87,6 +89,16 @@ export class ShaderProgram<TUniforms extends object = Record<string, unknown>>
                     this.setMat3(name, val instanceof Float32Array ? val : new Float32Array(val as number[]));
                 } else if (val.length === 16) {
                     this.setMat4(name, val instanceof Float32Array ? val : new Float32Array(val as number[]));
+                }
+            } else if (typeof val === "object") {
+                if ("x" in val && "y" in val && "z" in val && "w" in val) {
+                    this.setVec4(name, val as Vector4Like);
+                } else if ("r" in val && "g" in val && "b" in val && "a" in val) {
+                    this.setVec4(name, val as RgbaLike);
+                } else if ("x" in val && "y" in val && "z" in val) {
+                    this.setVec3(name, val as Vector3Like);
+                } else if ("r" in val && "g" in val && "b" in val) {
+                    this.setColor(name, val as RgbLike);
                 }
             }
         }
@@ -261,17 +273,19 @@ export class ShaderProgram<TUniforms extends object = Record<string, unknown>>
      */
     public setVec3(
         name: string,
-        xOrArray: number | [number, number, number] | Float32Array,
+        xOrVector: number | [number, number, number] | Float32Array | Vector3Like,
         y?: number,
         z?: number
     ): void {
         let val: [number, number, number];
-        if (typeof xOrArray === "number") {
-            val = [xOrArray, y ?? 0, z ?? 0];
-        } else if (Array.isArray(xOrArray)) {
-            val = [xOrArray[0], xOrArray[1], xOrArray[2]];
+        if (typeof xOrVector === "number") {
+            val = [xOrVector, y ?? 0, z ?? 0];
+        } else if (Array.isArray(xOrVector) || xOrVector instanceof Float32Array) {
+            val = [xOrVector[0], xOrVector[1], xOrVector[2]];
+        } else if ("x" in xOrVector && "y" in xOrVector && "z" in xOrVector) {
+            val = [xOrVector.x, xOrVector.y, xOrVector.z];
         } else {
-            val = [xOrArray[0], xOrArray[1], xOrArray[2]];
+            val = [0, 0, 0];
         }
 
         const cached = this.uniformCache.get(name);
@@ -300,20 +314,32 @@ export class ShaderProgram<TUniforms extends object = Record<string, unknown>>
      */
     public setVec4(
         name: string,
-        x: number,
-        y: number,
-        z: number,
-        w: number
+        xOrVector: number | [number, number, number, number] | Float32Array | Vector4Like | RgbaLike,
+        y?: number,
+        z?: number,
+        w?: number
     ): void {
-        const val: [number, number, number, number] = [x, y, z, w];
+        let val: [number, number, number, number];
+        if (typeof xOrVector === "number") {
+            val = [xOrVector, y ?? 0, z ?? 0, w ?? 0];
+        } else if (Array.isArray(xOrVector) || xOrVector instanceof Float32Array) {
+            val = [xOrVector[0], xOrVector[1], xOrVector[2], xOrVector[3]];
+        } else if ("x" in xOrVector && "y" in xOrVector && "z" in xOrVector && "w" in xOrVector) {
+            val = [xOrVector.x, xOrVector.y, xOrVector.z, xOrVector.w];
+        } else if ("r" in xOrVector && "g" in xOrVector && "b" in xOrVector && "a" in xOrVector) {
+            val = [xOrVector.r, xOrVector.g, xOrVector.b, xOrVector.a];
+        } else {
+            val = [0, 0, 0, 1];
+        }
+
         const cached = this.uniformCache.get(name);
         if (
             cached &&
             Array.isArray(cached.value) &&
-            cached.value[0] === x &&
-            cached.value[1] === y &&
-            cached.value[2] === z &&
-            cached.value[3] === w
+            cached.value[0] === val[0] &&
+            cached.value[1] === val[1] &&
+            cached.value[2] === val[2] &&
+            cached.value[3] === val[3]
         ) {
             return;
         }
@@ -321,7 +347,21 @@ export class ShaderProgram<TUniforms extends object = Record<string, unknown>>
         this.uniformCache.set(name, { type: "vec4", value: val });
         const loc = this.getUniformLocation(name);
         if (loc) {
-            this.gl?.uniform4f(loc, x, y, z, w);
+            this.gl?.uniform4f(loc, val[0], val[1], val[2], val[3]);
+        }
+    }
+
+    /**
+     * Uploads an RGB or RGBA semantic color uniform value.
+     *
+     * **Context Binding:** Does NOT bind program. Caller must ensure `contextManager.useShader(this)`
+     * has been called prior to invoking.
+     */
+    public setColor(name: string, color: RgbLike | RgbaLike): void {
+        if ("a" in color && typeof color.a === "number") {
+            this.setVec4(name, color);
+        } else {
+            this.setVec3(name, [color.r, color.g, color.b]);
         }
     }
 

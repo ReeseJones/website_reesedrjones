@@ -130,7 +130,7 @@ describe("applyMaterial", () => {
         expect(mockShader.setMat4).toHaveBeenCalledWith("u_viewProjectionMatrix", mockCamera.viewProjectionMatrix);
         expect(mockShader.setMat4).toHaveBeenCalledWith("u_viewMatrix", mockCamera.viewMatrix);
         expect(mockShader.setMat4).toHaveBeenCalledWith("u_projectionMatrix", mockCamera.projectionMatrix);
-        expect(mockShader.setVec3).toHaveBeenCalledWith("u_cameraPosition", [5, 10, 15]);
+        expect(mockShader.setVec3).toHaveBeenCalledWith("u_cameraPosition", { x: 5, y: 10, z: 15 });
         expect(mockShader.setFloat).toHaveBeenCalledWith("u_time", 25.0);
         expect(mockShader.setFloat).toHaveBeenCalledWith("u_viewportHeight", 1080);
         expect(mockShader.lastFrameId).toBe(42);

@@ -1,3 +1,4 @@
+import type { Vector3Like } from "../../maths/vector_types";
 import type { IScene } from "../core/scene_types";
 import type { ICamera } from "../camera/camera_types";
 import type { IRenderable } from "../core/renderable_types";
@@ -12,7 +13,7 @@ export interface StandardShaderUniforms {
     u_viewProjectionMatrix: Float32Array;
     u_viewMatrix: Float32Array;
     u_projectionMatrix: Float32Array;
-    u_cameraPosition: [number, number, number];
+    u_cameraPosition: Vector3Like | [number, number, number] | Float32Array;
     u_modelMatrix: Float32Array;
     u_modelViewMatrix: Float32Array;
     u_normalMatrix?: Float32Array;

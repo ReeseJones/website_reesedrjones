@@ -3,6 +3,8 @@ import { ShaderProgram } from "./shader_program";
 import { VertexShader } from "./vertex_shader";
 import { FragmentShader } from "./fragment_shader";
 import type { IWebGLContextManager } from "../core/context_manager_types";
+import type { Vector3Like, Vector4Like } from "../../maths/vector_types";
+import type { RgbLike, RgbaLike } from "../../helpers/colors_types";
 import { createMockWebGL2Context } from "../../testing/mocks/mock_gl_context";
 import { createMockContextManager } from "../../testing/mocks/mock_context_manager";
 
@@ -358,6 +360,15 @@ describe("ShaderProgram", () => {
                 );
             });
 
+            it("accepts Vector3Like ({ x, y, z }) semantic object", () => {
+                const vec: Vector3Like = { x: 10.0, y: 20.0, z: 30.0 };
+                shader.setVec3("u_position", vec);
+                expect(gl.uniform3fv).toHaveBeenCalledWith(
+                    expect.objectContaining({ name: "u_position" }),
+                    [10.0, 20.0, 30.0]
+                );
+            });
+
             it("calls gl.uniform3fv with vector values and suppresses redundant upload if elements match", () => {
                 shader.setVec3("u_light", 1.0, 2.0, 3.0);
                 shader.setVec3("u_light", [1.0, 2.0, 3.0]);
@@ -387,6 +398,52 @@ describe("ShaderProgram", () => {
                 );
             });
 
+            it("accepts Vector4Like ({ x, y, z, w }) semantic object", () => {
+                const v4: Vector4Like = { x: 1.0, y: 2.0, z: 3.0, w: 4.0 };
+                shader.setVec4("u_clipPlane", v4);
+
+                expect(gl.uniform4f).toHaveBeenCalledWith(
+                    expect.objectContaining({ name: "u_clipPlane" }),
+                    1.0,
+                    2.0,
+                    3.0,
+                    4.0
+                );
+            });
+
+            it("accepts RgbaLike ({ r, g, b, a }) semantic object", () => {
+                const color: RgbaLike = { r: 0.2, g: 0.4, b: 0.6, a: 0.8 };
+                shader.setVec4("u_tint", color);
+
+                expect(gl.uniform4f).toHaveBeenCalledWith(
+                    expect.objectContaining({ name: "u_tint" }),
+                    0.2,
+                    0.4,
+                    0.6,
+                    0.8
+                );
+            });
+
+            it("accepts tuple array or Float32Array", () => {
+                shader.setVec4("u_bounds", [1, 2, 3, 4]);
+                expect(gl.uniform4f).toHaveBeenCalledWith(
+                    expect.objectContaining({ name: "u_bounds" }),
+                    1,
+                    2,
+                    3,
+                    4
+                );
+
+                shader.setVec4("u_boundsF", new Float32Array([5, 6, 7, 8]));
+                expect(gl.uniform4f).toHaveBeenCalledWith(
+                    expect.objectContaining({ name: "u_boundsF" }),
+                    5,
+                    6,
+                    7,
+                    8
+                );
+            });
+
             it("caches [x, y, z, w] and suppresses redundant upload if elements match", () => {
                 shader.setVec4("u_color", 1.0, 0.5, 0.25, 1.0);
                 shader.setVec4("u_color", 1.0, 0.5, 0.25, 1.0);
@@ -405,6 +462,31 @@ describe("ShaderProgram", () => {
             });
         });
 
+
+        describe("setColor", () => {
+            it("uploads RgbLike as a 3-component vector via setVec3", () => {
+                const rgb: RgbLike = { r: 0.25, g: 0.5, b: 0.75 };
+                shader.setColor("u_albedo", rgb);
+
+                expect(gl.uniform3fv).toHaveBeenCalledWith(
+                    expect.objectContaining({ name: "u_albedo" }),
+                    [0.25, 0.5, 0.75]
+                );
+            });
+
+            it("uploads RgbaLike as a 4-component vector via setVec4", () => {
+                const rgba: RgbaLike = { r: 0.1, g: 0.2, b: 0.3, a: 0.4 };
+                shader.setColor("u_specular", rgba);
+
+                expect(gl.uniform4f).toHaveBeenCalledWith(
+                    expect.objectContaining({ name: "u_specular" }),
+                    0.1,
+                    0.2,
+                    0.3,
+                    0.4
+                );
+            });
+        });
         describe("setMat3", () => {
             it("calls gl.uniformMatrix3fv with Float32Array and caches Float32Array copy", () => {
                 const mat = new Float32Array([1, 0, 0, 0, 1, 0, 0, 0, 1]);
@@ -561,6 +643,56 @@ describe("ShaderProgram", () => {
                 0.5,
                 0.2,
                 1.0
+            );
+        });
+
+        it("correctly dispatches Vector3Like -> setVec3", () => {
+            shader.setUniforms({
+                u_pos: { x: 10, y: 20, z: 30 },
+            });
+
+            expect(gl.uniform3fv).toHaveBeenCalledWith(
+                expect.objectContaining({ name: "u_pos" }),
+                [10, 20, 30]
+            );
+        });
+
+        it("correctly dispatches Vector4Like -> setVec4", () => {
+            shader.setUniforms({
+                u_plane: { x: 1, y: 2, z: 3, w: 4 },
+            });
+
+            expect(gl.uniform4f).toHaveBeenCalledWith(
+                expect.objectContaining({ name: "u_plane" }),
+                1,
+                2,
+                3,
+                4
+            );
+        });
+
+        it("correctly dispatches RgbLike -> setColor (setVec3)", () => {
+            shader.setUniforms({
+                u_tint: { r: 0.3, g: 0.6, b: 0.9 },
+            });
+
+            expect(gl.uniform3fv).toHaveBeenCalledWith(
+                expect.objectContaining({ name: "u_tint" }),
+                [0.3, 0.6, 0.9]
+            );
+        });
+
+        it("correctly dispatches RgbaLike -> setVec4", () => {
+            shader.setUniforms({
+                u_baseColor: { r: 0.1, g: 0.2, b: 0.3, a: 0.4 },
+            });
+
+            expect(gl.uniform4f).toHaveBeenCalledWith(
+                expect.objectContaining({ name: "u_baseColor" }),
+                0.1,
+                0.2,
+                0.3,
+                0.4
             );
         });
 

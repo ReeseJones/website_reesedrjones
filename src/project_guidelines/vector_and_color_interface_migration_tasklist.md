@@ -104,29 +104,29 @@ The migration decouples internal typed array storage (`Float32Array`) from publi
 
 ## Phase 5: Materials, Textures, Shaders & Renderer Pipeline
 
-- [ ] **Shader Program Uniforms ([`src/webgl/shaders/shader_program.ts`](../webgl/shaders/shader_program.ts))**
-  - [ ] Update [`shader_program_types.ts`](../webgl/shaders/shader_program_types.ts) `setVec3` to accept `Vector3Like`.
-  - [ ] Update `setVec4` to accept `Vector4Like` or `RgbaLike`.
-  - [ ] Add `setColor(name: string, color: RgbLike | RgbaLike)` helper method.
-  - [ ] Update unit tests in [`shader_program.test.ts`](../webgl/shaders/shader_program.test.ts).
-- [ ] **Renderer Uniform Synchronization ([`src/scene/renderer/scene_renderer_types.ts`](../scene/renderer/scene_renderer_types.ts))**
-  - [ ] Update `StandardShaderUniforms.u_cameraPosition` to `Vector3Like | Float32Array`.
-  - [ ] Update scratch buffer handling in [`material_binder.ts`](../scene/materials/material_binder.ts).
-  - [ ] Update unit tests in [`scene_renderer.test.ts`](../scene/renderer/scene_renderer.test.ts) and [`material_binder.test.ts`](../scene/materials/material_binder.test.ts).
-- [ ] **Unlit Material ([`src/scene/materials/unlit_material.ts`](../scene/materials/unlit_material.ts))**
-  - [ ] Update [`unlit_material_types.ts`](../scene/materials/unlit_material_types.ts) `color` option to accept `RgbLike | RgbaLike`.
-  - [ ] Update `UnlitMaterial.setColor` and unit tests in [`unlit_material.test.ts`](../scene/materials/unlit_material.test.ts).
-- [ ] **Galactic Cloud Material & Constants ([`src/scene/materials/galactic_cloud_material.ts`](../scene/materials/galactic_cloud_material.ts))**
-  - [ ] Update `DEFAULT_HORIZON_COLOR_CENTER` and `DEFAULT_HORIZON_COLOR_OUTER` in [`galactic_cloud_material_constants.ts`](../scene/materials/galactic_cloud_material_constants.ts) to `RgbLike`.
-  - [ ] Update `horizonColorCenter`, `horizonColorOuter`, `cloudColorPrimary`, and `cloudColorSecondary` in [`galactic_cloud_material_types.ts`](../scene/materials/galactic_cloud_material_types.ts) to `RgbLike`.
-  - [ ] Update unit tests in [`galactic_cloud_material.test.ts`](../scene/materials/galactic_cloud_material.test.ts).
-- [ ] **Galaxy Material ([`src/scene/materials/galaxy_material.ts`](../scene/materials/galaxy_material.ts))**
-  - [ ] Update galaxy color uniform options to `RgbLike`.
-  - [ ] Update [`galaxy_material_types.ts`](../scene/materials/galaxy_material_types.ts) and unit tests in [`galaxy_material.test.ts`](../scene/materials/galaxy_material.test.ts).
-- [ ] **Textures ([`src/webgl/textures/`](../webgl/textures/))**
-  - [ ] Update [`solid_color_texture_types.ts`](../webgl/textures/solid_color_texture_types.ts) and [`solid_color_texture.ts`](../webgl/textures/solid_color_texture.ts) to accept `RgbaLike` or `RgbLike` in `setColor`.
-  - [ ] Update [`solid_color_cube_texture_types.ts`](../webgl/textures/solid_color_cube_texture_types.ts) and [`solid_color_cube_texture.ts`](../webgl/textures/solid_color_cube_texture.ts).
-  - [ ] Update unit tests in [`solid_color_texture.test.ts`](../webgl/textures/solid_color_texture.test.ts).
+- [x] **Shader Program Uniforms ([`src/webgl/shaders/shader_program.ts`](../webgl/shaders/shader_program.ts))**
+  - [x] Update [`shader_program_types.ts`](../webgl/shaders/shader_program_types.ts) `setVec3` to accept `Vector3Like`.
+  - [x] Update `setVec4` to accept `Vector4Like` or `RgbaLike`.
+  - [x] Add `setColor(name: string, color: RgbLike | RgbaLike)` helper method.
+  - [x] Update unit tests in [`shader_program.test.ts`](../webgl/shaders/shader_program.test.ts).
+- [x] **Renderer Uniform Synchronization ([`src/scene/renderer/scene_renderer_types.ts`](../scene/renderer/scene_renderer_types.ts))**
+  - [x] Update `StandardShaderUniforms.u_cameraPosition` to `Vector3Like | Float32Array`.
+  - [x] Update scratch buffer handling in [`material_binder.ts`](../scene/materials/material_binder.ts).
+  - [x] Update unit tests in [`scene_renderer.test.ts`](../scene/renderer/scene_renderer.test.ts) and [`material_binder.test.ts`](../scene/materials/material_binder.test.ts).
+- [x] **Unlit Material ([`src/scene/materials/unlit_material.ts`](../scene/materials/unlit_material.ts))**
+  - [x] Update [`unlit_material_types.ts`](../scene/materials/unlit_material_types.ts) `color` option to accept `RgbLike | RgbaLike`.
+  - [x] Update `UnlitMaterial.setColor` and unit tests in [`unlit_material.test.ts`](../scene/materials/unlit_material.test.ts).
+- [x] **Galactic Cloud Material & Constants ([`src/scene/materials/galactic_cloud_material.ts`](../scene/materials/galactic_cloud_material.ts))**
+  - [x] Update `DEFAULT_HORIZON_COLOR_CENTER` and `DEFAULT_HORIZON_COLOR_OUTER` in [`galactic_cloud_material_constants.ts`](../scene/materials/galactic_cloud_material_constants.ts) to `RgbLike`.
+  - [x] Update `horizonColorCenter`, `horizonColorOuter`, `cloudColorPrimary`, and `cloudColorSecondary` in [`galactic_cloud_material_types.ts`](../scene/materials/galactic_cloud_material_types.ts) to `RgbLike`.
+  - [x] Update unit tests in [`galactic_cloud_material.test.ts`](../scene/materials/galactic_cloud_material.test.ts).
+- [x] **Galaxy Material ([`src/scene/materials/galaxy_material.ts`](../scene/materials/galaxy_material.ts))**
+  - [x] Update galaxy color uniform options to `RgbLike`.
+  - [x] Update [`galaxy_material_types.ts`](../scene/materials/galaxy_material_types.ts) and unit tests in [`galaxy_material.test.ts`](../scene/materials/galaxy_material.test.ts).
+- [x] **Textures ([`src/webgl/textures/`](../webgl/textures/))**
+  - [x] Update [`solid_color_texture_types.ts`](../webgl/textures/solid_color_texture_types.ts) and [`solid_color_texture.ts`](../webgl/textures/solid_color_texture.ts) to accept `RgbaLike` or `RgbLike` in `setColor`.
+  - [x] Update [`solid_color_cube_texture_types.ts`](../webgl/textures/solid_color_cube_texture_types.ts) and [`solid_color_cube_texture.ts`](../webgl/textures/solid_color_cube_texture.ts).
+  - [x] Update unit tests in [`solid_color_texture.test.ts`](../webgl/textures/solid_color_texture.test.ts).
 
 ---
 

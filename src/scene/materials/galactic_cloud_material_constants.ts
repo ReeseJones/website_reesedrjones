@@ -1,3 +1,4 @@
+import type { RgbLike } from "../../helpers/colors_types";
 /**
  * Default horizon intensity falloff multiplier.
  */
@@ -11,12 +12,12 @@ export const DEFAULT_HORIZON_THICKNESS = 0.22;
 /**
  * Default celestial horizon center color (warm cream).
  */
-export const DEFAULT_HORIZON_COLOR_CENTER: [number, number, number] = [1.0, 0.84, 0.66];
+export const DEFAULT_HORIZON_COLOR_CENTER: RgbLike = { r: 1.0, g: 0.84, b: 0.66 };
 
 /**
  * Default celestial horizon outer color (deep space navy blue).
  */
-export const DEFAULT_HORIZON_COLOR_OUTER: [number, number, number] = [0.15, 0.25, 0.85];
+export const DEFAULT_HORIZON_COLOR_OUTER: RgbLike = { r: 0.15, g: 0.25, b: 0.85 };
 
 /**
  * Default render order for the background galactic cloud quad.

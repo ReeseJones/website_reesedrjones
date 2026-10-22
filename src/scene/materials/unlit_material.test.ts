@@ -1,3 +1,4 @@
+import type { RgbLike, RgbaLike } from "../../helpers/colors_types";
 import { describe, it, expect, vi } from "vitest";
 import { UnlitMaterial } from "./unlit_material";
 import { BlendMode } from "./material_types";
@@ -42,6 +43,18 @@ describe("UnlitMaterial", () => {
         it("accepts 4-component color [r, g, b, a] and preserves alpha", () => {
             const material = new UnlitMaterial({ color: [0.1, 0.3, 0.5, 0.7] });
             expect(material.getUniforms()["u_color"]).toEqual([0.1, 0.3, 0.5, 0.7]);
+        });
+
+        it("accepts RgbLike color and defaults alpha to 1.0", () => {
+            const rgb: RgbLike = { r: 0.3, g: 0.6, b: 0.9 };
+            const material = new UnlitMaterial({ color: rgb });
+            expect(material.getUniforms()["u_color"]).toEqual([0.3, 0.6, 0.9, 1.0]);
+        });
+
+        it("accepts RgbaLike color and preserves alpha", () => {
+            const rgba: RgbaLike = { r: 0.2, g: 0.4, b: 0.6, a: 0.8 };
+            const material = new UnlitMaterial({ color: rgba });
+            expect(material.getUniforms()["u_color"]).toEqual([0.2, 0.4, 0.6, 0.8]);
         });
 
         describe("when texture provided in options.texture", () => {
@@ -185,6 +198,20 @@ describe("UnlitMaterial", () => {
             const material = new UnlitMaterial();
             material.setColor([0.9, 0.8, 0.7, 0.6]);
             expect(material.getUniforms()["u_color"]).toEqual([0.9, 0.8, 0.7, 0.6]);
+        });
+
+        it("updates u_color with RgbLike expanded to [r, g, b, 1.0]", () => {
+            const material = new UnlitMaterial();
+            const rgb: RgbLike = { r: 0.4, g: 0.5, b: 0.6 };
+            material.setColor(rgb);
+            expect(material.getUniforms()["u_color"]).toEqual([0.4, 0.5, 0.6, 1.0]);
+        });
+
+        it("updates u_color with RgbaLike preserving alpha", () => {
+            const material = new UnlitMaterial();
+            const rgba: RgbaLike = { r: 0.15, g: 0.35, b: 0.55, a: 0.75 };
+            material.setColor(rgba);
+            expect(material.getUniforms()["u_color"]).toEqual([0.15, 0.35, 0.55, 0.75]);
         });
 
         it("returns this for method chaining", () => {

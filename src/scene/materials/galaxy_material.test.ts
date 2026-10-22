@@ -1,3 +1,4 @@
+import type { RgbLike } from "../../helpers/colors_types";
 import { describe, it, expect, vi } from "vitest";
 import { GalaxyMaterial } from "./galaxy_material";
 import { BlendMode } from "./material_types";

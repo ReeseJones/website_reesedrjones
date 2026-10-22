@@ -1,3 +1,4 @@
+import type { RgbLike, RgbaLike } from "../../helpers/colors_types";
 import { Texture } from "./texture";
 import type { SolidColorTextureOptions } from "./solid_color_texture_types";
 import { TextureTarget } from "./texture_types";
@@ -44,11 +45,25 @@ export class SolidColorTexture extends Texture {
     /**
      * Updates the color components and immediately re-uploads to GPU if active.
      */
-    public setColor(r: number, g: number, b: number, a: number = 255): void {
-        this._pixelData[0] = r;
-        this._pixelData[1] = g;
-        this._pixelData[2] = b;
-        this._pixelData[3] = a;
+    public setColor(color: RgbLike | RgbaLike): void;
+    public setColor(r: number, g: number, b: number, a?: number): void;
+    public setColor(rOrColor: number | RgbLike | RgbaLike, g?: number, b?: number, a: number = 255): void {
+        if (typeof rOrColor === "object" && rOrColor !== null) {
+            const toByte = (v: number): number =>
+                v > 1 ? Math.min(255, Math.max(0, Math.round(v))) : Math.min(255, Math.max(0, Math.round(v * 255)));
+            this._pixelData[0] = toByte(rOrColor.r);
+            this._pixelData[1] = toByte(rOrColor.g);
+            this._pixelData[2] = toByte(rOrColor.b);
+            this._pixelData[3] =
+                "a" in rOrColor && typeof (rOrColor as RgbaLike).a === "number"
+                    ? toByte((rOrColor as RgbaLike).a)
+                    : 255;
+        } else {
+            this._pixelData[0] = rOrColor;
+            this._pixelData[1] = g ?? 0;
+            this._pixelData[2] = b ?? 0;
+            this._pixelData[3] = a;
+        }
 
         this.updateFromSource();
     }

@@ -1,3 +1,4 @@
+import type { RgbLike } from "../../helpers/colors_types";
 import { describe, it, expect, vi } from "vitest";
 import { GalacticCloudMaterial } from "./galactic_cloud_material";
 import { BlendMode } from "./material_types";
@@ -68,6 +69,26 @@ describe("GalacticCloudMaterial", () => {
             expect(uniforms.uHorizonThickness).toBe(0.45);
             expect(uniforms.uHorizonColorCenter).toEqual(customCenter);
             expect(uniforms.uHorizonColorOuter).toEqual(customOuter);
+        });
+
+        it("accepts RgbLike color objects for horizon and cloud colors", () => {
+            const rgbCenter: RgbLike = { r: 0.85, g: 0.75, b: 0.65 };
+            const rgbOuter: RgbLike = { r: 0.1, g: 0.2, b: 0.9 };
+            const rgbPrimary: RgbLike = { r: 0.3, g: 0.4, b: 0.5 };
+            const rgbSecondary: RgbLike = { r: 0.6, g: 0.7, b: 0.8 };
+
+            const material = new GalacticCloudMaterial({
+                params: {
+                    horizonColorCenter: rgbCenter,
+                    horizonColorOuter: rgbOuter,
+                    cloudColorPrimary: rgbPrimary,
+                    cloudColorSecondary: rgbSecondary,
+                },
+            });
+
+            const uniforms = material.getUniforms();
+            expect(uniforms.uHorizonColorCenter).toEqual(rgbCenter);
+            expect(uniforms.uHorizonColorOuter).toEqual(rgbOuter);
         });
 
         it("falls back to default horizon values when partial params are provided", () => {
@@ -171,6 +192,27 @@ describe("GalacticCloudMaterial", () => {
             material.updateParameters({ horizonColorOuter: newOuter });
 
             expect(material.getUniforms().uHorizonColorOuter).toEqual(newOuter);
+        });
+
+        it("updates horizon and cloud colors using RgbLike in updateParameters", () => {
+            const material = new GalacticCloudMaterial();
+            const rgbCenter: RgbLike = { r: 0.77, g: 0.66, b: 0.55 };
+            const rgbOuter: RgbLike = { r: 0.22, g: 0.33, b: 0.44 };
+            const rgbPrimary: RgbLike = { r: 0.12, g: 0.34, b: 0.56 };
+            const rgbSecondary: RgbLike = { r: 0.78, g: 0.89, b: 0.99 };
+
+            material.updateParameters({
+                horizonColorCenter: rgbCenter,
+                horizonColorOuter: rgbOuter,
+                cloudColorPrimary: rgbPrimary,
+                cloudColorSecondary: rgbSecondary,
+            });
+
+            const uniforms = material.getUniforms();
+            expect(uniforms.uHorizonColorCenter).toEqual(rgbCenter);
+            expect(uniforms.uHorizonColorOuter).toEqual(rgbOuter);
+            expect(uniforms.uCloudColorPrimary).toEqual(rgbPrimary);
+            expect(uniforms.uCloudColorSecondary).toEqual(rgbSecondary);
         });
 
         it("updates multiple horizon parameters simultaneously", () => {

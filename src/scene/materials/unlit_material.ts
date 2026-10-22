@@ -1,3 +1,4 @@
+import type { RgbLike, RgbaLike } from "../../helpers/colors_types";
 import { Material } from "./material";
 import { BlendMode } from "./material_types";
 import type { UnlitMaterialOptions } from "./unlit_material_types";
@@ -8,13 +9,22 @@ import type { UnlitShaderKey } from "../../webgl/shaders/shader_types";
  * Unlit material for rendering geometry with a solid/tinted color and optional 2D texture,
  * completely independent of scene lighting.
  */
+function resolveColorVec4(
+    color: RgbLike | RgbaLike | [number, number, number] | [number, number, number, number] | undefined
+): [number, number, number, number] {
+    if (!color) return [1.0, 1.0, 1.0, 1.0];
+    if (Array.isArray(color)) {
+        return color.length === 3
+            ? [color[0], color[1], color[2], 1.0]
+            : [color[0], color[1], color[2], color[3]];
+    }
+    const a = "a" in color && typeof color.a === "number" ? color.a : 1.0;
+    return [color.r, color.g, color.b, a];
+}
+
 export class UnlitMaterial extends Material {
     constructor(options?: UnlitMaterialOptions) {
-        const colorVec4 = options?.color
-            ? options.color.length === 3
-                ? [options.color[0], options.color[1], options.color[2], 1.0]
-                : options.color
-            : [1.0, 1.0, 1.0, 1.0];
+        const colorVec4 = resolveColorVec4(options?.color);
 
         const uniforms: Record<string, unknown> = {
             u_color: colorVec4,
@@ -63,8 +73,8 @@ export class UnlitMaterial extends Material {
     /**
      * Updates the base tint color.
      */
-    public setColor(color: [number, number, number] | [number, number, number, number]): this {
-        const colorVec4 = color.length === 3 ? [color[0], color[1], color[2], 1.0] : color;
+    public setColor(color: RgbLike | RgbaLike | [number, number, number] | [number, number, number, number]): this {
+        const colorVec4 = resolveColorVec4(color);
         return this.setUniform("u_color", colorVec4);
     }
 

@@ -1,3 +1,4 @@
+import type { RgbLike } from "../../helpers/colors_types";
 import type { GalaxyParameters } from "../../galaxy_backdrop/parameters/types";
 import type { MaterialOptions } from "./material_types";
 import type { GenerativeShaderKey } from "../../webgl/shaders/shader_types";
@@ -17,9 +18,25 @@ export interface GalacticCloudFrameUniforms {
 /**
  * Construction options for GalacticCloudMaterial.
  */
+
+export type GalacticCloudColor = RgbLike | [number, number, number];
+
+export interface GalacticCloudMaterialParameters
+    extends Partial<
+        Omit<
+            GalaxyParameters,
+            "horizonColorCenter" | "horizonColorOuter" | "cloudColorPrimary" | "cloudColorSecondary"
+        >
+    > {
+    horizonColorCenter?: GalacticCloudColor;
+    horizonColorOuter?: GalacticCloudColor;
+    cloudColorPrimary?: GalacticCloudColor;
+    cloudColorSecondary?: GalacticCloudColor;
+}
+
 export interface GalacticCloudMaterialOptions extends Partial<MaterialOptions> {
     /** Generative shader program key ("galactic_cloud"). Defaults to "galactic_cloud". */
     shaderKey?: GenerativeShaderKey;
     /** Galaxy simulation parameters determining horizon gradient uniforms */
-    params?: Partial<GalaxyParameters>;
+    params?: GalacticCloudMaterialParameters;
 }

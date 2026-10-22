@@ -1,10 +1,11 @@
+import type { Vector3Like } from "../../maths/vector_types";
 import type { IMaterial } from "./material_types";
 import type { IWebGLContextManager } from "../../webgl/core/context_manager_types";
 import type { ShaderProgram } from "../../webgl/shaders/shader_program";
 import type { RenderContext } from "../core/renderable_types";
 import { Mat4Index } from "../../maths/matrix_types";
 
-const s_cameraPosition: [number, number, number] = [0, 0, 0];
+const s_cameraPosition: Vector3Like = { x: 0, y: 0, z: 0 };
 
 /**
  * Binds material pipeline state, activates the shader program, binds all 2D and cubemap
@@ -39,9 +40,9 @@ export function applyMaterial(
     // 5. Synchronize Tier A Frame / Camera uniforms (uploaded once per shader per frame)
     if (renderContext && shader.lastFrameId !== renderContext.frameId) {
         const { camera, dimensions, time, frameId } = renderContext;
-        s_cameraPosition[0] = camera.worldMatrix[Mat4Index.TranslationX];
-        s_cameraPosition[1] = camera.worldMatrix[Mat4Index.TranslationY];
-        s_cameraPosition[2] = camera.worldMatrix[Mat4Index.TranslationZ];
+        s_cameraPosition.x = camera.worldMatrix[Mat4Index.TranslationX];
+        s_cameraPosition.y = camera.worldMatrix[Mat4Index.TranslationY];
+        s_cameraPosition.z = camera.worldMatrix[Mat4Index.TranslationZ];
 
         shader.setMat4("u_viewProjectionMatrix", camera.viewProjectionMatrix);
         shader.setMat4("u_viewMatrix", camera.viewMatrix);

@@ -1,3 +1,4 @@
+import type { RgbLike, RgbaLike } from "../../helpers/colors_types";
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { SolidColorTexture } from "./solid_color_texture";
 import { SolidColorCubeTexture } from "./solid_color_cube_texture";
@@ -88,6 +89,22 @@ describe("SolidColorTexture", () => {
             // Test fallback default alpha = 255 when 4th parameter omitted
             texture.setColor(90, 80, 70);
             expect(Array.from(texture.pixelData)).toEqual([90, 80, 70, 255]);
+        });
+
+        it("setColor accepts RgbLike object with normalized values and scales to 0-255", () => {
+            const texture = new SolidColorTexture();
+            const rgb: RgbLike = { r: 1.0, g: 0.5, b: 0.0 };
+
+            texture.setColor(rgb);
+            expect(Array.from(texture.pixelData)).toEqual([255, 128, 0, 255]);
+        });
+
+        it("setColor accepts RgbaLike object with normalized values and scales to 0-255", () => {
+            const texture = new SolidColorTexture();
+            const rgba: RgbaLike = { r: 0.2, g: 0.4, b: 0.6, a: 0.8 };
+
+            texture.setColor(rgba);
+            expect(Array.from(texture.pixelData)).toEqual([51, 102, 153, 204]);
         });
 
         it("setColor re-uploads to GPU when texture is initialized and active", () => {
@@ -369,6 +386,25 @@ describe("SolidColorCubeTexture", () => {
             texture.setColor(10, 20, 30, 40);
 
             expect(Array.from(texture.pixelData)).toEqual([10, 20, 30, 40]);
+        });
+
+        it("SolidColorCubeTexture.setColor accepts RgbLike and RgbaLike objects", () => {
+            const texture = new SolidColorCubeTexture();
+            texture.init(gl);
+
+            vi.mocked(gl.bindTexture).mockClear();
+            vi.mocked(gl.texImage2D).mockClear();
+
+            const rgb: RgbLike = { r: 0.5, g: 1.0, b: 0.25 };
+            texture.setColor(rgb);
+            expect(Array.from(texture.pixelData)).toEqual([128, 255, 64, 255]);
+
+            vi.mocked(gl.bindTexture).mockClear();
+            vi.mocked(gl.texImage2D).mockClear();
+
+            const rgba: RgbaLike = { r: 0.1, g: 0.2, b: 0.3, a: 0.4 };
+            texture.setColor(rgba);
+            expect(Array.from(texture.pixelData)).toEqual([26, 51, 77, 102]);
             expect(gl.bindTexture).toHaveBeenNthCalledWith(1, WebGL2RenderingContext.TEXTURE_CUBE_MAP, texture.handle);
             expect(gl.texImage2D).toHaveBeenCalledTimes(6);
             for (let i = 0; i < EXPECTED_CUBE_FACES.length; i++) {

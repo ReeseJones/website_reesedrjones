@@ -161,7 +161,7 @@ describe("SceneRenderer", () => {
 
             expect(mockShader.setVec3).toHaveBeenCalledWith(
                 "u_cameraPosition",
-                [42.5, -18.25, 100.0]
+                { x: 42.5, y: -18.25, z: 100.0 }
             );
         });
     });
@@ -452,7 +452,7 @@ describe("SceneRenderer", () => {
             );
             expect(mockShader.setVec3).toHaveBeenCalledWith(
                 "u_cameraPosition",
-                [1.0, 2.0, 3.0]
+                { x: 1.0, y: 2.0, z: 3.0 }
             );
             expect(mockShader.setFloat).toHaveBeenCalledWith("u_time", defaultTimeInfo.time);
             expect(mockShader.setFloat).toHaveBeenCalledWith(

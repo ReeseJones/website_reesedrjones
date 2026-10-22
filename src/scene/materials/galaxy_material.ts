@@ -6,7 +6,11 @@ import {
 } from "../../galaxy_backdrop/parameters/index";
 import type { GalaxyParameters } from "../../galaxy_backdrop/parameters/types";
 import type { GalaxyShaderKey } from "../../webgl/shaders/shader_types";
-import type { GalaxyMaterialOptions } from "./galaxy_material_types";
+import type {
+    GalaxyMaterialOptions,
+    GalaxyMaterialParameters,
+    ResolvedGalaxyMaterialParameters,
+} from "./galaxy_material_types";
 
 /**
  * Specialized material for rendering the interactive spiral galaxy starfield.
@@ -14,14 +18,14 @@ import type { GalaxyMaterialOptions } from "./galaxy_material_types";
  * and pre-populates galaxy simulation domain uniforms.
  */
 export class GalaxyMaterial extends Material {
-    public readonly galaxyParams: GalaxyParameters;
+    public readonly galaxyParams: ResolvedGalaxyMaterialParameters;
 
     constructor(options?: GalaxyMaterialOptions) {
         const resolvedShaderKey: GalaxyShaderKey =
             options?.shaderKey ??
             (options?.params?.style === "pinprick" ? "galaxy_pinprick" : "galaxy_orb");
         const defaultParams = resolvedShaderKey === "galaxy_orb" ? DEFAULT_ORB_PARAMETERS : DEFAULT_PINPRICK_PARAMETERS;
-        const resolvedParams: GalaxyParameters = {
+        const resolvedParams: ResolvedGalaxyMaterialParameters = {
             ...defaultParams,
             ...options?.params,
         };
@@ -69,7 +73,7 @@ export class GalaxyMaterial extends Material {
     /**
      * Dynamically updates simulation uniforms when galaxy parameters change.
      */
-    public updateParameters(params: Partial<GalaxyParameters>): void {
+    public updateParameters(params: GalaxyMaterialParameters): void {
         if (params.style !== undefined) {
             this.shaderKey = params.style === "pinprick" ? "galaxy_pinprick" : "galaxy_orb";
         }
