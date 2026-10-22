@@ -300,15 +300,17 @@ export function hexToRgbLike(hex: string): RgbLike {
 }
 
 /**
- * Converts a hexadecimal color string into an RgbaLike object.
+ * Converts a hexadecimal color string or float color string into an RgbaLike object.
  */
-export function hexToRgbaLike(hex: string): RgbaLike {
+export function hexToRgbaLike(hex: string | null): RgbaLike {
     if (!hex || typeof hex !== "string") {
         return { ...DEFAULT_FALLBACK_RGBA_LIKE };
     }
     const trimmed = hex.trim();
-    const formatted = trimmed.startsWith("#") ? trimmed : `#${trimmed}`;
-    const tuple = parseRgbaColor(formatted);
+    let tuple = parseRgbaColor(trimmed);
+    if (tuple === DEFAULT_FALLBACK_RGBA && !trimmed.startsWith("#")) {
+        tuple = parseRgbaColor(`#${trimmed}`);
+    }
     return {
         r: tuple[0],
         g: tuple[1],

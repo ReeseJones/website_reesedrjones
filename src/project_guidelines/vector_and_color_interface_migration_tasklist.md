@@ -39,10 +39,10 @@ The migration decouples internal typed array storage (`Float32Array`) from publi
   - [ ] Refactor `vector3Converter.fromAttribute` to return `Vector3Like` (`{ x, y, z }`).
   - [ ] Refactor `vector3Converter.toAttribute` to accept `Vector3Like`.
   - [ ] Update unit tests in [`src/lit/converters/vector3_converter.test.ts`](../lit/converters/vector3_converter.test.ts).
-- [ ] **RGBA Color Converter ([`src/lit/converters/rgba_color_converter.ts`](../lit/converters/rgba_color_converter.ts))**
-  - [ ] Refactor `rgbaColorConverter.fromAttribute` to return `RgbaLike` (`{ r, g, b, a }`).
-  - [ ] Refactor `rgbaColorConverter.toAttribute` to accept `RgbaLike`.
-  - [ ] Update unit tests in [`src/lit/converters/rgba_color_converter.test.ts`](../lit/converters/rgba_color_converter.test.ts).
+- [x] **RGBA Color Converter ([`src/lit/converters/rgba_color_converter.ts`](../lit/converters/rgba_color_converter.ts))**
+  - [x] Refactor `rgbaColorConverter.fromAttribute` to return `RgbaLike` (`{ r, g, b, a }`).
+  - [x] Refactor `rgbaColorConverter.toAttribute` to accept `RgbaLike`.
+  - [x] Update unit tests in [`src/lit/converters/rgba_color_converter.test.ts`](../lit/converters/rgba_color_converter.test.ts).
 - [ ] **3D Node Element ([`src/scene/elements/node_3d_element.ts`](../scene/elements/node_3d_element.ts))**
   - [ ] Update `Node3DElementProps` in [`node_3d_element_types.ts`](../scene/elements/node_3d_element_types.ts) to use `Vector3Like`.
   - [ ] Update `DEFAULT_NODE_3D_POSITION`, `DEFAULT_NODE_3D_ROTATION`, `DEFAULT_NODE_3D_SCALE` in [`node_3d_element_constants.ts`](../scene/elements/node_3d_element_constants.ts) to `Vector3Like`.
