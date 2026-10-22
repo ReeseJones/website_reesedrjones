@@ -167,7 +167,7 @@ The migration decouples internal typed array storage (`Float32Array`) from publi
 
 ## Phase 8: Verification & Quality Gates
 
-- [ ] Run full lint suite: `npm run lint` (ensure zero ESLint or hook rule warnings).
-- [ ] Run TypeScript type checker: `npm run typecheck` (ensure zero type errors).
-- [ ] Run test suite: `npm test` (ensure all unit tests pass).
-- [ ] Run production build: `npm run build` (ensure clean Parcel bundle generation).
+- [x] Run full lint suite: `npm run lint` (ensure zero ESLint or hook rule warnings).
+- [x] Run TypeScript type checker: `npm run typecheck` (ensure zero type errors).
+- [x] Run test suite: `npm test` (ensure all unit tests pass).
+- [x] Run production build: `npm run build` (ensure clean Parcel bundle generation).
