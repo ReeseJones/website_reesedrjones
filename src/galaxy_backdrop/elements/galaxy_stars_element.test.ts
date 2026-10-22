@@ -8,7 +8,7 @@ import {
     ModelInstanceElement,
 } from "../../scene/elements/model_instance_element";
 import { TAG_RJ_MODEL_INSTANCE } from "../../scene/elements/model_instance_element_constants";
-import type { Vector3Tuple } from "../../lit/converters/vector3_converter_types";
+import type { Vector3Like } from "../../maths/vector_types";
 import {
     getSharedGalaxyGeometry,
     getSharedGalaxyMaterial,
@@ -283,7 +283,7 @@ describe("GalaxyStarsElement", () => {
             instanceEl.setAttribute("position", "10 20 30");
             await instanceEl.updateComplete;
 
-            expect(instanceEl.position).toEqual([10, 20, 30]);
+            expect(instanceEl.position).toEqual({ x: 10, y: 20, z: 30 });
             expect(instanceEl.modelInstance.transform.getPosition()).toEqual({ x: 10, y: 20, z: 30 });
         });
 
@@ -294,7 +294,7 @@ describe("GalaxyStarsElement", () => {
             if (!instanceEl) return;
 
             await instanceEl.updateComplete;
-            const targetPosition: Vector3Tuple = [10, 20, 30];
+            const targetPosition: Vector3Like = { x: 10, y: 20, z: 30 };
             instanceEl.position = targetPosition;
             await instanceEl.updateComplete;
 
@@ -312,7 +312,7 @@ describe("GalaxyStarsElement", () => {
             instanceEl.setAttribute("rotation", "0 1.57 0");
             await instanceEl.updateComplete;
 
-            expect(instanceEl.rotation).toEqual([0, 1.57, 0]);
+            expect(instanceEl.rotation).toEqual({ x: 0, y: 1.57, z: 0 });
             const angles = instanceEl.modelInstance.transform.getEulerAngles();
             expect(angles.pitch).toBeCloseTo(0, 4);
             expect(angles.yaw).toBeCloseTo(1.57, 4);
@@ -326,7 +326,7 @@ describe("GalaxyStarsElement", () => {
             if (!instanceEl) return;
 
             await instanceEl.updateComplete;
-            const targetRotation: Vector3Tuple = [0, 1.57, 0];
+            const targetRotation: Vector3Like = { x: 0, y: 1.57, z: 0 };
             instanceEl.rotation = targetRotation;
             await instanceEl.updateComplete;
 
@@ -347,7 +347,7 @@ describe("GalaxyStarsElement", () => {
             instanceEl.setAttribute("scale", "2 3 4");
             await instanceEl.updateComplete;
 
-            expect(instanceEl.scale).toEqual([2, 3, 4]);
+            expect(instanceEl.scale).toEqual({ x: 2, y: 3, z: 4 });
             expect(instanceEl.modelInstance.transform.getScale()).toEqual({ x: 2, y: 3, z: 4 });
         });
     });

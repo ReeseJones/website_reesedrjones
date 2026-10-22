@@ -18,7 +18,7 @@ import { setupSceneElement } from "./scene_element";
 import { TAG_RJ_SCENE } from "./scene_element_constants";
 import { parentNodeContext } from "./scene_element_types";
 import type { ISceneNode } from "../core/scene_node_types";
-import type { Vector3Tuple } from "../../lit/converters/vector3_converter_types";
+import type { Vector3Like } from "../../maths/vector_types";
 
 class TestNodeChildConsumerElement extends LitElement {
     public parentValue: ISceneNode | undefined;
@@ -125,7 +125,7 @@ describe("Node3DElement", () => {
             });
 
             it("should reconcile to node.transform.position and reflect to attribute on property change", async () => {
-                const targetPos: Vector3Tuple = [10, 20, 30];
+                const targetPos: Vector3Like = { x: 10, y: 20, z: 30 };
                 element.position = targetPos;
                 await element.updateComplete;
 
@@ -138,7 +138,7 @@ describe("Node3DElement", () => {
                 element.setAttribute("position", "1.5 2.5 3.5");
                 await element.updateComplete;
 
-                expect(element.position).toEqual([1.5, 2.5, 3.5]);
+                expect(element.position).toEqual({ x: 1.5, y: 2.5, z: 3.5 });
                 expect(element.node.transform.getPosition()).toEqual({ x: 1.5, y: 2.5, z: 3.5 });
             });
 
@@ -146,7 +146,7 @@ describe("Node3DElement", () => {
                 element.setAttribute("position", "-5, 12, 100");
                 await element.updateComplete;
 
-                expect(element.position).toEqual([-5, 12, 100]);
+                expect(element.position).toEqual({ x: -5, y: 12, z: 100 });
                 expect(element.node.transform.getPosition()).toEqual({ x: -5, y: 12, z: 100 });
             });
         });
@@ -162,7 +162,7 @@ describe("Node3DElement", () => {
             });
 
             it("should reconcile to node.transform.rotation and reflect to attribute on property change", async () => {
-                const targetRot: Vector3Tuple = [0.25, 0.5, 0.75];
+                const targetRot: Vector3Like = { x: 0.25, y: 0.5, z: 0.75 };
                 element.rotation = targetRot;
                 await element.updateComplete;
 
@@ -178,7 +178,7 @@ describe("Node3DElement", () => {
                 element.setAttribute("rotation", "0.1 0.2 0.3");
                 await element.updateComplete;
 
-                expect(element.rotation).toEqual([0.1, 0.2, 0.3]);
+                expect(element.rotation).toEqual({ x: 0.1, y: 0.2, z: 0.3 });
                 const angles = element.node.transform.getEulerAngles();
                 expect(angles.pitch).toBeCloseTo(0.1, 4);
                 expect(angles.yaw).toBeCloseTo(0.2, 4);
@@ -189,7 +189,7 @@ describe("Node3DElement", () => {
                 element.setAttribute("rotation", "0.4, 0.5, 0.6");
                 await element.updateComplete;
 
-                expect(element.rotation).toEqual([0.4, 0.5, 0.6]);
+                expect(element.rotation).toEqual({ x: 0.4, y: 0.5, z: 0.6 });
                 const angles = element.node.transform.getEulerAngles();
                 expect(angles.pitch).toBeCloseTo(0.4, 4);
                 expect(angles.yaw).toBeCloseTo(0.5, 4);
@@ -205,7 +205,7 @@ describe("Node3DElement", () => {
             });
 
             it("should reconcile to node.transform.scale and reflect to attribute on property change", async () => {
-                const targetScale: Vector3Tuple = [2, 3, 4];
+                const targetScale: Vector3Like = { x: 2, y: 3, z: 4 };
                 element.scale = targetScale;
                 await element.updateComplete;
 
@@ -218,7 +218,7 @@ describe("Node3DElement", () => {
                 element.setAttribute("scale", "0.5 0.5 0.5");
                 await element.updateComplete;
 
-                expect(element.scale).toEqual([0.5, 0.5, 0.5]);
+                expect(element.scale).toEqual({ x: 0.5, y: 0.5, z: 0.5 });
                 expect(element.node.transform.getScale()).toEqual({ x: 0.5, y: 0.5, z: 0.5 });
             });
 
@@ -226,7 +226,7 @@ describe("Node3DElement", () => {
                 element.setAttribute("scale", "3, 2, 1");
                 await element.updateComplete;
 
-                expect(element.scale).toEqual([3, 2, 1]);
+                expect(element.scale).toEqual({ x: 3, y: 2, z: 1 });
                 expect(element.node.transform.getScale()).toEqual({ x: 3, y: 2, z: 1 });
             });
         });

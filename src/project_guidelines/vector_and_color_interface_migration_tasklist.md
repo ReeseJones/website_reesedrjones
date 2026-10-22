@@ -34,36 +34,36 @@ The migration decouples internal typed array storage (`Float32Array`) from publi
 
 ## Phase 2: Attribute Converters & Lit Web Components
 
-- [ ] **Vector3 Converter ([`src/lit/converters/vector3_converter.ts`](../lit/converters/vector3_converter.ts))**
-  - [ ] Update converter interface in [`vector3_converter_types.ts`](../lit/converters/vector3_converter_types.ts) to `Vector3Like`.
-  - [ ] Refactor `vector3Converter.fromAttribute` to return `Vector3Like` (`{ x, y, z }`).
-  - [ ] Refactor `vector3Converter.toAttribute` to accept `Vector3Like`.
-  - [ ] Update unit tests in [`src/lit/converters/vector3_converter.test.ts`](../lit/converters/vector3_converter.test.ts).
+- [x] **Vector3 Converter ([`src/lit/converters/vector3_converter.ts`](../lit/converters/vector3_converter.ts))**
+  - [x] Update converter interface in [`vector3_converter_types.ts`](../lit/converters/vector3_converter_types.ts) to `Vector3Like`.
+  - [x] Refactor `vector3Converter.fromAttribute` to return `Vector3Like` (`{ x, y, z }`).
+  - [x] Refactor `vector3Converter.toAttribute` to accept `Vector3Like`.
+  - [x] Update unit tests in [`src/lit/converters/vector3_converter.test.ts`](../lit/converters/vector3_converter.test.ts).
 - [x] **RGBA Color Converter ([`src/lit/converters/rgba_color_converter.ts`](../lit/converters/rgba_color_converter.ts))**
   - [x] Refactor `rgbaColorConverter.fromAttribute` to return `RgbaLike` (`{ r, g, b, a }`).
   - [x] Refactor `rgbaColorConverter.toAttribute` to accept `RgbaLike`.
   - [x] Update unit tests in [`src/lit/converters/rgba_color_converter.test.ts`](../lit/converters/rgba_color_converter.test.ts).
-- [ ] **3D Node Element ([`src/scene/elements/node_3d_element.ts`](../scene/elements/node_3d_element.ts))**
-  - [ ] Update `Node3DElementProps` in [`node_3d_element_types.ts`](../scene/elements/node_3d_element_types.ts) to use `Vector3Like`.
-  - [ ] Update `DEFAULT_NODE_3D_POSITION`, `DEFAULT_NODE_3D_ROTATION`, `DEFAULT_NODE_3D_SCALE` in [`node_3d_element_constants.ts`](../scene/elements/node_3d_element_constants.ts) to `Vector3Like`.
-  - [ ] Remove obsolete index constants `VECTOR_INDEX_X`, `VECTOR_INDEX_Y`, `VECTOR_INDEX_Z`.
-  - [ ] Refactor property handlers in `node_3d_element.ts`.
-  - [ ] Update unit tests in [`node_3d_element.test.ts`](../scene/elements/node_3d_element.test.ts).
-- [ ] **Perspective Camera Element ([`src/scene/elements/perspective_camera_element.ts`](../scene/elements/perspective_camera_element.ts))**
-  - [ ] Update `PerspectiveCameraElementProps` in [`perspective_camera_element_types.ts`](../scene/elements/perspective_camera_element_types.ts) to use `Vector3Like`.
-  - [ ] Update `DEFAULT_CAMERA_POSITION`, `DEFAULT_CAMERA_ROTATION`, `DEFAULT_CAMERA_SCALE` in [`perspective_camera_element_constants.ts`](../scene/elements/perspective_camera_element_constants.ts) to `Vector3Like`.
-  - [ ] Remove obsolete index constants `VECTOR_INDEX_*`.
-  - [ ] Refactor property handlers in `perspective_camera_element.ts`.
-  - [ ] Update unit tests in [`perspective_camera_element.test.ts`](../scene/elements/perspective_camera_element.test.ts).
-- [ ] **Model Instance Element ([`src/scene/elements/model_instance_element.ts`](../scene/elements/model_instance_element.ts))**
-  - [ ] Update `ModelInstanceElementProps` in [`model_instance_element_types.ts`](../scene/elements/model_instance_element_types.ts) to use `Vector3Like`.
-  - [ ] Update `DEFAULT_MODEL_INSTANCE_POSITION`, `DEFAULT_MODEL_INSTANCE_ROTATION`, `DEFAULT_MODEL_INSTANCE_SCALE` in [`model_instance_element_constants.ts`](../scene/elements/model_instance_element_constants.ts) to `Vector3Like`.
-  - [ ] Refactor property handlers in `model_instance_element.ts`.
-  - [ ] Update unit tests in [`model_instance_element.test.ts`](../scene/elements/model_instance_element.test.ts).
-- [ ] **Galaxy Elements ([`src/galaxy_backdrop/elements/`](../galaxy_backdrop/elements/))**
-  - [ ] Update `GalaxyCameraElement` in [`galaxy_camera_element.ts`](../galaxy_backdrop/elements/galaxy_camera_element.ts) to serialize/deserialize `position` and `rotation` as `Vector3Like`.
-  - [ ] Update unit tests in [`galaxy_camera_element.test.ts`](../galaxy_backdrop/elements/galaxy_camera_element.test.ts).
-  - [ ] Update [`galaxy_stars_element.test.ts`](../galaxy_backdrop/elements/galaxy_stars_element.test.ts) to assert `Vector3Like` properties on rendered model instances.
+- [x] **3D Node Element ([`src/scene/elements/node_3d_element.ts`](../scene/elements/node_3d_element.ts))**
+  - [x] Update `Node3DElementProps` in [`node_3d_element_types.ts`](../scene/elements/node_3d_element_types.ts) to use `Vector3Like`.
+  - [x] Update `DEFAULT_NODE_3D_POSITION`, `DEFAULT_NODE_3D_ROTATION`, `DEFAULT_NODE_3D_SCALE` in [`node_3d_element_constants.ts`](../scene/elements/node_3d_element_constants.ts) to `Vector3Like`.
+  - [x] Remove obsolete index constants `VECTOR_INDEX_X`, `VECTOR_INDEX_Y`, `VECTOR_INDEX_Z`.
+  - [x] Refactor property handlers in `node_3d_element.ts`.
+  - [x] Update unit tests in [`node_3d_element.test.ts`](../scene/elements/node_3d_element.test.ts).
+- [x] **Perspective Camera Element ([`src/scene/elements/perspective_camera_element.ts`](../scene/elements/perspective_camera_element.ts))**
+  - [x] Update `PerspectiveCameraElementProps` in [`perspective_camera_element_types.ts`](../scene/elements/perspective_camera_element_types.ts) to use `Vector3Like`.
+  - [x] Update `DEFAULT_CAMERA_POSITION`, `DEFAULT_CAMERA_ROTATION`, `DEFAULT_CAMERA_SCALE` in [`perspective_camera_element_constants.ts`](../scene/elements/perspective_camera_element_constants.ts) to `Vector3Like`.
+  - [x] Remove obsolete index constants `VECTOR_INDEX_*`.
+  - [x] Refactor property handlers in `perspective_camera_element.ts`.
+  - [x] Update unit tests in [`perspective_camera_element.test.ts`](../scene/elements/perspective_camera_element.test.ts).
+- [x] **Model Instance Element ([`src/scene/elements/model_instance_element.ts`](../scene/elements/model_instance_element.ts))**
+  - [x] Update `ModelInstanceElementProps` in [`model_instance_element_types.ts`](../scene/elements/model_instance_element_types.ts) to use `Vector3Like`.
+  - [x] Update `DEFAULT_MODEL_INSTANCE_POSITION`, `DEFAULT_MODEL_INSTANCE_ROTATION`, `DEFAULT_MODEL_INSTANCE_SCALE` in [`model_instance_element_constants.ts`](../scene/elements/model_instance_element_constants.ts) to `Vector3Like`.
+  - [x] Refactor property handlers in `model_instance_element.ts`.
+  - [x] Update unit tests in [`model_instance_element.test.ts`](../scene/elements/model_instance_element.test.ts).
+- [x] **Galaxy Elements ([`src/galaxy_backdrop/elements/`](../galaxy_backdrop/elements/))**
+  - [x] Update `GalaxyCameraElement` in [`galaxy_camera_element.ts`](../galaxy_backdrop/elements/galaxy_camera_element.ts) to serialize/deserialize `position` and `rotation` as `Vector3Like`.
+  - [x] Update unit tests in [`galaxy_camera_element.test.ts`](../galaxy_backdrop/elements/galaxy_camera_element.test.ts).
+  - [x] Update [`galaxy_stars_element.test.ts`](../galaxy_backdrop/elements/galaxy_stars_element.test.ts) to assert `Vector3Like` properties on rendered model instances.
 
 ---
 

@@ -2,7 +2,7 @@ import { LitElement, type PropertyValues } from "lit";
 import { ContextConsumer, ContextProvider } from "@lit/context";
 import { PerspectiveCamera } from "../camera/perspective_camera";
 import { vector3Converter } from "../../lit/converters/vector3_converter";
-import type { Vector3Tuple } from "../../lit/converters/vector3_converter_types";
+import type { Vector3Like } from "../../maths/vector_types";
 import type { ISceneNode } from "../core/scene_node_types";
 import {
     sceneContext,
@@ -21,9 +21,6 @@ import {
     DEFAULT_CAMERA_ROTATION,
     DEFAULT_CAMERA_SCALE,
     DEFAULT_CAMERA_NAME,
-    VECTOR_INDEX_X,
-    VECTOR_INDEX_Y,
-    VECTOR_INDEX_Z,
 } from "./perspective_camera_element_constants";
 
 /**
@@ -52,9 +49,9 @@ export class PerspectiveCameraElement extends LitElement {
     public declare far: number;
     public declare aspect: number | undefined;
     public declare makeDefault: boolean;
-    public declare position: Vector3Tuple;
-    public declare rotation: Vector3Tuple;
-    public declare scale: Vector3Tuple;
+    public declare position: Vector3Like;
+    public declare rotation: Vector3Like;
+    public declare scale: Vector3Like;
     public declare visible: boolean;
 
     private readonly _camera: PerspectiveCamera = new PerspectiveCamera({
@@ -159,25 +156,25 @@ export class PerspectiveCameraElement extends LitElement {
 
         if (changedProperties.has("position") && this.position) {
             this._camera.transform.setPosition(
-                this.position[VECTOR_INDEX_X],
-                this.position[VECTOR_INDEX_Y],
-                this.position[VECTOR_INDEX_Z]
+                this.position.x,
+                this.position.y,
+                this.position.z
             );
         }
 
         if (changedProperties.has("rotation") && this.rotation) {
             this._camera.transform.setRotationEuler(
-                this.rotation[VECTOR_INDEX_X],
-                this.rotation[VECTOR_INDEX_Y],
-                this.rotation[VECTOR_INDEX_Z]
+                this.rotation.x,
+                this.rotation.y,
+                this.rotation.z
             );
         }
 
         if (changedProperties.has("scale") && this.scale) {
             this._camera.transform.setScale(
-                this.scale[VECTOR_INDEX_X],
-                this.scale[VECTOR_INDEX_Y],
-                this.scale[VECTOR_INDEX_Z]
+                this.scale.x,
+                this.scale.y,
+                this.scale.z
             );
         }
 

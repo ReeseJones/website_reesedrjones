@@ -1,4 +1,4 @@
-import type { Vector3Tuple } from "../../lit/converters/vector3_converter_types";
+import type { Vector3Like } from "../../maths/vector_types";
 import type { Node3DElement } from "./node_3d_element";
 
 /**
@@ -6,9 +6,9 @@ import type { Node3DElement } from "./node_3d_element";
  */
 export interface Node3DElementProps {
     name?: string;
-    position?: Vector3Tuple;
-    rotation?: Vector3Tuple;
-    scale?: Vector3Tuple;
+    position?: Vector3Like;
+    rotation?: Vector3Like;
+    scale?: Vector3Like;
     visible?: boolean;
 }
 

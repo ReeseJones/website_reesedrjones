@@ -220,8 +220,8 @@ export class GalaxyCameraElement extends PerspectiveCameraElement {
             this.camera.transform.setRotationQuaternion(q[0], q[1], q[2], q[3]);
 
             const euler = this.camera.transform.getEulerAngles();
-            this.position = [t[0], t[1], t[2]];
-            this.rotation = [euler.pitch, euler.yaw, euler.roll];
+            this.position = { x: t[0], y: t[1], z: t[2] };
+            this.rotation = { x: euler.pitch, y: euler.yaw, z: euler.roll };
             this._hasWorldTransform = true;
         }
 

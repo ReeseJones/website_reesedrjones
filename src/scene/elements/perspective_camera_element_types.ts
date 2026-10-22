@@ -1,4 +1,4 @@
-import type { Vector3Tuple } from "../../lit/converters/vector3_converter_types";
+import type { Vector3Like } from "../../maths/vector_types";
 import type { PerspectiveCameraElement } from "./perspective_camera_element";
 
 /**
@@ -12,9 +12,9 @@ export interface PerspectiveCameraElementProps {
     aspect?: number;
     makeDefault?: boolean;
     "make-default"?: boolean;
-    position?: Vector3Tuple;
-    rotation?: Vector3Tuple;
-    scale?: Vector3Tuple;
+    position?: Vector3Like;
+    rotation?: Vector3Like;
+    scale?: Vector3Like;
     visible?: boolean;
 }
 

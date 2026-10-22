@@ -160,10 +160,10 @@ describe("GalaxyCameraElement", () => {
 
         describe("position", () => {
             it("should update position and reflect to attribute", async () => {
-                element.position = [10, 20, 30];
+                element.position = { x: 10, y: 20, z: 30 };
                 await element.updateComplete;
 
-                expect(element.position).toEqual([10, 20, 30]);
+                expect(element.position).toEqual({ x: 10, y: 20, z: 30 });
                 expect(element.camera.transform.getPosition()).toEqual({ x: 10, y: 20, z: 30 });
                 expect(element.getAttribute("position")).toBe("10 20 30");
             });
@@ -171,10 +171,10 @@ describe("GalaxyCameraElement", () => {
 
         describe("rotation", () => {
             it("should update rotation and reflect to attribute", async () => {
-                element.rotation = [0.1, 0.2, 0.3];
+                element.rotation = { x: 0.1, y: 0.2, z: 0.3 };
                 await element.updateComplete;
 
-                expect(element.rotation).toEqual([0.1, 0.2, 0.3]);
+                expect(element.rotation).toEqual({ x: 0.1, y: 0.2, z: 0.3 });
                 expect(element.getAttribute("rotation")).toBe("0.1 0.2 0.3");
             });
         });
@@ -447,9 +447,9 @@ describe("GalaxyCameraElement", () => {
 
             // View matrix translates by [offsetX, offsetY, -cameraDistance]
             // Inverse camera world translation gives [-offsetX, -offsetY, cameraDistance]
-            expect(element.position[0]).toBeCloseTo(-expectedOffsetX, 4);
-            expect(element.position[1]).toBeCloseTo(-expectedOffsetY, 4);
-            expect(element.position[2]).toBeCloseTo(testParams.cameraDistance, 4);
+            expect(element.position.x).toBeCloseTo(-expectedOffsetX, 4);
+            expect(element.position.y).toBeCloseTo(-expectedOffsetY, 4);
+            expect(element.position.z).toBeCloseTo(testParams.cameraDistance, 4);
 
             const camPos = element.camera.transform.getPosition();
             expect(camPos.x).toBeCloseTo(-expectedOffsetX, 4);
@@ -536,14 +536,14 @@ describe("GalaxyCameraElement", () => {
             expect(element.camera.far).toBe(expectedFar);
 
             // Verify position and rotation properties were set
-            expect(element.position).toHaveLength(3);
-            expect(element.rotation).toHaveLength(3);
+            expect(typeof element.position.x).toBe("number");
+            expect(typeof element.rotation.x).toBe("number");
 
             // Transform on camera should have matching position
             const camPos = element.camera.transform.getPosition();
-            expect(camPos.x).toBeCloseTo(element.position[0], 4);
-            expect(camPos.y).toBeCloseTo(element.position[1], 4);
-            expect(camPos.z).toBeCloseTo(element.position[2], 4);
+            expect(camPos.x).toBeCloseTo(element.position.x, 4);
+            expect(camPos.y).toBeCloseTo(element.position.y, 4);
+            expect(camPos.z).toBeCloseTo(element.position.z, 4);
 
             sceneElement.remove();
         });
@@ -622,9 +622,9 @@ describe("GalaxyCameraElement", () => {
 
             expect(parsedPos).toHaveLength(3);
             expect(parsedRot).toHaveLength(3);
-            expect(parsedPos[0]).toBeCloseTo(element.position[0], 4);
-            expect(parsedPos[1]).toBeCloseTo(element.position[1], 4);
-            expect(parsedPos[2]).toBeCloseTo(element.position[2], 4);
+            expect(parsedPos[0]).toBeCloseTo(element.position.x, 4);
+            expect(parsedPos[1]).toBeCloseTo(element.position.y, 4);
+            expect(parsedPos[2]).toBeCloseTo(element.position.z, 4);
 
             sceneElement.remove();
         });

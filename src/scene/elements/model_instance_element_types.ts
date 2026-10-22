@@ -1,4 +1,4 @@
-import type { Vector3Tuple } from "../../lit/converters/vector3_converter_types";
+import type { Vector3Like } from "../../maths/vector_types";
 import type { IMeshGeometry } from "../models/mesh_geometry_types";
 import type { IMaterial } from "../materials/material_types";
 import type { ModelInstanceElement } from "./model_instance_element";
@@ -8,9 +8,9 @@ import type { ModelInstanceElement } from "./model_instance_element";
  */
 export interface ModelInstanceElementProps {
     name?: string;
-    position?: Vector3Tuple;
-    rotation?: Vector3Tuple;
-    scale?: Vector3Tuple;
+    position?: Vector3Like;
+    rotation?: Vector3Like;
+    scale?: Vector3Like;
     visible?: boolean;
     renderOrder?: number;
     geometry?: IMeshGeometry;

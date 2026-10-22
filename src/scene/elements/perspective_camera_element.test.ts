@@ -292,10 +292,10 @@ describe("PerspectiveCameraElement", () => {
             });
 
             it("should reconcile to camera.transform.position and reflect to attribute on property change", async () => {
-                element.position = [1, 2, 3];
+                element.position = { x: 1, y: 2, z: 3 };
                 await element.updateComplete;
 
-                expect(element.position).toEqual([1, 2, 3]);
+                expect(element.position).toEqual({ x: 1, y: 2, z: 3 });
                 expect(element.camera.transform.getPosition()).toEqual({ x: 1, y: 2, z: 3 });
                 expect(element.getAttribute("position")).toBe("1 2 3");
             });
@@ -304,7 +304,7 @@ describe("PerspectiveCameraElement", () => {
                 element.setAttribute("position", "4 5 6");
                 await element.updateComplete;
 
-                expect(element.position).toEqual([4, 5, 6]);
+                expect(element.position).toEqual({ x: 4, y: 5, z: 6 });
                 expect(element.camera.transform.getPosition()).toEqual({ x: 4, y: 5, z: 6 });
             });
 
@@ -312,7 +312,7 @@ describe("PerspectiveCameraElement", () => {
                 element.setAttribute("position", "7, 8, 9");
                 await element.updateComplete;
 
-                expect(element.position).toEqual([7, 8, 9]);
+                expect(element.position).toEqual({ x: 7, y: 8, z: 9 });
                 expect(element.camera.transform.getPosition()).toEqual({ x: 7, y: 8, z: 9 });
             });
         });
@@ -327,10 +327,10 @@ describe("PerspectiveCameraElement", () => {
             });
 
             it("should reconcile to camera.transform.rotation and reflect to attribute on property change", async () => {
-                element.rotation = [0.1, 0.2, 0.3];
+                element.rotation = { x: 0.1, y: 0.2, z: 0.3 };
                 await element.updateComplete;
 
-                expect(element.rotation).toEqual([0.1, 0.2, 0.3]);
+                expect(element.rotation).toEqual({ x: 0.1, y: 0.2, z: 0.3 });
                 const angles = element.camera.transform.getEulerAngles();
                 expect(angles.pitch).toBeCloseTo(0.1, 4);
                 expect(angles.yaw).toBeCloseTo(0.2, 4);
@@ -342,7 +342,7 @@ describe("PerspectiveCameraElement", () => {
                 element.setAttribute("rotation", "0.4 0.5 0.6");
                 await element.updateComplete;
 
-                expect(element.rotation).toEqual([0.4, 0.5, 0.6]);
+                expect(element.rotation).toEqual({ x: 0.4, y: 0.5, z: 0.6 });
                 const angles = element.camera.transform.getEulerAngles();
                 expect(angles.pitch).toBeCloseTo(0.4, 4);
                 expect(angles.yaw).toBeCloseTo(0.5, 4);
@@ -357,10 +357,10 @@ describe("PerspectiveCameraElement", () => {
             });
 
             it("should reconcile to camera.transform.scale and reflect to attribute on property change", async () => {
-                element.scale = [2, 3, 4];
+                element.scale = { x: 2, y: 3, z: 4 };
                 await element.updateComplete;
 
-                expect(element.scale).toEqual([2, 3, 4]);
+                expect(element.scale).toEqual({ x: 2, y: 3, z: 4 });
                 expect(element.camera.transform.getScale()).toEqual({ x: 2, y: 3, z: 4 });
                 expect(element.getAttribute("scale")).toBe("2 3 4");
             });
@@ -369,7 +369,7 @@ describe("PerspectiveCameraElement", () => {
                 element.setAttribute("scale", "0.5 0.5 0.5");
                 await element.updateComplete;
 
-                expect(element.scale).toEqual([0.5, 0.5, 0.5]);
+                expect(element.scale).toEqual({ x: 0.5, y: 0.5, z: 0.5 });
                 expect(element.camera.transform.getScale()).toEqual({ x: 0.5, y: 0.5, z: 0.5 });
             });
         });
