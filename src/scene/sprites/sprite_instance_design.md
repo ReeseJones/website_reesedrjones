@@ -10,9 +10,11 @@ The primary catalyst for this subsystem is displaying **waypoint markers**—suc
 ### Key Architectural Principles
 - **Configurable Normalized Anchor:** Quad vertices are defined relative to a continuous normalized 2D anchor point $(\alpha_x, \alpha_y) \in [0, 1]^2$. For a map pin, an anchor of $(0.5, 0.0)$ anchors the bottom tip precisely at the 3D target coordinates, while allowing other entities to anchor at center $(0.5, 0.5)$ or arbitrary pivots.
 - **Versatile Sizing Modes:** Supports three distinct size paradigms via `SpriteSizeMode`: fixed screen-space pixels (default for navigation pins), true world units, and distance-clamped screen pixels.
-- **Dual Visual Engines:** Supports both procedural 2D Signed Distance Field (SDF) pins (zero external textures, mathematically crisp at any resolution) and traditional texture maps (PNG/WebP icons, sprite sheets).
-- **Flexible Occlusion & Depth:** Provides clear execution pathways for standard depth testing, always-on-top rendering, and two-pass X-Ray ghost outlines when occluded by celestial bodies.
-- **Strong Typing Project-Wide:** Uses strongly-typed enums for modes, [`Vector2Like`](../../maths/vector_types.ts) for coordinates and dimensions, and [`NormalizedRgbaTuple`](../../helpers/colors_types.ts) for colors.
+- **Shared Static Unit Quad Geometry:** All billboard instances share a single, static unit quad buffer (4 vertices, 6 indices) allocated once on the GPU, avoiding per-instance VBO memory allocations and eliminating point-sprite aspect ratio and hardware size limits.
+- **Unified Vertex Transformation:** All billboards utilize a single shared vertex shader (`sprite_billboard.vert`) handling spherical/cylindrical billboarding, anchor offsets, and sizing projections.
+- **Divergent Material Specializations:** Decouples procedural Signed Distance Field (SDF) pins and sampled texture billboards into separate, specialized materials (`SpritePinMaterial` and `SpriteTextureMaterial`) extending a shared `SpriteMaterial` base. Eliminates runtime shader branching and property pollution.
+- **Flexible Occlusion, Depth, & Two-Sided Safety:** Provides clear execution pathways for standard depth testing and always-on-top rendering. Defaults to two-sided rendering (`cullFace: false`) to safeguard against negative scale mirroring.
+- **Strict Vector & Color Standards:** Adheres to [working_with_vectors_and_colors_guidelines.md](../../project_guidelines/working_with_vectors_and_colors_guidelines.md): public interfaces expose explicit semantic objects ([`Vector2Like`](../../maths/vector_types.ts) for anchor/size, [`RgbaLike`](../../helpers/colors_types.ts) for tint/color), while internal storage uses contiguous `Float32Array` buffers for zero-allocation WebGL uniform uploads.
 - **First-Class Scene Citizen:** Extends [`SceneNode`](../core/scene_node.ts) and implements [`IRenderable`](../core/renderable_types.ts), enabling transformation hierarchies, parenting to moving star nodes, and seamless rendering via [`SceneRenderer`](../renderer/scene_renderer.ts).
 
 ---
@@ -28,12 +30,24 @@ flowchart TD
     end
 
     subgraph SpriteComponents ["Sprite Internal Components"]
-        Geom["SpriteGeometry (Quad VBO with UVs & Local Offsets)"]
-        Mat["SpriteMaterial (SDF Pin or Texture + Pipeline State)"]
-        Shader["ShaderProgram (sprite_billboard.vert / frag)"]
+        Geom["SpriteGeometry (Shared Static Unit Quad VBO)"]
+        BaseMat["ISpriteMaterial (Base Billboard Pipeline State)"]
+        PinMat["SpritePinMaterial (Procedural SDF Pin)"]
+        TexMat["SpriteTextureMaterial (Sampled Texture)"]
+        BaseMat --> PinMat
+        BaseMat --> TexMat
         SpriteNode --> Geom
-        SpriteNode --> Mat
-        Mat --> Shader
+        SpriteNode -->|"material: ISpriteMaterial"| BaseMat
+    end
+
+    subgraph Shaders ["Shader Pipeline"]
+        VertShader["sprite_billboard.vert (Shared Extrusion Math)"]
+        FragPin["sprite_sdf_pin.frag (Procedural SDF Math)"]
+        FragTex["sprite_texture.frag (Texture Sampling & Cutoff)"]
+        PinMat --> VertShader
+        PinMat --> FragPin
+        TexMat --> VertShader
+        TexMat --> FragTex
     end
 
     subgraph RendererContext ["Scene Renderer Pipeline"]
@@ -158,7 +172,7 @@ Scales with distance, but clamps between a minimum pixel size (e.g. 16px) and ma
 
 ---
 
-## 6. Occlusion & Depth Handling Strategies
+## 6. Occlusion, Depth, & Rasterization Strategies
 
 Waypoint navigation markers must handle depth gracefully. Three operational modes are supported:
 
@@ -175,12 +189,25 @@ Waypoint navigation markers must handle depth gracefully. Three operational mode
 ### Behavior C: Multi-Pass X-Ray Ghost Outline (Deferred Architecture)
 In navigation systems, viewing a waypoint through celestial bodies via a ghost outline or silhouette requires a multi-pass technique (Pass 1 occluded with `gl.GREATER`, Pass 2 visible with `gl.LEQUAL`). Because the current `SceneRenderer` pipeline organizes draw calls around single-pass `render(context)` invocations, full multi-pass orchestration will be specified in a dedicated future multi-pass rendering architecture design document. For initial implementation, `SpriteInstance` will support **Behavior A (Standard Depth Testing)** and **Behavior B (Always-On-Top)**.
 
+### Backface Culling Default (`cullFace: false`)
+- **Safety Against Negative Scale / Mirroring:** Billboard materials default to `cullFace: false`. While billboards continuously rotate toward the camera, flipping an axis (e.g. `scale.x < 0` or negative sprite width for mirroring) inverts triangle winding from Counter-Clockwise (CCW) to Clockwise (CW). Disabling culling guarantees flipped sprites or cameras crossing through the anchor point never vanish.
+- **Zero Rasterizer Waste:** Because correctly oriented billboards face the camera, $100\%$ of the quad surface is front-facing; culling provides zero rasterization savings.
+
 ---
 
-## 7. Visual Representation: SDF Procedural Pin vs. Texture Mode
+## 7. Geometry & Shading Subsystems
 
-### 1. Procedural SDF Pin Shader (Default)
-Drawing the waypoint pin via 2D Signed Distance Fields in the fragment shader eliminates external image dependencies, delivers perfect resolution independence, and allows dynamic styling (colors, core indicators, glow) through uniforms.
+### 1. Shared Unit Quad Geometry & Unified Vertex Shader
+All billboard sprites in the engine share a single, globally allocated static unit quad buffer (`SpriteGeometry.getSharedQuad()`) consisting of 4 vertices and 6 indices (`[0, 1, 2, 0, 2, 3]`).
+
+- **Why Not Point Sprites (`gl.POINTS`)?** Hardware point sprites are constrained to 1:1 square aspect ratios (wasting fill-rate on tall navigation pins), suffer from vendor-specific max point size clamping (often 64px or 128px on mobile/integrated GPUs), and clip abruptly when their center point passes outside the frustum. A shared unit quad supports arbitrary rectangular dimensions, custom anchor offsets, and seamless clipping with zero per-instance GPU buffer overhead.
+- **Unified Vertex Shader (`sprite_billboard.vert`):** Both procedural pins and textured sprites share the identical vertex shader. The vertex shader performs:
+  1. Transforming the anchor position to camera view or clip space.
+  2. Extruding quad corners according to `anchor`, `size`, `sizeMode`, and `billboardMode` (Spherical vs. Cylindrical).
+  3. Interpolating standard UV coordinates $[(0, 0) \to (1, 1)]$ across the rasterized quad.
+
+### 2. Procedural SDF Pin Material (`SpritePinMaterial`)
+Drawing the waypoint pin via 2D Signed Distance Fields in fragment shader `sprite_sdf_pin.frag` eliminates external image dependencies, delivers perfect resolution independence, and allows dynamic styling through uniforms.
 
 ```
        ,---.
@@ -208,26 +235,84 @@ Drawing the waypoint pin via 2D Signed Distance Fields in the fragment shader el
     - Inner Dot: `u_innerDotColor` (e.g. White `[1.0, 1.0, 1.0, 1.0]`).
     - Halo / Drop Shadow: Exponential falloff outside $d_{\text{pin}} > 0$.
 
-### 2. Texture Mode (Custom Sprite / PNG)
+### 3. Textured Billboard Material (`SpriteTextureMaterial`)
 When custom artwork (e.g. checkered flags, military insignia, or UI iconography) is desired:
 - **Material Binding:**
-  - Shader: `sprite_billboard.frag` with texture sampler `u_texture` bound to `TextureUnit.Color0`.
+  - Shader: `sprite_texture.frag` with texture sampler `u_texture` bound to `TextureUnit.Color`.
 - **Sampling & Tinting:**
   $$\mathbf{C}_{\text{tex}} = \text{texture}(\text{u\_texture}, \mathbf{v\_uv})$$
   $$\mathbf{C}_{\text{final}} = \mathbf{C}_{\text{tex}} \times \text{u\_tintColor}$$
 - **Alpha Discard:**
-  - Fragments with $\mathbf{C}_{\text{final}}.a < \text{u\_alphaThreshold}$ (e.g. $0.01$) are discarded via `discard` to avoid transparent blending artifacts.
+  - Fragments with $\mathbf{C}_{\text{final}}.a < \text{u\_alphaThreshold}$ (e.g. $0.01$) are discarded via `discard` to avoid transparent blending depth-sorting artifacts.
 
 ---
 
-## 8. TypeScript Interface Specifications
+## 8. Vector & Color Memory Architecture
+
+In strict compliance with [working_with_vectors_and_colors_guidelines.md](../../project_guidelines/working_with_vectors_and_colors_guidelines.md), all spatial vectors and color properties maintain a strict boundary between internal native contiguity and public explicit semantic interfaces:
+
+### Internal Native Contiguity (`Float32Array`)
+Classes store spatial and color components in private, contiguous typed arrays:
+- **`SpriteInstance`**:
+  - `private readonly _anchor: Float32Array = new Float32Array([0.5, 0.0]);`
+  - `private readonly _size: Float32Array = new Float32Array([32.0, 32.0]);`
+- **`SpriteMaterial`**:
+  - `private readonly _tint: Float32Array = new Float32Array([1.0, 1.0, 1.0, 1.0]);`
+- **`SpritePinMaterial`**:
+  - `private readonly _innerColor: Float32Array = new Float32Array([1.0, 1.0, 1.0, 1.0]);`
+
+### Zero-Allocation WebGL Uniform Handoff
+Storing components as contiguous `Float32Array` buffers enables direct WebGL uniform uploads during per-frame rendering without creating temporary wrapper objects or arrays:
+```typescript
+gl.uniform2fv(u_anchorLocation, this._anchor);
+gl.uniform2fv(u_sizeLocation, this._size);
+gl.uniform4fv(u_tintLocation, this._tint);
+gl.uniform4fv(u_innerColorLocation, this._innerColor);
+```
+
+### Public Semantic Getters & Zero-Allocation Target-Out
+Public getters return safe copies conforming to explicit interfaces ([`Vector2Like`](../../maths/vector_types.ts) and [`RgbaLike`](../../helpers/colors_types.ts)), preventing external callers from mutating private memory buffers. High-frequency loops can pass an optional `out` target object to eliminate GC allocations entirely:
+```typescript
+public getAnchor(out?: Vector2Like): Vector2Like {
+    if (out) {
+        out.x = this._anchor[0];
+        out.y = this._anchor[1];
+        return out;
+    }
+    return { x: this._anchor[0], y: this._anchor[1] };
+}
+```
+
+### Overloaded Setters & Change Detection
+Setters accept semantic objects or individual scalar numbers. Internal buffers are only mutated and marked dirty if incoming values differ from current contents:
+```typescript
+public setSize(size: Vector2Like): this;
+public setSize(width: number, height: number): this;
+public setSize(wOrSize: number | Vector2Like, h?: number): this {
+    const w = typeof wOrSize === "number" ? wOrSize : wOrSize.x;
+    const height = typeof wOrSize === "number" ? (h ?? wOrSize) : wOrSize.y;
+
+    if (this._size[0] !== w || this._size[1] !== height) {
+        this._size[0] = w;
+        this._size[1] = height;
+        this.markDirty();
+    }
+    return this;
+}
+```
+
+### Clean Separation of Concerns
+Visual appearance parameters (such as `tint`) reside strictly on `SpriteMaterial` rather than duplicating them onto `SpriteInstance`. This preserves clear scene graph boundaries between spatial node positioning and shader pipeline appearance.
+
+---
+
+## 9. TypeScript Interface Specifications
 
 ### Sprite Enums & Types (`src/scene/sprites/sprite_instance_types.ts`)
 
 ```typescript
 import type { IRenderable } from "../core/renderable_types";
 import type { Vector2Like } from "../../maths/vector_types";
-import type { RgbaLike } from "../../helpers/colors_types";
 import type { ISpriteMaterial } from "./sprite_material_types";
 import type { ISpriteGeometry } from "./sprite_geometry_types";
 
@@ -247,12 +332,36 @@ export interface SpriteSizeClamping {
     maxPixels: number;
 }
 
-export interface ISpriteInstance extends IRenderable {
+export interface SpriteInstanceOptions {
     /** Normalized 2D anchor pivot point (default: { x: 0.5, y: 0.0 } for pins) */
-    anchor: Vector2Like;
+    anchor?: Vector2Like;
 
-    /** Dimensions: [width, height] in screen pixels or world units */
-    size: Vector2Like;
+    /** Dimensions: [width, height] in screen pixels or world units (default: { x: 32, y: 32 }) */
+    size?: Vector2Like;
+
+    /** Active sizing paradigm (default: SpriteSizeMode.ScreenSpace) */
+    sizeMode?: SpriteSizeMode;
+
+    /** Sizing bounds when using SpriteSizeMode.ClampedScreenSpace */
+    sizeClamping?: SpriteSizeClamping;
+
+    /** Billboarding rotation constraint (default: BillboardMode.Spherical) */
+    billboardMode?: BillboardMode;
+
+    /** Active visual appearance material */
+    material: ISpriteMaterial;
+}
+
+export interface ISpriteInstance extends IRenderable {
+    /** Normalized 2D anchor pivot point */
+    getAnchor(out?: Vector2Like): Vector2Like;
+    setAnchor(anchor: Vector2Like): this;
+    setAnchor(x: number, y: number): this;
+
+    /** Dimensions: width and height in screen pixels or world units */
+    getSize(out?: Vector2Like): Vector2Like;
+    setSize(size: Vector2Like): this;
+    setSize(width: number, height: number): this;
 
     /** Active sizing paradigm (default: SpriteSizeMode.ScreenSpace) */
     sizeMode: SpriteSizeMode;
@@ -263,63 +372,112 @@ export interface ISpriteInstance extends IRenderable {
     /** Billboarding rotation constraint (default: BillboardMode.Spherical) */
     billboardMode: BillboardMode;
 
-    /** Tint color multiplier */
-    tint: RgbaLike;
-
-    /** Visual appearance material */
+    /** Active visual appearance material (e.g. SpritePinMaterial or SpriteTextureMaterial) */
     material: ISpriteMaterial;
 
-    /** Geometry quad descriptor */
-    geometry: ISpriteGeometry;
+    /** Shared static geometry quad descriptor */
+    readonly geometry: ISpriteGeometry;
 }
 ```
 
 ### Material Types (`src/scene/sprites/sprite_material_types.ts`)
 
 ```typescript
-import type { IMaterial } from "../materials/material_types";
+import type { IMaterial, MaterialOptions } from "../materials/material_types";
 import type { RgbaLike } from "../../helpers/colors_types";
 import type { ITexture2D } from "../../webgl/textures/texture_types";
 
-export enum SpriteVisualMode {
-    SdfPin = 0,
-    Texture = 1,
+/**
+ * Base contract for camera-facing billboard sprite materials.
+ */
+export interface ISpriteMaterial extends IMaterial {
+    /** Color tint multiplied against the sprite output */
+    getTint(out?: RgbaLike): RgbaLike;
+    setTint(tint: RgbaLike): this;
+    setTint(r: number, g: number, b: number, a?: number): this;
+
+    /** Convenience toggle for depth testing / overlay queue placement */
+    alwaysOnTop: boolean;
 }
 
-export interface ISpriteMaterial extends IMaterial {
-    /** Visual rendering engine (SdfPin or Texture) */
-    visualMode: SpriteVisualMode;
+/**
+ * Common configuration options for initializing any SpriteMaterial.
+ */
+export interface SpriteMaterialOptions extends Omit<MaterialOptions, "shaderKey"> {
+    tint?: RgbaLike;
+    alwaysOnTop?: boolean;
+}
 
-    /** Primary color tint */
-    tint: RgbaLike;
+/**
+ * Contract for mathematically rendered procedural Signed Distance Field (SDF) pins.
+ */
+export interface ISpritePinMaterial extends ISpriteMaterial {
+    /** Color of the inner circular core indicator */
+    getInnerColor(out?: RgbaLike): RgbaLike;
+    setInnerColor(color: RgbaLike): this;
+    setInnerColor(r: number, g: number, b: number, a?: number): this;
 
-    /** Secondary inner dot color for SDF pin */
+    /** Normalized radius of the inner circular core indicator */
+    innerRadius: number;
+
+    /** Soft drop shadow / glow halo width outside the pin perimeter */
+    haloWidth: number;
+}
+
+export interface SpritePinMaterialOptions extends SpriteMaterialOptions {
     innerColor?: RgbaLike;
+    innerRadius?: number;
+    haloWidth?: number;
+}
 
-    /** Optional texture map for Texture mode */
-    texture?: ITexture2D | null;
+/**
+ * Contract for raster textured billboard sprites.
+ */
+export interface ISpriteTextureMaterial extends ISpriteMaterial {
+    /** 2D texture bound to TextureUnit.Color */
+    texture: ITexture2D | null;
 
-    /** Alpha test cutoff threshold */
+    /** Cutoff alpha threshold below which fragments are discarded */
     alphaCutoff: number;
+}
 
-    /** Whether always-on-top rendering is enabled */
-    alwaysOnTop: boolean;
+export interface SpriteTextureMaterialOptions extends SpriteMaterialOptions {
+    texture?: ITexture2D | null;
+    alphaCutoff?: number;
+}
+```
+
+### Geometry Types (`src/scene/sprites/sprite_geometry_types.ts`)
+
+```typescript
+import type { IGeometry } from "../geometry/geometry_types";
+
+/**
+ * Contract for static billboard quad geometry.
+ */
+export interface ISpriteGeometry extends IGeometry {
+    /** Whether this geometry references the globally shared unit quad buffer */
+    readonly isShared: boolean;
 }
 ```
 
 ---
 
-## 9. Implementation Roadmap & Steps
+## 10. Implementation Roadmap & Steps
 
 - **Step 1: Type Definitions (`src/scene/sprites/`)**
   - Author `sprite_instance_types.ts`, `sprite_material_types.ts`, and `sprite_geometry_types.ts`.
-- **Step 2: Quad Geometry (`src/scene/sprites/sprite_geometry.ts`)**
-  - Implement reusable unit quad geometry with anchor-offset attribute calculation.
+- **Step 2: Shared Unit Quad Geometry (`src/scene/sprites/sprite_geometry.ts`)**
+  - Implement static shared unit quad geometry (`SpriteGeometry.getSharedQuad()`) with zero per-instance buffer allocations.
 - **Step 3: GLSL Billboard Shaders (`src/scene/shaders/`)**
-  - `sprite_billboard.vert`: Viewport-aware screen-space and world-space billboarding extrusion.
-  - `sprite_billboard.frag`: SDF Pin evaluation (with inner dot and antialiasing) and texture sampling branch.
-- **Step 4: Material & Instance Implementation**
-  - `SpriteMaterial`: Pipeline state configuration, depth function management (including X-Ray two-pass).
-  - `SpriteInstance`: Scene graph integration extending `SceneNode` and implementing `IRenderable`.
-- **Step 5: Testing & Quality Gate**
-  - Comprehensive unit test suites asserting anchor math, matrix unrotation, sizing clamp calculations, and disposal contracts.
+  - `sprite_billboard.vert`: Viewport-aware screen-space and world-space billboarding extrusion shared across all sprite types.
+  - `sprite_sdf_pin.frag`: Procedural SDF pin evaluation with antialiasing, inner dot, and halo shadow.
+  - `sprite_texture.frag`: Clean 2D texture sampling with tinting and alpha cutoff discard.
+- **Step 4: Material Subsystem Implementation**
+  - `SpriteMaterial`: Base billboard material extending `Material`, configuring `cullFace: false`, `blendMode: BlendMode.Alpha`, `_tint: Float32Array(4)`, and `alwaysOnTop` depth state.
+  - `SpritePinMaterial`: Specialization for procedural SDF pin rendering with `_innerColor: Float32Array(4)` and halo uniforms.
+  - `SpriteTextureMaterial`: Specialization for texture mapping with `TextureUnit.Color` binding and alpha discard.
+- **Step 5: SpriteInstance Integration (`src/scene/sprites/sprite_instance.ts`)**
+  - Scene graph integration extending `SceneNode` and implementing `IRenderable`, storing `_anchor: Float32Array(2)` and `_size: Float32Array(2)`, binding shared quad geometry and polymorphic `ISpriteMaterial`.
+- **Step 6: Testing & Quality Gate**
+  - Comprehensive unit test suites asserting anchor math, matrix unrotation, sizing clamp calculations, vector/color getter safe copies and target-out reuse, material pipeline defaults, and deterministic disposal contracts.
