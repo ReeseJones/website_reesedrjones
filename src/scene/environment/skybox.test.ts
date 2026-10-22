@@ -55,11 +55,11 @@ describe("Skybox", () => {
             expect(skybox1.id).not.toBe(skybox2.id);
         });
 
-        it("default exposure is 1.0, tint is [1.0, 1.0, 1.0], rotationY is 0.0, cubeTexture is null", () => {
+        it("default exposure is 1.0, tint is { r: 1.0, g: 1.0, b: 1.0 }, rotationY is 0.0, cubeTexture is null", () => {
             const skybox = new Skybox();
 
             expect(skybox.exposure).toBe(1.0);
-            expect(skybox.tint).toEqual([1.0, 1.0, 1.0]);
+            expect(skybox.tint).toEqual({ r: 1.0, g: 1.0, b: 1.0 });
             expect(skybox.rotationY).toBe(0.0);
             expect(skybox.cubeTexture).toBeNull();
         });
@@ -134,13 +134,22 @@ describe("Skybox", () => {
             });
 
             expect(skybox.exposure).toBe(2.5);
-            expect(skybox.tint).toEqual([0.8, 0.9, 1.0]);
+            expect(skybox.tint).toEqual({ r: 0.8, g: 0.9, b: 1.0 });
             expect(skybox.rotationY).toBeCloseTo(Math.PI / 4);
 
             const uniforms = skybox.skyboxMaterial.getUniforms();
             expect(uniforms["u_exposure"]).toBe(2.5);
             expect(uniforms["u_tint"]).toEqual([0.8, 0.9, 1.0]);
             expect(uniforms["u_rotationY"]).toBeCloseTo(Math.PI / 4);
+        });
+
+        it("passes RgbLike tint through to internal SkyboxMaterial", () => {
+            const skybox = new Skybox({
+                tint: { r: 0.4, g: 0.5, b: 0.6 },
+            });
+
+            expect(skybox.tint).toEqual({ r: 0.4, g: 0.5, b: 0.6 });
+            expect(skybox.skyboxMaterial.getUniforms()["u_tint"]).toEqual([0.4, 0.5, 0.6]);
         });
 
         it("passes pipelineState overrides through to SkyboxMaterial", () => {
@@ -196,16 +205,22 @@ describe("Skybox", () => {
 
         it("tint: reads and writes to skyboxMaterial.tint and updates u_tint uniform", () => {
             const skybox = new Skybox();
-            expect(skybox.tint).toEqual([1.0, 1.0, 1.0]);
+            expect(skybox.tint).toEqual({ r: 1.0, g: 1.0, b: 1.0 });
 
             skybox.tint = [0.2, 0.4, 0.6];
-            expect(skybox.tint).toEqual([0.2, 0.4, 0.6]);
-            expect(skybox.skyboxMaterial.tint).toEqual([0.2, 0.4, 0.6]);
+            expect(skybox.tint).toEqual({ r: 0.2, g: 0.4, b: 0.6 });
+            expect(skybox.skyboxMaterial.tint).toEqual({ r: 0.2, g: 0.4, b: 0.6 });
             expect(skybox.skyboxMaterial.getUniforms()["u_tint"]).toEqual([0.2, 0.4, 0.6]);
+
+            // Updating with RgbLike object
+            skybox.tint = { r: 0.3, g: 0.5, b: 0.7 };
+            expect(skybox.tint).toEqual({ r: 0.3, g: 0.5, b: 0.7 });
+            expect(skybox.skyboxMaterial.tint).toEqual({ r: 0.3, g: 0.5, b: 0.7 });
+            expect(skybox.skyboxMaterial.getUniforms()["u_tint"]).toEqual([0.3, 0.5, 0.7]);
 
             // Updating material uniform directly reflects on skybox getter
             skybox.skyboxMaterial.tint = [0.9, 0.8, 0.7];
-            expect(skybox.tint).toEqual([0.9, 0.8, 0.7]);
+            expect(skybox.tint).toEqual({ r: 0.9, g: 0.8, b: 0.7 });
         });
 
         it("rotationY: reads and writes to skyboxMaterial.rotationY and updates u_rotationY uniform", () => {

@@ -3,6 +3,7 @@ import { CubeGeometry } from "../models/primitives/cube_geometry";
 import { SkyboxMaterial } from "./skybox_material";
 import type { ICubeTexture } from "../../webgl/textures/cube_texture_types";
 import type { ISkybox, SkyboxOptions } from "./skybox_types";
+import type { RgbLike } from "../../helpers/colors_types";
 
 /**
  * Scene graph citizen representing a background environment cubemap skybox.
@@ -32,11 +33,11 @@ export class Skybox extends ModelInstance implements ISkybox {
         this.skyboxMaterial.exposure = value;
     }
 
-    public get tint(): [number, number, number] {
+    public get tint(): RgbLike {
         return this.skyboxMaterial.tint;
     }
 
-    public set tint(value: [number, number, number]) {
+    public set tint(value: RgbLike | [number, number, number]) {
         this.skyboxMaterial.tint = value;
     }
 

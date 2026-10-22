@@ -189,6 +189,15 @@ describe("Transform", () => {
 
             expect(transform.getPosition()).toEqual({ x: 1, y: 2, z: 3 });
         });
+
+        it("should write into out target vector when provided to avoid heap allocation", () => {
+            const transform = new Transform();
+            transform.setPosition(15, -25, 35);
+            const target = { x: 0, y: 0, z: 0 };
+            const result = transform.getPosition(target);
+            expect(result).toBe(target);
+            expect(target).toEqual({ x: 15, y: -25, z: 35 });
+        });
     });
 
     describe("getQuaternion()", () => {
@@ -284,6 +293,15 @@ describe("Transform", () => {
 
             expect(transform.getScale()).toEqual({ x: 3, y: 4, z: 5 });
         });
+
+        it("should write into out target vector when provided to avoid heap allocation", () => {
+            const transform = new Transform();
+            transform.setScale(2, 4, 8);
+            const target = { x: 0, y: 0, z: 0 };
+            const result = transform.getScale(target);
+            expect(result).toBe(target);
+            expect(target).toEqual({ x: 2, y: 4, z: 8 });
+        });
     });
 
     describe("setPosition()", () => {
@@ -321,6 +339,25 @@ describe("Transform", () => {
             onDirty.mockClear();
 
             transform.setPosition(5, 5, 5);
+            expect(transform.isLocalDirty).toBe(false);
+            expect(onDirty).not.toHaveBeenCalled();
+        });
+
+        it("should accept Vector3Like object overload", () => {
+            const transform = new Transform();
+            const result = transform.setPosition({ x: 11, y: 22, z: 33 });
+            expect(result).toBe(transform);
+            expect(transform.getPosition()).toEqual({ x: 11, y: 22, z: 33 });
+        });
+
+        it("should be idempotent and skip dirty notification when setting identical coordinates via Vector3Like", () => {
+            const onDirty = vi.fn();
+            const transform = new Transform(onDirty);
+            transform.setPosition(5, 5, 5);
+            transform.updateLocalMatrix();
+            onDirty.mockClear();
+
+            transform.setPosition({ x: 5, y: 5, z: 5 });
             expect(transform.isLocalDirty).toBe(false);
             expect(onDirty).not.toHaveBeenCalled();
         });
@@ -533,6 +570,25 @@ describe("Transform", () => {
             onDirty.mockClear();
 
             transform.setScale(3, 4, 5);
+            expect(transform.isLocalDirty).toBe(false);
+            expect(onDirty).not.toHaveBeenCalled();
+        });
+
+        it("should accept Vector3Like object overload", () => {
+            const transform = new Transform();
+            const result = transform.setScale({ x: 3, y: 6, z: 9 });
+            expect(result).toBe(transform);
+            expect(transform.getScale()).toEqual({ x: 3, y: 6, z: 9 });
+        });
+
+        it("should be idempotent and skip dirty notification when setting identical scale via Vector3Like", () => {
+            const onDirty = vi.fn();
+            const transform = new Transform(onDirty);
+            transform.setScale(3, 4, 5);
+            transform.updateLocalMatrix();
+            onDirty.mockClear();
+
+            transform.setScale({ x: 3, y: 4, z: 5 });
             expect(transform.isLocalDirty).toBe(false);
             expect(onDirty).not.toHaveBeenCalled();
         });

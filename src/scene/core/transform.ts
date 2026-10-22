@@ -48,7 +48,13 @@ export class Transform implements ITransform {
         this._onDirty?.();
     }
 
-    public getPosition(): Vector3Like {
+    public getPosition(out?: Vector3Like): Vector3Like {
+        if (out) {
+            out.x = this._position[0];
+            out.y = this._position[1];
+            out.z = this._position[2];
+            return out;
+        }
         return {
             x: this._position[0],
             y: this._position[1],
@@ -92,7 +98,13 @@ export class Transform implements ITransform {
         return { pitch, yaw, roll };
     }
 
-    public getScale(): Vector3Like {
+    public getScale(out?: Vector3Like): Vector3Like {
+        if (out) {
+            out.x = this._scale[0];
+            out.y = this._scale[1];
+            out.z = this._scale[2];
+            return out;
+        }
         return {
             x: this._scale[0],
             y: this._scale[1],
@@ -100,9 +112,23 @@ export class Transform implements ITransform {
         };
     }
 
-    public setPosition(x: number, y: number, z: number): this {
-        if (this._position[0] !== x || this._position[1] !== y || this._position[2] !== z) {
-            vec3.set(this._position, x, y, z);
+    public setPosition(pos: Vector3Like): this;
+    public setPosition(x: number, y: number, z: number): this;
+    public setPosition(posOrX: Vector3Like | number, y?: number, z?: number): this {
+        let nx: number;
+        let ny: number;
+        let nz: number;
+        if (typeof posOrX === "object" && posOrX !== null) {
+            nx = posOrX.x;
+            ny = posOrX.y;
+            nz = posOrX.z;
+        } else {
+            nx = posOrX;
+            ny = y!;
+            nz = z!;
+        }
+        if (this._position[0] !== nx || this._position[1] !== ny || this._position[2] !== nz) {
+            vec3.set(this._position, nx, ny, nz);
             this.markDirty();
         }
         return this;
@@ -173,9 +199,23 @@ export class Transform implements ITransform {
         return this;
     }
 
-    public setScale(sx: number, sy: number, sz: number): this {
-        if (this._scale[0] !== sx || this._scale[1] !== sy || this._scale[2] !== sz) {
-            vec3.set(this._scale, sx, sy, sz);
+    public setScale(scale: Vector3Like): this;
+    public setScale(sx: number, sy: number, sz: number): this;
+    public setScale(scaleOrX: Vector3Like | number, sy?: number, sz?: number): this {
+        let nx: number;
+        let ny: number;
+        let nz: number;
+        if (typeof scaleOrX === "object" && scaleOrX !== null) {
+            nx = scaleOrX.x;
+            ny = scaleOrX.y;
+            nz = scaleOrX.z;
+        } else {
+            nx = scaleOrX;
+            ny = sy!;
+            nz = sz!;
+        }
+        if (this._scale[0] !== nx || this._scale[1] !== ny || this._scale[2] !== nz) {
+            vec3.set(this._scale, nx, ny, nz);
             this.markDirty();
         }
         return this;

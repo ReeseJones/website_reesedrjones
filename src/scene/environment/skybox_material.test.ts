@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import { SkyboxMaterial } from "./skybox_material";
 import { BlendMode } from "../materials/material_types";
 import { TextureUnit } from "../../webgl/textures/texture_types";
@@ -36,7 +36,7 @@ describe("SkyboxMaterial", () => {
             expect(uniforms["u_rotationY"]).toBe(0.0);
 
             // Also verify corresponding property getters match default uniform values
-            expect(material.tint).toEqual([1.0, 1.0, 1.0]);
+            expect(material.tint).toEqual({ r: 1.0, g: 1.0, b: 1.0 });
             expect(material.exposure).toBe(1.0);
             expect(material.rotationY).toBe(0.0);
         });
@@ -69,13 +69,23 @@ describe("SkyboxMaterial", () => {
             });
 
             expect(material.exposure).toBe(2.5);
-            expect(material.tint).toEqual([0.8, 0.9, 1.0]);
+            expect(material.tint).toEqual({ r: 0.8, g: 0.9, b: 1.0 });
             expect(material.rotationY).toBeCloseTo(Math.PI / 4);
 
             const uniforms = material.getUniforms();
             expect(uniforms["u_exposure"]).toBe(2.5);
             expect(uniforms["u_tint"]).toEqual([0.8, 0.9, 1.0]);
             expect(uniforms["u_rotationY"]).toBeCloseTo(Math.PI / 4);
+        });
+
+        it("accepts RgbLike object for tint in options", () => {
+            const material = new SkyboxMaterial({
+                tint: { r: 0.5, g: 0.6, b: 0.7 },
+            });
+
+            expect(material.tint).toEqual({ r: 0.5, g: 0.6, b: 0.7 });
+            const uniforms = material.getUniforms();
+            expect(uniforms["u_tint"]).toEqual([0.5, 0.6, 0.7]);
         });
 
         it("accepts custom pipelineState overrides (e.g. blendMode: BlendMode.Alpha, depthTest: false)", () => {
@@ -139,20 +149,24 @@ describe("SkyboxMaterial", () => {
         });
 
         describe("tint", () => {
-            it("reads u_tint uniform", () => {
+            it("reads u_tint uniform as RgbLike", () => {
                 const material = new SkyboxMaterial({ tint: [0.5, 0.6, 0.7] });
-                expect(material.tint).toEqual([0.5, 0.6, 0.7]);
+                expect(material.tint).toEqual({ r: 0.5, g: 0.6, b: 0.7 });
 
                 material.setUniform("u_tint", [0.1, 0.2, 0.3]);
-                expect(material.tint).toEqual([0.1, 0.2, 0.3]);
+                expect(material.tint).toEqual({ r: 0.1, g: 0.2, b: 0.3 });
             });
 
-            it("setter updates u_tint uniform", () => {
+            it("setter updates u_tint uniform with tuple or RgbLike", () => {
                 const material = new SkyboxMaterial();
                 material.tint = [0.2, 0.3, 0.4];
 
-                expect(material.tint).toEqual([0.2, 0.3, 0.4]);
+                expect(material.tint).toEqual({ r: 0.2, g: 0.3, b: 0.4 });
                 expect(material.getUniforms()["u_tint"]).toEqual([0.2, 0.3, 0.4]);
+
+                material.tint = { r: 0.7, g: 0.8, b: 0.9 };
+                expect(material.tint).toEqual({ r: 0.7, g: 0.8, b: 0.9 });
+                expect(material.getUniforms()["u_tint"]).toEqual([0.7, 0.8, 0.9]);
             });
         });
 
@@ -275,7 +289,7 @@ describe("SkyboxMaterial", () => {
             expect(cloned.pipelineState.cullFace).toBe(true);
         });
 
-        it("deep-copies uniforms and tint array (mutating clone tint does not mutate original)", () => {
+        it("deep-copies uniforms and tint (mutating clone tint does not mutate original)", () => {
             const original = new SkyboxMaterial({
                 tint: [0.1, 0.2, 0.3],
                 exposure: 1.0,
@@ -289,12 +303,12 @@ describe("SkyboxMaterial", () => {
             cloned.rotationY = 1.5;
             cloned.setUniform("u_extra", "clone_only");
 
-            expect(original.tint).toEqual([0.1, 0.2, 0.3]);
+            expect(original.tint).toEqual({ r: 0.1, g: 0.2, b: 0.3 });
             expect(original.exposure).toBe(1.0);
             expect(original.rotationY).toBe(0.0);
             expect(original.getUniforms()["u_extra"]).toBeUndefined();
 
-            expect(cloned.tint).toEqual([0.9, 0.8, 0.7]);
+            expect(cloned.tint).toEqual({ r: 0.9, g: 0.8, b: 0.7 });
             expect(cloned.exposure).toBe(3.0);
             expect(cloned.rotationY).toBe(1.5);
             expect(cloned.getUniforms()["u_extra"]).toBe("clone_only");

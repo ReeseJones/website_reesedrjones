@@ -83,22 +83,22 @@ The migration decouples internal typed array storage (`Float32Array`) from publi
 
 ## Phase 4: Scene Graph Core, Transforms & Cameras
 
-- [ ] **Transform Component ([`src/scene/core/transform.ts`](../scene/core/transform.ts))**
-  - [ ] Update [`transform_types.ts`](../scene/core/transform_types.ts) `ITransform` interface:
-    - [ ] Add `setPosition(pos: Vector3Like): this;` overload.
-    - [ ] Add optional target-out parameter to `getPosition(out?: Vector3Like): Vector3Like;`.
-    - [ ] Add `setScale(scale: Vector3Like): this;` overload.
-    - [ ] Add optional target-out parameter to `getScale(out?: Vector3Like): Vector3Like;`.
-  - [ ] Update `Transform` class implementation in [`transform.ts`](../scene/core/transform.ts).
-  - [ ] Update unit tests in [`src/scene/core/transform.test.ts`](../scene/core/transform.test.ts).
-- [ ] **Camera System ([`src/scene/camera/camera.ts`](../scene/camera/camera.ts))**
-  - [ ] Update `ICamera` interface in [`camera_types.ts`](../scene/camera/camera_types.ts) to accept `Vector3Like` for target and up vectors.
-  - [ ] Add optional target-out parameter to `getPosition(out?: Vector3Like): Vector3Like;`.
-  - [ ] Update `Camera` implementation and unit tests in [`camera.test.ts`](../scene/camera/camera.test.ts), [`perspective_camera.test.ts`](../scene/camera/perspective_camera.test.ts), and [`orthographic_camera.test.ts`](../scene/camera/orthographic_camera.test.ts).
-- [ ] **Skybox System ([`src/scene/environment/skybox.ts`](../scene/environment/skybox.ts))**
-  - [ ] Update `ISkybox` and `Skybox` `tint` property from `[number, number, number]` to `RgbLike`.
-  - [ ] Update [`skybox_types.ts`](../scene/environment/skybox_types.ts) and [`skybox_material_types.ts`](../scene/environment/skybox_material_types.ts).
-  - [ ] Update unit tests in [`skybox.test.ts`](../scene/environment/skybox.test.ts) and [`skybox_material.test.ts`](../scene/environment/skybox_material.test.ts).
+- [x] **Transform Component ([`src/scene/core/transform.ts`](../scene/core/transform.ts))**
+  - [x] Update [`transform_types.ts`](../scene/core/transform_types.ts) `ITransform` interface:
+    - [x] Add `setPosition(pos: Vector3Like): this;` overload.
+    - [x] Add optional target-out parameter to `getPosition(out?: Vector3Like): Vector3Like;`.
+    - [x] Add `setScale(scale: Vector3Like): this;` overload.
+    - [x] Add optional target-out parameter to `getScale(out?: Vector3Like): Vector3Like;`.
+  - [x] Update `Transform` class implementation in [`transform.ts`](../scene/core/transform.ts).
+  - [x] Update unit tests in [`src/scene/core/transform.test.ts`](../scene/core/transform.test.ts).
+- [x] **Camera System ([`src/scene/camera/camera.ts`](../scene/camera/camera.ts))**
+  - [x] Update `ICamera` interface in [`camera_types.ts`](../scene/camera/camera_types.ts) to accept `Vector3Like` for target and up vectors.
+  - [x] Add optional target-out parameter to `getPosition(out?: Vector3Like): Vector3Like;`.
+  - [x] Update `Camera` implementation and unit tests in [`camera.test.ts`](../scene/camera/camera.test.ts), [`perspective_camera.test.ts`](../scene/camera/perspective_camera.test.ts), and [`orthographic_camera.test.ts`](../scene/camera/orthographic_camera.test.ts).
+- [x] **Skybox System ([`src/scene/environment/skybox.ts`](../scene/environment/skybox.ts))**
+  - [x] Update `ISkybox` and `Skybox` `tint` property from `[number, number, number]` to `RgbLike`.
+  - [x] Update [`skybox_types.ts`](../scene/environment/skybox_types.ts) and [`skybox_material_types.ts`](../scene/environment/skybox_material_types.ts).
+  - [x] Update unit tests in [`skybox.test.ts`](../scene/environment/skybox.test.ts) and [`skybox_material.test.ts`](../scene/environment/skybox_material.test.ts).
 
 ---
 

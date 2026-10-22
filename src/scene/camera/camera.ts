@@ -94,6 +94,14 @@ export abstract class Camera extends SceneNode implements ICamera {
     }
 
     /**
+     * Returns local position of the camera. If out is provided, writes into out
+     * and returns out to avoid heap allocation.
+     */
+    public getPosition(out?: Vector3Like): Vector3Like {
+        return this.transform.getPosition(out);
+    }
+
+    /**
      * Points the camera toward target coordinates in world space.
      * Computes the look-at orientation basis and applies it as a unit quaternion.
      */

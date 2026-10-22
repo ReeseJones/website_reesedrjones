@@ -4,6 +4,8 @@ import { TextureUnit } from "../../webgl/textures/texture_types";
 import type { ICubeTexture } from "../../webgl/textures/cube_texture_types";
 import type { SkyboxShaderKey } from "../../webgl/shaders/shader_types";
 import type { SkyboxMaterialOptions } from "./skybox_material_types";
+import type { RgbLike } from "../../helpers/colors_types";
+import { rgbLikeToTuple, tupleToRgbLike } from "../../helpers/colors";
 
 /**
  * Specialized material for background cubemap skyboxes.
@@ -13,6 +15,11 @@ import type { SkyboxMaterialOptions } from "./skybox_material_types";
  */
 export class SkyboxMaterial extends Material {
     constructor(options: SkyboxMaterialOptions = {}) {
+        const rawTint = options.tint ?? [1.0, 1.0, 1.0];
+        const initialTint: [number, number, number] = Array.isArray(rawTint)
+            ? [rawTint[0], rawTint[1], rawTint[2]]
+            : [...rgbLikeToTuple(rawTint)];
+
         super({
             shaderKey: options.shaderKey ?? "skybox",
             pipelineState: {
@@ -23,7 +30,7 @@ export class SkyboxMaterial extends Material {
             },
             cubeTextures: options.cubeTexture ? { [TextureUnit.Environment]: options.cubeTexture } : undefined,
             uniforms: {
-                u_tint: options.tint ?? [1.0, 1.0, 1.0],
+                u_tint: initialTint,
                 u_exposure: options.exposure ?? 1.0,
                 u_rotationY: options.rotationY ?? 0.0,
                 ...options.uniforms,
@@ -47,12 +54,16 @@ export class SkyboxMaterial extends Material {
         this.setUniform("u_exposure", value);
     }
 
-    public get tint(): [number, number, number] {
-        return (this.getUniforms().u_tint as [number, number, number]) ?? [1.0, 1.0, 1.0];
+    public get tint(): RgbLike {
+        const uTint = this.getUniforms().u_tint as [number, number, number] | undefined;
+        return tupleToRgbLike(uTint ?? [1.0, 1.0, 1.0]);
     }
 
-    public set tint(value: [number, number, number]) {
-        this.setUniform("u_tint", value);
+    public set tint(value: RgbLike | [number, number, number]) {
+        const tuple: [number, number, number] = Array.isArray(value)
+            ? [value[0], value[1], value[2]]
+            : [...rgbLikeToTuple(value)];
+        this.setUniform("u_tint", tuple);
     }
 
     public get rotationY(): number {
@@ -80,7 +91,7 @@ export class SkyboxMaterial extends Material {
             pipelineState: { ...this.pipelineState },
             cubeTexture: this.cubeTexture,
             exposure: this.exposure,
-            tint: [...this.tint],
+            tint: { ...this.tint },
             rotationY: this.rotationY,
             uniforms: this.getUniforms(),
         });

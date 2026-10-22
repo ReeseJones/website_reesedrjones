@@ -20,8 +20,8 @@ export interface ITransform {
     /** Indicates whether the local matrix needs recalculation */
     readonly isLocalDirty: boolean;
 
-    /** Returns a copy of the current local position */
-    getPosition(): Vector3Like;
+    /** Returns a copy of the current local position, or populates out if provided */
+    getPosition(out?: Vector3Like): Vector3Like;
 
     /** Returns a copy of the current internal quaternion [x, y, z, w] */
     getQuaternion(): QuaternionTuple;
@@ -29,10 +29,11 @@ export interface ITransform {
     /** Computes and returns current Euler angles (YXZ order) */
     getEulerAngles(): EulerAngles;
 
-    /** Returns a copy of the current local scale */
-    getScale(): Vector3Like;
+    /** Returns a copy of the current local scale, or populates out if provided */
+    getScale(out?: Vector3Like): Vector3Like;
 
     /** Sets local position coordinates */
+    setPosition(pos: Vector3Like): this;
     setPosition(x: number, y: number, z: number): this;
 
     /** Sets local rotation from Euler angles (YXZ composition) */
@@ -45,6 +46,7 @@ export interface ITransform {
     slerp(target: QuaternionTuple, t: number): this;
 
     /** Sets local non-uniform scale */
+    setScale(scale: Vector3Like): this;
     setScale(sx: number, sy: number, sz: number): this;
 
     /** Sets local uniform scale */

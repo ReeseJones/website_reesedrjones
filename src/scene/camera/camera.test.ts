@@ -155,6 +155,27 @@ describe("Camera (abstract)", () => {
         });
     });
 
+    describe("getPosition", () => {
+        it("returns the local camera position as a Vector3Like object", () => {
+            const camera = new TestCamera();
+            camera.transform.setPosition(10, -20, 30);
+
+            const pos = camera.getPosition();
+            expect(pos).toEqual({ x: 10, y: -20, z: 30 });
+        });
+
+        it("populates target out vector and returns it when provided to avoid heap allocation", () => {
+            const camera = new TestCamera();
+            camera.transform.setPosition(1.5, 2.5, 3.5);
+
+            const target = { x: 0, y: 0, z: 0 };
+            const result = camera.getPosition(target);
+
+            expect(result).toBe(target);
+            expect(target).toEqual({ x: 1.5, y: 2.5, z: 3.5 });
+        });
+    });
+
     describe("markProjectionDirty and markWorldDirty", () => {
         it("calling markProjectionDirty flags projection as dirty", () => {
             const camera = new TestCamera();

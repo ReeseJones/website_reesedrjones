@@ -48,6 +48,9 @@ export interface ICamera extends ISceneNode {
     /** Current viewport aspect ratio (width / height), if applicable */
     readonly aspect?: number;
 
+    /** Returns local position of camera, or writes into out if provided */
+    getPosition(out?: Vector3Like): Vector3Like;
+
     /** Points the camera toward target coordinates in world space */
     lookAt(target: Vector3Like, worldUp?: Vector3Like): this;
 

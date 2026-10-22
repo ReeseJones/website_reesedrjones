@@ -2,6 +2,7 @@ import type { ICubeTexture } from "../../webgl/textures/cube_texture_types";
 import type { IMeshGeometry } from "../models/mesh_geometry_types";
 import type { IModelInstance } from "../models/model_instance_types";
 import type { SkyboxMaterialOptions } from "./skybox_material_types";
+import type { RgbLike } from "../../helpers/colors_types";
 
 /**
  * Configuration options for creating a Skybox scene node.
@@ -25,7 +26,7 @@ export interface ISkybox extends IModelInstance {
     /** Brightness exposure multiplier */
     exposure: number;
     /** RGB color tint */
-    tint: [number, number, number];
+    tint: RgbLike;
     /** Y-axis azimuth orientation rotation in radians */
     rotationY: number;
     /** Active cubemap texture */
