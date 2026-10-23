@@ -10,7 +10,7 @@ import { parentNodeContext } from "./scene_element_types";
 import {
     TAG_RJ_MODEL_INSTANCE,
     DEFAULT_MODEL_INSTANCE_NAME,
-    DEFAULT_MODEL_INSTANCE_VISIBLE,
+    DEFAULT_MODEL_INSTANCE_HIDDEN,
     DEFAULT_MODEL_INSTANCE_RENDER_ORDER,
     DEFAULT_MODEL_INSTANCE_POSITION,
     DEFAULT_MODEL_INSTANCE_ROTATION,
@@ -29,7 +29,7 @@ export class ModelInstanceElement extends LitElement {
         position: { converter: vector3Converter, reflect: true },
         rotation: { converter: vector3Converter, reflect: true },
         scale: { converter: vector3Converter, reflect: true },
-        visible: { type: Boolean, reflect: true },
+        hidden: { type: Boolean, reflect: true },
         renderOrder: { type: Number, attribute: "render-order", reflect: true },
         geometry: { attribute: false },
         material: { attribute: false },
@@ -39,7 +39,7 @@ export class ModelInstanceElement extends LitElement {
     public declare position: Vector3Like;
     public declare rotation: Vector3Like;
     public declare scale: Vector3Like;
-    public declare visible: boolean;
+    public declare hidden: boolean;
     public declare renderOrder: number;
     public declare geometry: IMeshGeometry | undefined;
     public declare material: IMaterial | undefined;
@@ -56,7 +56,9 @@ export class ModelInstanceElement extends LitElement {
         this.position = DEFAULT_MODEL_INSTANCE_POSITION;
         this.rotation = DEFAULT_MODEL_INSTANCE_ROTATION;
         this.scale = DEFAULT_MODEL_INSTANCE_SCALE;
-        this.visible = DEFAULT_MODEL_INSTANCE_VISIBLE;
+        // eslint-disable-next-line wc/no-constructor-attributes
+        this.hidden = DEFAULT_MODEL_INSTANCE_HIDDEN;
+        this._modelInstance.visible = !DEFAULT_MODEL_INSTANCE_HIDDEN;
         this.renderOrder = DEFAULT_MODEL_INSTANCE_RENDER_ORDER;
         this.geometry = undefined;
         this.material = undefined;
@@ -140,8 +142,8 @@ export class ModelInstanceElement extends LitElement {
             );
         }
 
-        if (changedProperties.has("visible")) {
-            this._modelInstance.visible = this.visible;
+        if (changedProperties.has("hidden")) {
+            this._modelInstance.visible = !this.hidden;
         }
 
         if (changedProperties.has("renderOrder")) {

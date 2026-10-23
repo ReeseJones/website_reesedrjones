@@ -13,7 +13,7 @@ import {
     DEFAULT_CAMERA_FAR,
     DEFAULT_CAMERA_ASPECT,
     DEFAULT_CAMERA_MAKE_DEFAULT,
-    DEFAULT_CAMERA_VISIBLE,
+    DEFAULT_CAMERA_HIDDEN,
     DEFAULT_CAMERA_POSITION,
     DEFAULT_CAMERA_ROTATION,
     DEFAULT_CAMERA_SCALE,
@@ -103,7 +103,7 @@ describe("PerspectiveCameraElement", () => {
             expect(cam.near).toBe(DEFAULT_CAMERA_NEAR);
             expect(cam.far).toBe(DEFAULT_CAMERA_FAR);
             expect(cam.aspect).toBe(DEFAULT_CAMERA_ASPECT);
-            expect(cam.visible).toBe(DEFAULT_CAMERA_VISIBLE);
+            expect(cam.visible).toBe(true);
             expect(cam.transform.getPosition()).toEqual({ x: 0, y: 0, z: 0 });
             expect(cam.transform.getScale()).toEqual({ x: 1, y: 1, z: 1 });
         });
@@ -374,37 +374,38 @@ describe("PerspectiveCameraElement", () => {
             });
         });
 
-        describe("visible", () => {
-            it("should default to DEFAULT_CAMERA_VISIBLE and sync with camera", () => {
-                expect(element.visible).toBe(DEFAULT_CAMERA_VISIBLE);
-                expect(element.camera.visible).toBe(DEFAULT_CAMERA_VISIBLE);
+        describe("hidden", () => {
+            it("should default to DEFAULT_CAMERA_HIDDEN (false) and sync with camera (visible = true)", () => {
+                expect(element.hidden).toBe(DEFAULT_CAMERA_HIDDEN);
+                expect(element.camera.visible).toBe(true);
+                expect(element.hasAttribute("hidden")).toBe(false);
             });
 
             it("should reconcile to camera.visible and reflect to attribute on property change", async () => {
-                element.visible = false;
+                element.hidden = true;
                 await element.updateComplete;
 
-                expect(element.visible).toBe(false);
+                expect(element.hidden).toBe(true);
                 expect(element.camera.visible).toBe(false);
-                expect(element.hasAttribute("visible")).toBe(false);
+                expect(element.hasAttribute("hidden")).toBe(true);
 
-                element.visible = true;
+                element.hidden = false;
                 await element.updateComplete;
 
-                expect(element.visible).toBe(true);
+                expect(element.hidden).toBe(false);
                 expect(element.camera.visible).toBe(true);
-                expect(element.hasAttribute("visible")).toBe(true);
+                expect(element.hasAttribute("hidden")).toBe(false);
             });
 
             it("should update when toggled via attribute", async () => {
-                element.removeAttribute("visible");
+                element.setAttribute("hidden", "");
                 await element.updateComplete;
-                expect(element.visible).toBe(false);
+                expect(element.hidden).toBe(true);
                 expect(element.camera.visible).toBe(false);
 
-                element.setAttribute("visible", "");
+                element.removeAttribute("hidden");
                 await element.updateComplete;
-                expect(element.visible).toBe(true);
+                expect(element.hidden).toBe(false);
                 expect(element.camera.visible).toBe(true);
             });
         });

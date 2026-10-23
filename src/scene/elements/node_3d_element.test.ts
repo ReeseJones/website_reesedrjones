@@ -8,7 +8,7 @@ import {
 import {
     TAG_RJ_NODE_3D,
     DEFAULT_NODE_3D_NAME,
-    DEFAULT_NODE_3D_VISIBLE,
+    DEFAULT_NODE_3D_HIDDEN,
     DEFAULT_NODE_3D_POSITION,
     DEFAULT_NODE_3D_ROTATION,
     DEFAULT_NODE_3D_SCALE,
@@ -83,7 +83,7 @@ describe("Node3DElement", () => {
 
             expect(node).toBeInstanceOf(SceneNode);
             expect(node.name).toBe(DEFAULT_NODE_3D_NAME);
-            expect(node.visible).toBe(DEFAULT_NODE_3D_VISIBLE);
+            expect(node.visible).toBe(true);
             expect(node.transform.getPosition()).toEqual({ x: 0, y: 0, z: 0 });
             expect(node.transform.getScale()).toEqual({ x: 1, y: 1, z: 1 });
         });
@@ -231,38 +231,39 @@ describe("Node3DElement", () => {
             });
         });
 
-        describe("visible", () => {
-            it("should default to DEFAULT_NODE_3D_VISIBLE and sync with node", async () => {
+        describe("hidden", () => {
+            it("should default to DEFAULT_NODE_3D_HIDDEN (false) and sync with node (visible = true)", async () => {
                 await element.updateComplete;
-                expect(element.visible).toBe(DEFAULT_NODE_3D_VISIBLE);
-                expect(element.node.visible).toBe(DEFAULT_NODE_3D_VISIBLE);
+                expect(element.hidden).toBe(DEFAULT_NODE_3D_HIDDEN);
+                expect(element.node.visible).toBe(true);
+                expect(element.hasAttribute("hidden")).toBe(false);
             });
 
             it("should reconcile to node.visible and reflect to attribute on property change", async () => {
-                element.visible = false;
+                element.hidden = true;
                 await element.updateComplete;
 
-                expect(element.visible).toBe(false);
+                expect(element.hidden).toBe(true);
                 expect(element.node.visible).toBe(false);
-                expect(element.hasAttribute("visible")).toBe(false);
+                expect(element.hasAttribute("hidden")).toBe(true);
 
-                element.visible = true;
+                element.hidden = false;
                 await element.updateComplete;
 
-                expect(element.visible).toBe(true);
+                expect(element.hidden).toBe(false);
                 expect(element.node.visible).toBe(true);
-                expect(element.hasAttribute("visible")).toBe(true);
+                expect(element.hasAttribute("hidden")).toBe(false);
             });
 
             it("should update when toggled via attribute", async () => {
-                element.removeAttribute("visible");
+                element.setAttribute("hidden", "");
                 await element.updateComplete;
-                expect(element.visible).toBe(false);
+                expect(element.hidden).toBe(true);
                 expect(element.node.visible).toBe(false);
 
-                element.setAttribute("visible", "");
+                element.removeAttribute("hidden");
                 await element.updateComplete;
-                expect(element.visible).toBe(true);
+                expect(element.hidden).toBe(false);
                 expect(element.node.visible).toBe(true);
             });
         });

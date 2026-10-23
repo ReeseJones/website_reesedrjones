@@ -16,7 +16,7 @@ import {
     DEFAULT_CAMERA_FAR,
     DEFAULT_CAMERA_ASPECT,
     DEFAULT_CAMERA_MAKE_DEFAULT,
-    DEFAULT_CAMERA_VISIBLE,
+    DEFAULT_CAMERA_HIDDEN,
     DEFAULT_CAMERA_POSITION,
     DEFAULT_CAMERA_ROTATION,
     DEFAULT_CAMERA_SCALE,
@@ -40,7 +40,7 @@ export class PerspectiveCameraElement extends LitElement {
         position: { converter: vector3Converter, reflect: true },
         rotation: { converter: vector3Converter, reflect: true },
         scale: { converter: vector3Converter, reflect: true },
-        visible: { type: Boolean, reflect: true },
+        hidden: { type: Boolean, reflect: true },
     };
 
     public declare name: string;
@@ -52,7 +52,7 @@ export class PerspectiveCameraElement extends LitElement {
     public declare position: Vector3Like;
     public declare rotation: Vector3Like;
     public declare scale: Vector3Like;
-    public declare visible: boolean;
+    public declare hidden: boolean;
 
     private readonly _camera: PerspectiveCamera = new PerspectiveCamera({
         fov: DEFAULT_CAMERA_FOV,
@@ -80,7 +80,9 @@ export class PerspectiveCameraElement extends LitElement {
         this.position = DEFAULT_CAMERA_POSITION;
         this.rotation = DEFAULT_CAMERA_ROTATION;
         this.scale = DEFAULT_CAMERA_SCALE;
-        this.visible = DEFAULT_CAMERA_VISIBLE;
+        // eslint-disable-next-line wc/no-constructor-attributes
+        this.hidden = DEFAULT_CAMERA_HIDDEN;
+        this._camera.visible = !DEFAULT_CAMERA_HIDDEN;
 
         this._sceneConsumer = new ContextConsumer(this, {
             context: sceneContext,
@@ -178,8 +180,8 @@ export class PerspectiveCameraElement extends LitElement {
             );
         }
 
-        if (changedProperties.has("visible")) {
-            this._camera.visible = this.visible;
+        if (changedProperties.has("hidden")) {
+            this._camera.visible = !this.hidden;
         }
 
         if (changedProperties.has("makeDefault") && this.makeDefault) {

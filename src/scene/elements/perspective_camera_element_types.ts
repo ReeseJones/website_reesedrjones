@@ -15,7 +15,7 @@ export interface PerspectiveCameraElementProps {
     position?: Vector3Like;
     rotation?: Vector3Like;
     scale?: Vector3Like;
-    visible?: boolean;
+    hidden?: boolean;
 }
 
 declare global {

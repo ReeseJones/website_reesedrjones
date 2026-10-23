@@ -71,8 +71,8 @@ Geometries are passive CPU data generation routines that allocate a contiguous `
 
 The reason the galaxy renders correctly is that it is paired with a **`GalaxyMaterial`** that cooperates with `GalaxyGeometry`:
 - Its vertex shader expects input locations $0 \to 5$ matching `GALAXY_VERTEX_LAYOUT`.
-- It performs the differential spiral rotation and drift inside the vertex shader on the GPU.
-- It supplies the galaxy domain uniforms (`u_rotationSpeed`, `u_driftSpeed`, `u_pointScale`, `u_coreColor`, `u_armInnerColor`).
+- It performs micro-stellar drift inside the vertex shader on the GPU (with galaxy rotation applied via model node transform).
+- It supplies the galaxy domain uniforms (`u_driftSpeed`, `u_pointScale`, `u_coreColor`, `u_armInnerColor`).
 - Its fragment shader evaluates Gaussian point-sprite needle falloff and photometric luminosity.
 - It enforces the necessary WebGL pipeline states: `gl.blendFunc(gl.ONE, gl.ONE)` (additive blending) and `gl.disable(gl.DEPTH_TEST)`.
 
@@ -127,7 +127,7 @@ The reason the galaxy renders correctly is that it is paired with a **`GalaxyMat
 
   void main() {
       // 2. Heavy spiral and drift math computed entirely on GPU
-      float theta = a_baseAngle + (u_rotationSpeed * u_time) + diffOffset;
+      float theta = a_baseAngle;
       float posX = r * cos(theta);
       float posZ = r * sin(theta);
       float posY = a_zOffset + dz;

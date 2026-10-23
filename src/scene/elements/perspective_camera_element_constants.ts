@@ -36,9 +36,9 @@ export const DEFAULT_CAMERA_ASPECT = 1.0 as const;
 export const DEFAULT_CAMERA_MAKE_DEFAULT = false as const;
 
 /**
- * Default visibility flag for the camera scene node.
+ * Default hidden flag for the camera scene node (visible by default).
  */
-export const DEFAULT_CAMERA_VISIBLE = true as const;
+export const DEFAULT_CAMERA_HIDDEN = false as const;
 
 /**
  * Default 3D translation coordinates { x, y, z }.

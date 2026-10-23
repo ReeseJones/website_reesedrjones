@@ -8,7 +8,7 @@ import { parentNodeContext } from "./scene_element_types";
 import {
     TAG_RJ_NODE_3D,
     DEFAULT_NODE_3D_NAME,
-    DEFAULT_NODE_3D_VISIBLE,
+    DEFAULT_NODE_3D_HIDDEN,
     DEFAULT_NODE_3D_POSITION,
     DEFAULT_NODE_3D_ROTATION,
     DEFAULT_NODE_3D_SCALE,
@@ -26,14 +26,14 @@ export class Node3DElement extends LitElement {
         position: { converter: vector3Converter, reflect: true },
         rotation: { converter: vector3Converter, reflect: true },
         scale: { converter: vector3Converter, reflect: true },
-        visible: { type: Boolean, reflect: true },
+        hidden: { type: Boolean, reflect: true },
     };
 
     public declare name: string;
     public declare position: Vector3Like;
     public declare rotation: Vector3Like;
     public declare scale: Vector3Like;
-    public declare visible: boolean;
+    public declare hidden: boolean;
 
     private readonly _node: SceneNode = new SceneNode();
     private readonly _parentConsumer: ContextConsumer<typeof parentNodeContext, Node3DElement>;
@@ -47,7 +47,9 @@ export class Node3DElement extends LitElement {
         this.position = DEFAULT_NODE_3D_POSITION;
         this.rotation = DEFAULT_NODE_3D_ROTATION;
         this.scale = DEFAULT_NODE_3D_SCALE;
-        this.visible = DEFAULT_NODE_3D_VISIBLE;
+        // eslint-disable-next-line wc/no-constructor-attributes
+        this.hidden = DEFAULT_NODE_3D_HIDDEN;
+        this._node.visible = !DEFAULT_NODE_3D_HIDDEN;
 
         this._parentConsumer = new ContextConsumer(this, {
             context: parentNodeContext,
@@ -121,8 +123,8 @@ export class Node3DElement extends LitElement {
             );
         }
 
-        if (changedProperties.has("visible")) {
-            this._node.visible = this.visible;
+        if (changedProperties.has("hidden")) {
+            this._node.visible = !this.hidden;
         }
     }
 

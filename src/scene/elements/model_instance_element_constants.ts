@@ -11,9 +11,9 @@ export const TAG_RJ_MODEL_INSTANCE = "rj-model-instance" as const;
 export const DEFAULT_MODEL_INSTANCE_NAME = "ModelInstance" as const;
 
 /**
- * Default visibility flag for ModelInstanceElement.
+ * Default hidden flag for ModelInstanceElement (visible by default).
  */
-export const DEFAULT_MODEL_INSTANCE_VISIBLE = true as const;
+export const DEFAULT_MODEL_INSTANCE_HIDDEN = false as const;
 
 /**
  * Default render queue priority order for ModelInstanceElement.

@@ -11,7 +11,7 @@ export interface ModelInstanceElementProps {
     position?: Vector3Like;
     rotation?: Vector3Like;
     scale?: Vector3Like;
-    visible?: boolean;
+    hidden?: boolean;
     renderOrder?: number;
     geometry?: IMeshGeometry;
     material?: IMaterial;

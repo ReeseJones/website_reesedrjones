@@ -11,9 +11,9 @@ export const TAG_RJ_NODE_3D = "rj-node-3d" as const;
 export const DEFAULT_NODE_3D_NAME = "" as const;
 
 /**
- * Default visibility flag for Node3DElement.
+ * Default hidden flag for Node3DElement (visible by default).
  */
-export const DEFAULT_NODE_3D_VISIBLE = true as const;
+export const DEFAULT_NODE_3D_HIDDEN = false as const;
 
 /**
  * Default 3D translation coordinates { x, y, z }.
