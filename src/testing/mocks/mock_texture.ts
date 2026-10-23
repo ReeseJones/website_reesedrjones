@@ -23,6 +23,7 @@ export function createMockTexture(
         bind: vi.fn(),
         dispose: vi.fn(),
         onDispose: vi.fn().mockReturnValue(() => {}),
+        onUpdate: vi.fn().mockReturnValue(() => {}),
         onContextLost: vi.fn(),
         onContextRestored: vi.fn(),
         ...overrides,

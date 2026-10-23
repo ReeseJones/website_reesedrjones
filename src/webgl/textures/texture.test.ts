@@ -30,6 +30,10 @@ class TestTexture extends Texture {
         this._isLoaded = loaded;
     }
 
+    public triggerUpdate(): void {
+        this.notifyUpdate();
+    }
+
     protected uploadToGPU(gl: WebGL2RenderingContext): void {
         this.uploadCallCount++;
         this.lastUploadGl = gl;
@@ -343,6 +347,46 @@ describe("Texture", () => {
             texture.onDispose(callback);
 
             expect(callback).toHaveBeenCalledTimes(1);
+        });
+    });
+
+    describe("onUpdate lifecycle", () => {
+        it("registers onUpdate callback and invokes it when notifyUpdate is called", () => {
+            const texture = new TestTexture();
+            const callback = vi.fn();
+
+            texture.onUpdate(callback);
+            expect(callback).not.toHaveBeenCalled();
+
+            texture.triggerUpdate();
+            expect(callback).toHaveBeenCalledTimes(1);
+
+            texture.triggerUpdate();
+            expect(callback).toHaveBeenCalledTimes(2);
+        });
+
+        it("returns an unsubscribe function that unregisters the callback", () => {
+            const texture = new TestTexture();
+            const callback = vi.fn();
+
+            const unsubscribe = texture.onUpdate(callback);
+            texture.triggerUpdate();
+            expect(callback).toHaveBeenCalledTimes(1);
+
+            unsubscribe();
+            texture.triggerUpdate();
+            expect(callback).toHaveBeenCalledTimes(1);
+        });
+
+        it("clears onUpdate listeners on dispose", () => {
+            const texture = new TestTexture();
+            const callback = vi.fn();
+
+            texture.onUpdate(callback);
+            texture.dispose();
+            texture.triggerUpdate();
+
+            expect(callback).not.toHaveBeenCalled();
         });
     });
 

@@ -13,6 +13,8 @@ import {
 export class ImageTexture extends Texture {
     private _source: TextureSource | string | null = null;
     private _cachedImage: HTMLImageElement | null = null;
+    private readonly _onLoadCallback?: () => void;
+    private readonly _onLoadCallbacks: Set<() => void> = new Set();
 
     /**
      * @param sourceOrOptions Asset URL string, image source, or configuration options object.
@@ -28,18 +30,25 @@ export class ImageTexture extends Texture {
             resolvedOptions = extraOptions ?? {};
         } else if (sourceOrOptions) {
             resolvedOptions = sourceOrOptions as ImageTextureOptions;
+        } else if (extraOptions) {
+            resolvedOptions = extraOptions;
         }
+
+        const generateMipmaps = resolvedOptions.generateMipmaps ?? false;
+        const defaultMin = generateMipmaps ? "linear_mipmap_linear" : "linear";
 
         super({
             wrapS: resolvedOptions.wrapS ?? "clamp_to_edge",
             wrapT: resolvedOptions.wrapT ?? "clamp_to_edge",
-            minFilter: resolvedOptions.minFilter ?? "linear_mipmap_linear",
+            minFilter: resolvedOptions.minFilter ?? defaultMin,
             magFilter: resolvedOptions.magFilter ?? "linear",
             flipY: resolvedOptions.flipY ?? true,
-            generateMipmaps: resolvedOptions.generateMipmaps ?? true,
+            generateMipmaps,
             label: resolvedOptions.label ?? "ImageTexture",
             target: TextureTarget.Texture2D,
         });
+
+        this._onLoadCallback = resolvedOptions.onLoad;
 
         if (typeof sourceOrOptions === "string" || (sourceOrOptions && "width" in sourceOrOptions)) {
             this._source = sourceOrOptions as TextureSource | string;
@@ -52,8 +61,10 @@ export class ImageTexture extends Texture {
         } else if (this._source && "src" in this._source) {
             this._cachedImage = this._source as HTMLImageElement;
             this._isLoaded = true;
+            this._onLoadCallback?.();
         } else if (this._source) {
             this._isLoaded = true;
+            this._onLoadCallback?.();
         }
     }
 
@@ -72,9 +83,22 @@ export class ImageTexture extends Texture {
     /**
      * Releases GPU texture memory and resets loading state.
      */
+    /** Registers a callback fired when the image successfully decodes and uploads. */
+    public onLoad(callback: () => void): () => void {
+        if (this._isLoaded) {
+            callback();
+            return () => {};
+        }
+        this._onLoadCallbacks.add(callback);
+        return () => {
+            this._onLoadCallbacks.delete(callback);
+        };
+    }
+
     public override dispose(): void {
         super.dispose();
         this._isLoaded = false;
+        this._onLoadCallbacks.clear();
     }
 
     // --- Protected / Private Helpers ---
@@ -101,6 +125,10 @@ export class ImageTexture extends Texture {
                 this._isLoaded = true;
                 if (this._gl && this._handle && !this._gl.isContextLost()) {
                     this.uploadSource(this._gl, img);
+                }
+                this._onLoadCallback?.();
+                for (const cb of this._onLoadCallbacks) {
+                    cb();
                 }
             })
             .catch((err) => {
@@ -146,6 +174,7 @@ export class ImageTexture extends Texture {
         this._width = source.width;
         this._height = source.height;
         this._isLoaded = true;
+        this.notifyUpdate();
     }
 
     // --- Static Factory Constructors ---

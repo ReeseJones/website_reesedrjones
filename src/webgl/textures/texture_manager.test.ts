@@ -173,6 +173,61 @@ describe("TextureManager", () => {
 
             expect((textureManager as any)._boundTextures.get(TextureUnit.Color1)).toBeNull();
         });
+
+        it("subscribes to onUpdate of external bound texture and invalidates bound cache when texture updates", () => {
+            const fakeHandle = gl.createTexture();
+            let updateCb: (() => void) | undefined;
+            const mockTex = createMockTexture("external-tex", {
+                handle: fakeHandle,
+                onUpdate: vi.fn((cb) => {
+                    updateCb = cb;
+                    return () => {};
+                }),
+            });
+
+            // Initial bind
+            textureManager.bind(TextureUnit.Color0, mockTex);
+            expect(gl.bindTexture).toHaveBeenCalledWith(gl.TEXTURE_2D, fakeHandle);
+            expect((textureManager as any)._boundTextures.get(TextureUnit.Color0)).toBe(fakeHandle);
+
+            // Redundant bind is skipped
+            vi.mocked(gl.bindTexture).mockClear();
+            textureManager.bind(TextureUnit.Color0, mockTex);
+            expect(gl.bindTexture).not.toHaveBeenCalled();
+
+            // Fire onUpdate (simulating async image load / pixel upload)
+            expect(updateCb).toBeDefined();
+            updateCb?.();
+
+            // Unit cache should now be invalidated (set to null)
+            expect((textureManager as any)._boundTextures.get(TextureUnit.Color0)).toBeNull();
+
+            // Next bind call must re-issue gl.bindTexture to hardware
+            textureManager.bind(TextureUnit.Color0, mockTex);
+            expect(gl.bindTexture).toHaveBeenCalledWith(gl.TEXTURE_2D, fakeHandle);
+            expect((textureManager as any)._boundTextures.get(TextureUnit.Color0)).toBe(fakeHandle);
+        });
+    });
+
+    describe("invalidateHandle", () => {
+        it("invalidates all bound units currently holding the specified handle", () => {
+            const fakeHandle1 = gl.createTexture();
+            const fakeHandle2 = gl.createTexture();
+
+            textureManager.bindHandle(TextureUnit.Color0, fakeHandle1);
+            textureManager.bindHandle(TextureUnit.Color1, fakeHandle1);
+            textureManager.bindHandle(TextureUnit.Color2, fakeHandle2);
+
+            expect((textureManager as any)._boundTextures.get(TextureUnit.Color0)).toBe(fakeHandle1);
+            expect((textureManager as any)._boundTextures.get(TextureUnit.Color1)).toBe(fakeHandle1);
+            expect((textureManager as any)._boundTextures.get(TextureUnit.Color2)).toBe(fakeHandle2);
+
+            textureManager.invalidateHandle(fakeHandle1);
+
+            expect((textureManager as any)._boundTextures.get(TextureUnit.Color0)).toBeNull();
+            expect((textureManager as any)._boundTextures.get(TextureUnit.Color1)).toBeNull();
+            expect((textureManager as any)._boundTextures.get(TextureUnit.Color2)).toBe(fakeHandle2);
+        });
     });
 
     describe(".bindHandle()", () => {

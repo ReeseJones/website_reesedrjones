@@ -183,6 +183,7 @@ export function createMockContextManager(gl?: WebGL2RenderingContext): IWebGLCon
         bindHandle: vi.fn(),
         bindCube: vi.fn(),
         bindCubeHandle: vi.fn(),
+        invalidateHandle: vi.fn(),
         unbind: vi.fn(),
         unbindAll: vi.fn(),
         getFallbackHandle: vi.fn(() => ({} as WebGLTexture)),

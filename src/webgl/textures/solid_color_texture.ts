@@ -76,6 +76,7 @@ export class SolidColorTexture extends Texture {
             this._gl.bindTexture(this.target, this._handle);
             this.uploadToGPU(this._gl);
             this._gl.bindTexture(this.target, null);
+            this.notifyUpdate();
         }
     }
 

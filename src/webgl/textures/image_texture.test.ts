@@ -20,11 +20,20 @@ describe("ImageTexture", () => {
 
             expect(texture.target).toBe(TextureTarget.Texture2D);
             expect(texture.label).toBe("ImageTexture");
+            expect(texture.options.generateMipmaps).toBe(false);
+            expect(texture.options.minFilter).toBe("linear");
+            expect(texture.options.magFilter).toBe("linear");
             expect(texture.width).toBe(1);
             expect(texture.height).toBe(1);
             expect(texture.isLoaded).toBe(false);
             expect(texture.isValid).toBe(false);
             expect(texture.isDisposed).toBe(false);
+        });
+
+        it("defaults minFilter to linear_mipmap_linear when generateMipmaps is true", () => {
+            const texture = new ImageTexture(undefined, { generateMipmaps: true });
+            expect(texture.options.generateMipmaps).toBe(true);
+            expect(texture.options.minFilter).toBe("linear_mipmap_linear");
         });
 
         it("initializes with URL string as first argument and custom options as second argument", () => {
@@ -89,6 +98,14 @@ describe("ImageTexture", () => {
             );
             expect(texture.width).toBe(256);
             expect(texture.height).toBe(128);
+            expect(gl.generateMipmap).not.toHaveBeenCalled();
+        });
+
+        it("generates mipmaps when generateMipmaps option is explicitly true", () => {
+            const mockCanvas = { width: 256, height: 128 } as unknown as HTMLCanvasElement;
+            const texture = new ImageTexture(mockCanvas, { generateMipmaps: true });
+            texture.init(gl);
+
             expect(gl.generateMipmap).toHaveBeenCalledWith(TextureTarget.Texture2D);
         });
     });
@@ -141,6 +158,133 @@ describe("ImageTexture", () => {
 
             expect(() => texture.updateFromSource()).not.toThrow();
             expect(gl.texImage2D).not.toHaveBeenCalled();
+        });
+    });
+
+    describe("onLoad notifications", () => {
+        it("invokes constructor onLoad option immediately if source is already decoded canvas", () => {
+            const onLoadMock = vi.fn();
+            const mockCanvas = { width: 64, height: 64 } as unknown as HTMLCanvasElement;
+            new ImageTexture(mockCanvas, { onLoad: onLoadMock });
+
+            expect(onLoadMock).toHaveBeenCalledTimes(1);
+        });
+
+        it("invokes onLoad listener immediately if texture is already loaded", () => {
+            const mockCanvas = { width: 64, height: 64 } as unknown as HTMLCanvasElement;
+            const texture = new ImageTexture(mockCanvas);
+            const listener = vi.fn();
+
+            const unsubscribe = texture.onLoad(listener);
+            expect(listener).toHaveBeenCalledTimes(1);
+            expect(typeof unsubscribe).toBe("function");
+        });
+
+        it("registers onLoad listener and triggers it upon async image decode", async () => {
+            // Mock global Image if not present or spy on decode
+            let triggerDecodeResolve: () => void = () => {};
+            const mockDecode = vi.fn().mockImplementation(() => new Promise<void>((resolve) => {
+                triggerDecodeResolve = resolve;
+            }));
+
+            const originalImage = globalThis.Image;
+            class MockImage {
+                public crossOrigin = "";
+                public src = "";
+                public decode = mockDecode;
+                public width = 128;
+                public height = 128;
+            }
+            // @ts-expect-error Mocking global image
+            globalThis.Image = MockImage;
+
+            try {
+                const listener = vi.fn();
+                const optionListener = vi.fn();
+                const texture = new ImageTexture("test-url.png", { onLoad: optionListener });
+                const unsubscribe = texture.onLoad(listener);
+
+                expect(listener).not.toHaveBeenCalled();
+                expect(optionListener).not.toHaveBeenCalled();
+
+                // Trigger decode completion
+                triggerDecodeResolve();
+                await Promise.resolve(); // flush microtask
+
+                expect(listener).toHaveBeenCalledTimes(1);
+                expect(optionListener).toHaveBeenCalledTimes(1);
+
+                unsubscribe();
+            } finally {
+                globalThis.Image = originalImage;
+            }
+        });
+
+        it("allows unsubscribing before async load completes", async () => {
+            let triggerDecodeResolve: () => void = () => {};
+            const mockDecode = vi.fn().mockImplementation(() => new Promise<void>((resolve) => {
+                triggerDecodeResolve = resolve;
+            }));
+
+            const originalImage = globalThis.Image;
+            class MockImage {
+                public crossOrigin = "";
+                public src = "";
+                public decode = mockDecode;
+                public width = 128;
+                public height = 128;
+            }
+            // @ts-expect-error Mocking global image
+            globalThis.Image = MockImage;
+
+            try {
+                const listener = vi.fn();
+                const texture = new ImageTexture("test-url.png");
+                const unsubscribe = texture.onLoad(listener);
+
+                unsubscribe();
+
+                triggerDecodeResolve();
+                await Promise.resolve();
+
+                expect(listener).not.toHaveBeenCalled();
+            } finally {
+                globalThis.Image = originalImage;
+            }
+        });
+
+        it("fires onUpdate listeners upon async image decode and GPU upload", async () => {
+            let triggerDecodeResolve: () => void = () => {};
+            const mockDecode = vi.fn().mockImplementation(() => new Promise<void>((resolve) => {
+                triggerDecodeResolve = resolve;
+            }));
+
+            const originalImage = globalThis.Image;
+            class MockImage {
+                public crossOrigin = "";
+                public src = "";
+                public decode = mockDecode;
+                public width = 128;
+                public height = 128;
+            }
+            // @ts-expect-error Mocking global image
+            globalThis.Image = MockImage;
+
+            try {
+                const updateListener = vi.fn();
+                const texture = new ImageTexture("test-url.png");
+                texture.init(gl);
+                texture.onUpdate(updateListener);
+
+                expect(updateListener).not.toHaveBeenCalled();
+
+                triggerDecodeResolve();
+                await Promise.resolve();
+
+                expect(updateListener).toHaveBeenCalledTimes(1);
+            } finally {
+                globalThis.Image = originalImage;
+            }
         });
     });
 

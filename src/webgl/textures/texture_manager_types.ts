@@ -85,6 +85,11 @@ export interface ITextureManager extends IContextSubsystem {
     bindCubeHandle(unit: TextureUnit | number, handle: WebGLTexture | null): void;
 
     /**
+     * Invalidates any cached hardware unit bindings associated with the specified texture handle.
+     */
+    invalidateHandle(handle: WebGLTexture | null): void;
+
+    /**
      * Unbinds any texture currently active on the specified hardware unit.
      */
     unbind(unit: TextureUnit | number): void;

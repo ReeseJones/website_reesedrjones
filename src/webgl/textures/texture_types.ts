@@ -199,6 +199,9 @@ export interface ITexture extends IWebGLResource {
     /** Re-uploads pixel data from CPU or source */
     updateFromSource(): void;
 
+    /** Registers a callback to be executed when this texture's GPU content is updated */
+    onUpdate(callback: () => void): () => void;
+
     /** WebGL context lost lifecycle hook */
     onContextLost(): void;
 

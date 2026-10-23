@@ -83,6 +83,7 @@ export abstract class Texture implements ITexture {
     protected _isDisposed: boolean = false;
     protected _gl: WebGL2RenderingContext | null = null;
     private readonly _onDisposeCallbacks: (() => void)[] = [];
+    private readonly _onUpdateCallbacks: Set<() => void> = new Set();
 
     constructor(options: TextureOptions = {}) {
         this.label = options.label ?? "Texture";
@@ -171,6 +172,29 @@ export abstract class Texture implements ITexture {
     }
 
     /**
+     * Registers a callback to be executed when this texture is updated with new pixel content.
+     */
+    public onUpdate(callback: () => void): () => void {
+        this._onUpdateCallbacks.add(callback);
+        return () => {
+            this._onUpdateCallbacks.delete(callback);
+        };
+    }
+
+    /**
+     * Dispatches notification to all registered onUpdate listeners.
+     */
+    protected notifyUpdate(): void {
+        for (const cb of this._onUpdateCallbacks) {
+            try {
+                cb();
+            } catch (err) {
+                console.error(`[${this.label}] Error in onUpdate callback:`, err);
+            }
+        }
+    }
+
+    /**
      * Registers a callback to be executed when this texture is disposed.
      */
     public onDispose(callback: () => void): () => void {
@@ -208,6 +232,7 @@ export abstract class Texture implements ITexture {
             }
         }
         this._onDisposeCallbacks.length = 0;
+        this._onUpdateCallbacks.clear();
     }
 
     /**

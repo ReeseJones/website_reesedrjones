@@ -21,6 +21,7 @@ export class TextureManager implements ITextureManager {
     private readonly _boundCubeTextures: Map<number, WebGLTexture | null> = new Map();
     private readonly _fallbacks: FallbackTextureRegistry = new FallbackTextureRegistry();
     private readonly _disposalSubscribers: WeakSet<object> = new WeakSet();
+    private readonly _updateSubscribers: WeakSet<object> = new WeakSet();
     private _activeUnit: number = 0;
 
     constructor() {}
@@ -112,6 +113,12 @@ export class TextureManager implements ITextureManager {
                         }
                     }
                     this._unbindHandle(handleToUnbind ?? texture.handle);
+                });
+            }
+            if (typeof texture.onUpdate === "function" && !this._updateSubscribers.has(texture)) {
+                this._updateSubscribers.add(texture);
+                texture.onUpdate(() => {
+                    this.invalidateHandle(texture.handle);
                 });
             }
         }
@@ -296,7 +303,11 @@ export class TextureManager implements ITextureManager {
 
     // --- Private Helpers ---
 
-    private _unbindHandle(handle: WebGLTexture | null): void {
+    /**
+     * Invalidates any cached hardware unit bindings associated with the specified texture handle,
+     * forcing a rebind on subsequent draw calls.
+     */
+    public invalidateHandle(handle: WebGLTexture | null): void {
         if (!handle) return;
         for (const [u, h] of this._boundTextures.entries()) {
             if (h === handle) this._boundTextures.set(u, null);
@@ -304,6 +315,10 @@ export class TextureManager implements ITextureManager {
         for (const [u, h] of this._boundCubeTextures.entries()) {
             if (h === handle) this._boundCubeTextures.set(u, null);
         }
+    }
+
+    private _unbindHandle(handle: WebGLTexture | null): void {
+        this.invalidateHandle(handle);
     }
 
     private _getGLContext(): WebGL2RenderingContext {
