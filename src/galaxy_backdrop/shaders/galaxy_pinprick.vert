@@ -12,8 +12,6 @@ uniform mat4 u_viewProjectionMatrix;
 uniform mat4 u_modelMatrix;
 uniform mat4 u_modelViewMatrix;
 uniform float u_time;
-uniform float u_rotationSpeed;
-uniform float u_differentialSpeed;
 uniform float u_driftSpeed;
 uniform float u_driftAmplitude;
 uniform float u_pointScale;
@@ -28,10 +26,8 @@ out float v_coreFactor;
 out float v_pointDist;
 
 void main() {
-    // 1. Angular motion with differential rotation
-    float rotDir = u_rotationSpeed < 0.0 ? -1.0 : 1.0;
-    float diffOffset = rotDir * (u_differentialSpeed / max(1.2, a_radius)) * u_time;
-    float theta = a_baseAngle + (u_rotationSpeed * u_time) + diffOffset;
+    // 1. Angular coordinate
+    float theta = a_baseAngle;
 
     // 2. Micro-drift and stellar scintillation
     float driftTime = u_time * u_driftSpeed + a_driftPhase;

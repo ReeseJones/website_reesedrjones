@@ -35,7 +35,7 @@ export const DEFAULT_ORB_PARAMETERS: GalaxyParameters = {
     pointScale: 3,
     coreGlowBoost: 0.5,
     rotationSpeed: -0.045,
-    differentialSpeed: 0,
+
     driftSpeed: 0.08,
     driftAmplitude: 0.14,
     pitchAngle: 0.24,

@@ -86,7 +86,7 @@ The system exposes a comprehensive, strongly-typed parameter interface:
     *   `coreGlowBoost`: Multiplier for core stellar brightness.
 *   **Dynamics & Motion:**
     *   `rotationSpeed`: Angular pattern velocity of the spiral arms ($\text{rad/s}$).
-    *   `differentialSpeed`: Radial variation in orbital velocity across the disk.
+
     *   `driftSpeed`: Rate of local micro-orbital pulsation and scintillation.
     *   `driftAmplitude`: Magnitude of local stellar turbulence.
 *   **Camera & Orientation:**
@@ -196,6 +196,6 @@ For each frame at time $t$:
     *   **No Versioned Keys:** Do NOT make new versioned keys for `localStorage` settings just keep clobbering.
     *   **Updating Defaults:** When changing defaults, modify `DEFAULT_ORB_PARAMETERS` or `DEFAULT_PINPRICK_PARAMETERS` directly in [parameters/presets/orb.ts](parameters/presets/orb.ts) or [parameters/presets/pinprick.ts](parameters/presets/pinprick.ts).
 *   **Update Architecture & Procedures:**
-    *   **Uniform Updates:** Parameter changes affecting camera vantage (`centerOffsetX`, `centerOffsetY`, `pitchAngle`, `yawAngle`, `rollAngle`, `cameraDistance`, `fov`), velocities (`rotationSpeed`, `differentialSpeed`, `driftSpeed`), and particle scaling (`pointScale`, `minPointSize`, `maxPointSize`, `nearFadeDistance`) are uploaded to WebGL uniforms on each animation tick with zero reallocation.
+    *   **Uniform Updates:** Parameter changes affecting camera vantage (`centerOffsetX`, `centerOffsetY`, `pitchAngle`, `yawAngle`, `rollAngle`, `cameraDistance`, `fov`), velocities (`driftSpeed`), and particle scaling (`pointScale`, `minPointSize`, `maxPointSize`, `nearFadeDistance`) are uploaded to WebGL uniforms on each animation tick with zero reallocation (with galaxy rotation driven directly via model node transform).
     *   **Color Uniforms:** Color vector alterations (`coreColor`, `coreBlazeColor`, `armInnerColor`, `armOuterColor`, `accentColor`, `coreGlowBoost`) execute immediate GPU uniform uploads via `uploadColorUniforms()`.
     *   **Geometry Regeneration:** When structural parameters change (`starCount`, `armCount`, `armWinding`, `armDispersion`, `spurFrequency`, `coreRadius`, `diskRadius`, `diskThickness`, `coreDensityRatio`), `generateStarBuffer()` regenerates the vertex array and re-populates the existing GPU `Float32Array` VBO via `rebuildStarBuffer()`, maintaining the VAO configuration without tearing down the WebGL context.

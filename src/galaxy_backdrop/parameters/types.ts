@@ -63,7 +63,7 @@ export interface GalaxyParameters extends GalacticCloudParameters {
 
     // Dynamics
     rotationSpeed: number;
-    differentialSpeed: number;
+
     driftSpeed: number;
     driftAmplitude: number;
 

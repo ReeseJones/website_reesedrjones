@@ -121,7 +121,7 @@ export function GalaxySettingsDialog(): React.JSX.Element
 - **Controls:** Sliders governing animation tick velocities.
 - **Parameters:**
   - `rotationSpeed`: Galactic pattern velocity in rad/s (-0.15 to 0.15 rad/s).
-  - `differentialSpeed`: Radial orbital velocity gradient (0.0 to 0.08).
+
   - `driftSpeed`: Micro-orbital scintillation pulsation rate (0.0 to 0.5).
   - `driftAmplitude`: Micro-orbital turbulence displacement (0.0 to 0.4).
 

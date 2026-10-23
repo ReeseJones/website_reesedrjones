@@ -1,9 +1,7 @@
-import type { RgbLike } from "../../helpers/colors_types";
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import { GalaxyMaterial } from "./galaxy_material";
 import { BlendMode } from "./material_types";
 import {
-    DEFAULT_GALAXY_PARAMETERS,
     DEFAULT_ORB_PARAMETERS,
     DEFAULT_PINPRICK_PARAMETERS,
 } from "../../galaxy_backdrop/parameters/index";
@@ -32,8 +30,8 @@ describe("GalaxyMaterial", () => {
             const material = new GalaxyMaterial();
             const uniforms = material.getUniforms();
 
-            expect(uniforms["u_rotationSpeed"]).toBe(DEFAULT_ORB_PARAMETERS.rotationSpeed);
-            expect(uniforms["u_differentialSpeed"]).toBe(DEFAULT_ORB_PARAMETERS.differentialSpeed);
+            expect(uniforms["u_rotationSpeed"]).toBeUndefined();
+            expect(uniforms["u_differentialSpeed"]).toBeUndefined();
             expect(uniforms["u_driftSpeed"]).toBe(DEFAULT_ORB_PARAMETERS.driftSpeed);
             expect(uniforms["u_driftAmplitude"]).toBe(DEFAULT_ORB_PARAMETERS.driftAmplitude);
             expect(uniforms["u_pointScale"]).toBe(DEFAULT_ORB_PARAMETERS.pointScale);
@@ -65,8 +63,8 @@ describe("GalaxyMaterial", () => {
             expect(material.galaxyParams).toEqual(DEFAULT_PINPRICK_PARAMETERS);
 
             const uniforms = material.getUniforms();
-            expect(uniforms["u_rotationSpeed"]).toBe(DEFAULT_PINPRICK_PARAMETERS.rotationSpeed);
-            expect(uniforms["u_differentialSpeed"]).toBe(DEFAULT_PINPRICK_PARAMETERS.differentialSpeed);
+            expect(uniforms["u_rotationSpeed"]).toBeUndefined();
+            expect(uniforms["u_differentialSpeed"]).toBeUndefined();
             expect(uniforms["u_driftSpeed"]).toBe(DEFAULT_PINPRICK_PARAMETERS.driftSpeed);
             expect(uniforms["u_driftAmplitude"]).toBe(DEFAULT_PINPRICK_PARAMETERS.driftAmplitude);
             expect(uniforms["u_pointScale"]).toBe(DEFAULT_PINPRICK_PARAMETERS.pointScale);
@@ -136,7 +134,7 @@ describe("GalaxyMaterial", () => {
             expect(material.galaxyParams.armOuterColor).toEqual(DEFAULT_ORB_PARAMETERS.armOuterColor);
 
             const uniforms = material.getUniforms();
-            expect(uniforms["u_rotationSpeed"]).toBe(-0.12);
+            expect(uniforms["u_rotationSpeed"]).toBeUndefined();
             expect(uniforms["u_pointScale"]).toBe(6.5);
             expect(uniforms["u_coreColor"]).toEqual(customCoreColor);
             expect(uniforms["u_driftSpeed"]).toBe(DEFAULT_ORB_PARAMETERS.driftSpeed);
@@ -186,17 +184,17 @@ describe("GalaxyMaterial", () => {
             const uniforms = material.getUniforms();
             expect(uniforms["u_customTime"]).toBe(12.34);
             expect(uniforms["u_customMatrix"]).toEqual([1, 0, 0, 1]);
-            expect(uniforms["u_rotationSpeed"]).toBe(DEFAULT_ORB_PARAMETERS.rotationSpeed);
+            expect(uniforms["u_pointScale"]).toBe(DEFAULT_ORB_PARAMETERS.pointScale);
         });
 
         it("allows custom uniforms in options.uniforms to explicitly override a standard galaxy uniform", () => {
             const material = new GalaxyMaterial({
                 uniforms: {
-                    u_rotationSpeed: 99.9,
+                    u_customSpeed: 99.9,
                 },
             });
 
-            expect(material.getUniforms()["u_rotationSpeed"]).toBe(99.9);
+            expect(material.getUniforms()["u_customSpeed"]).toBe(99.9);
         });
     });
 
@@ -206,7 +204,6 @@ describe("GalaxyMaterial", () => {
 
             material.updateParameters({
                 rotationSpeed: -0.2,
-                differentialSpeed: 0.05,
                 driftSpeed: 0.35,
                 driftAmplitude: 0.28,
                 pointScale: 8.0,
@@ -217,8 +214,9 @@ describe("GalaxyMaterial", () => {
             });
 
             const uniforms = material.getUniforms();
-            expect(uniforms["u_rotationSpeed"]).toBe(-0.2);
-            expect(uniforms["u_differentialSpeed"]).toBe(0.05);
+            expect(material.galaxyParams.rotationSpeed).toBe(-0.2);
+            expect(uniforms["u_rotationSpeed"]).toBeUndefined();
+            expect(uniforms["u_differentialSpeed"]).toBeUndefined();
             expect(uniforms["u_driftSpeed"]).toBe(0.35);
             expect(uniforms["u_driftAmplitude"]).toBe(0.28);
             expect(uniforms["u_pointScale"]).toBe(8.0);
@@ -298,11 +296,11 @@ describe("GalaxyMaterial", () => {
             const initialCoreColor = material.getUniforms()["u_coreColor"];
 
             material.updateParameters({
-                rotationSpeed: -0.08,
+                pointScale: 15.0,
                 coreColor: undefined,
             });
 
-            expect(material.getUniforms()["u_rotationSpeed"]).toBe(-0.08);
+            expect(material.getUniforms()["u_pointScale"]).toBe(15.0);
             expect(material.getUniforms()["u_coreColor"]).toEqual(initialCoreColor);
         });
 
@@ -357,7 +355,7 @@ describe("GalaxyMaterial", () => {
             const material = new GalaxyMaterial({
                 shaderKey: "galaxy_pinprick",
                 params: {
-                    rotationSpeed: -0.06,
+                    pointScale: 9.0,
                 },
                 pipelineState: {
                     depthTest: true,
@@ -374,8 +372,7 @@ describe("GalaxyMaterial", () => {
                 depthWrite: false,
                 cullFace: false,
             });
-            expect(cloned.getUniforms()["u_rotationSpeed"]).toBe(-0.06);
-            expect(cloned.getUniforms()["u_pointScale"]).toBe(DEFAULT_PINPRICK_PARAMETERS.pointScale);
+            expect(cloned.getUniforms()["u_pointScale"]).toBe(9.0);
         });
 
         it("clone() produces an independent uniform copy that is isolated from mutations to original", () => {

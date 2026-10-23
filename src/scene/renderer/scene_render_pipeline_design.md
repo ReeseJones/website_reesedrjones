@@ -174,7 +174,7 @@ The uniform and texture distribution protocol standardizes naming and binding co
 - `uniform mat3 u_normalMatrix`: Inverse-transpose of the $3 \times 3$ model matrix for lighting normals.
 
 ### Tier C: Material Domain Uniforms (Uploaded From Material Dictionary)
-- Custom domain uniforms extracted via `material.getUniforms()` (e.g. `u_color`, `u_rotationSpeed`, `u_pointScale`).
+- Custom domain uniforms extracted via `material.getUniforms()` (e.g. `u_color`, `u_driftSpeed`, `u_pointScale`).
 
 ### Tier D: Semantic Texture Slots (`TextureUnit` 0 to 15)
 - **`TextureUnit.Color0` / `Color` (Unit 0, `u_texture`, `u_colorMap0`, `u_diffuseMap`):** Primary base color, diffuse, or albedo map.

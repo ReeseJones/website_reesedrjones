@@ -4,7 +4,6 @@ import {
     DEFAULT_ORB_PARAMETERS,
     DEFAULT_PINPRICK_PARAMETERS,
 } from "../../galaxy_backdrop/parameters/index";
-import type { GalaxyParameters } from "../../galaxy_backdrop/parameters/types";
 import type { GalaxyShaderKey } from "../../webgl/shaders/shader_types";
 import type {
     GalaxyMaterialOptions,
@@ -31,8 +30,6 @@ export class GalaxyMaterial extends Material {
         };
 
         const initialUniforms: Record<string, unknown> = {
-            u_rotationSpeed: resolvedParams.rotationSpeed,
-            u_differentialSpeed: resolvedParams.differentialSpeed,
             u_driftSpeed: resolvedParams.driftSpeed,
             u_driftAmplitude: resolvedParams.driftAmplitude,
             u_pointScale: resolvedParams.pointScale,
@@ -79,8 +76,6 @@ export class GalaxyMaterial extends Material {
         }
 
         const uniforms: Record<string, unknown> = {};
-        if (params.rotationSpeed !== undefined) uniforms.u_rotationSpeed = params.rotationSpeed;
-        if (params.differentialSpeed !== undefined) uniforms.u_differentialSpeed = params.differentialSpeed;
         if (params.driftSpeed !== undefined) uniforms.u_driftSpeed = params.driftSpeed;
         if (params.driftAmplitude !== undefined) uniforms.u_driftAmplitude = params.driftAmplitude;
         if (params.pointScale !== undefined) uniforms.u_pointScale = params.pointScale;

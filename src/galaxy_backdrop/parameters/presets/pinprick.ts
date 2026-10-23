@@ -35,7 +35,7 @@ export const DEFAULT_PINPRICK_PARAMETERS: GalaxyParameters = {
     pointScale: 4,
     coreGlowBoost: 0.5,
     rotationSpeed: -0.045,
-    differentialSpeed: 0.015,
+
     driftSpeed: 0.18,
     driftAmplitude: 0.14,
     pitchAngle: 0.58,

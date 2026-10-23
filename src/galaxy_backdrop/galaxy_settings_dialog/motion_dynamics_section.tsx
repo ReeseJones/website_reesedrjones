@@ -7,7 +7,7 @@ export interface SectionProps {
 }
 
 /**
- * Settings section controlling angular pattern rotation, differential orbital shear, and micro-scintillation drift.
+ * Settings section controlling angular pattern rotation and micro-scintillation drift.
  */
 export function MotionDynamicsSection({ params, onChange }: SectionProps) {
     return (
@@ -23,15 +23,6 @@ export function MotionDynamicsSection({ params, onChange }: SectionProps) {
                     unit=" rad/s"
                     displayDecimals={3}
                     onChange={(val) => onChange({ rotationSpeed: val })}
-                />
-                <SliderRow
-                    label="Differential Orbital Spin"
-                    value={params.differentialSpeed}
-                    min={0.0}
-                    max={0.08}
-                    step={0.002}
-                    displayDecimals={3}
-                    onChange={(val) => onChange({ differentialSpeed: val })}
                 />
                 <SliderRow
                     label="Micro-Drift Speed"

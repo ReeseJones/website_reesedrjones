@@ -215,7 +215,7 @@ describe("galaxy_resources", () => {
 
             expect(material.galaxyParams.rotationSpeed).toBe(-0.45);
             expect(material.galaxyParams.pointScale).toBe(7.5);
-            expect(material.getUniforms()["u_rotationSpeed"]).toBe(-0.45);
+            expect(material.getUniforms()["u_rotationSpeed"]).toBeUndefined();
             expect(material.getUniforms()["u_pointScale"]).toBe(7.5);
         });
 
@@ -235,7 +235,7 @@ describe("galaxy_resources", () => {
                 minPointSize: 3.0,
             });
             expect(material.galaxyParams.rotationSpeed).toBe(0.6);
-            expect(material.getUniforms()["u_rotationSpeed"]).toBe(0.6);
+            expect(material.getUniforms()["u_rotationSpeed"]).toBeUndefined();
             expect(material.getUniforms()["u_minPointSize"]).toBe(3.0);
         });
 
