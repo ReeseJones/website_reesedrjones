@@ -38,12 +38,16 @@ export type GenerativeShaderKey = (typeof GENERATIVE_SHADER_KEYS)[number];
 export const SPRITE_SHADER_KEYS = ["sprite_sdf_pin", "sprite_texture"] as const;
 export type SpriteShaderKey = (typeof SPRITE_SHADER_KEYS)[number];
 
+export const POLYLINE_SHADER_KEYS = ["polyline_ribbon"] as const;
+export type PolylineShaderKey = (typeof POLYLINE_SHADER_KEYS)[number];
+
 export type MaterialShaderKey =
     | GalaxyShaderKey
     | UnlitShaderKey
     | SkyboxShaderKey
     | GenerativeShaderKey
-    | SpriteShaderKey;
+    | SpriteShaderKey
+    | PolylineShaderKey;
 
 /**
  * Canonical array of all registered shader program keys available in the engine.
@@ -54,6 +58,7 @@ export const AVAILABLE_SHADER_KEYS = [
     ...SKYBOX_SHADER_KEYS,
     ...GENERATIVE_SHADER_KEYS,
     ...SPRITE_SHADER_KEYS,
+    ...POLYLINE_SHADER_KEYS,
 ] as const;
 
 /**
@@ -73,6 +78,7 @@ export interface ShaderProgramStageMap {
     skybox: { vertex: "skybox"; fragment: "skybox" };
     sprite_sdf_pin: { vertex: "sprite_billboard"; fragment: "sprite_sdf_pin" };
     sprite_texture: { vertex: "sprite_billboard"; fragment: "sprite_texture" };
+    polyline_ribbon: { vertex: "polyline_ribbon"; fragment: "polyline_ribbon" };
 }
 
 /**

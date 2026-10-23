@@ -18,6 +18,8 @@ import skyboxFrag from "../../scene/shaders/skybox.frag";
 import spriteBillboardVert from "../../scene/shaders/sprite_billboard.vert";
 import spriteSdfPinFrag from "../../scene/shaders/sprite_sdf_pin.frag";
 import spriteTextureFrag from "../../scene/shaders/sprite_texture.frag";
+import polylineRibbonVert from "../../scene/shaders/polyline_ribbon.vert";
+import polylineRibbonFrag from "../../scene/shaders/polyline_ribbon.frag";
 
 export const VERTEX_SHADER_DEFS: Record<VertexShaderKey, ShaderStageDef> = {
     galaxy_pinprick: {
@@ -43,6 +45,10 @@ export const VERTEX_SHADER_DEFS: Record<VertexShaderKey, ShaderStageDef> = {
     sprite_billboard: {
         source: spriteBillboardVert,
         label: "sprite_billboard.vert",
+    },
+    polyline_ribbon: {
+        source: polylineRibbonVert,
+        label: "polyline_ribbon.vert",
     },
 };
 
@@ -74,6 +80,10 @@ export const FRAGMENT_SHADER_DEFS: Record<FragmentShaderKey, ShaderStageDef> = {
     sprite_texture: {
         source: spriteTextureFrag,
         label: "sprite_texture.frag",
+    },
+    polyline_ribbon: {
+        source: polylineRibbonFrag,
+        label: "polyline_ribbon.frag",
     },
 };
 
@@ -112,5 +122,10 @@ export const SHADER_PROGRAM_DEFS: { [K in ShaderKey]: ShaderProgramDef<K> } = {
         vertex: "sprite_billboard",
         fragment: "sprite_texture",
         label: "sprite_texture",
+    },
+    polyline_ribbon: {
+        vertex: "polyline_ribbon",
+        fragment: "polyline_ribbon",
+        label: "polyline_ribbon",
     },
 };
