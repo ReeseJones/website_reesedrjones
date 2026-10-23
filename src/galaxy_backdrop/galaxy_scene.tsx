@@ -1,11 +1,24 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { DEFAULT_GALAXY_SCENE_PRIORITY } from "./galaxy_scene_constants";
 import { DEFAULT_GALAXY_PARAMETERS } from "./parameters/index";
 import type { GalaxySceneProps } from "./galaxy_scene_types";
+import { BillboardMode } from "../scene/sprites/sprite_instance_types";
+import { SpritePinMaterial } from "../scene/sprites/sprite_pin_material";
+import { SpriteTextureMaterial } from "../scene/sprites/sprite_texture_material";
+import { ImageTexture } from "../webgl/textures/image_texture";
+import type { Vector2Like, Vector3Like } from "../maths/vector_types";
+import faviconUrl from "url:../images/favicon-32x32.png";
+
+const CENTER_PIN_POSITION: Vector3Like = { x: 0, y: 0, z: 0 };
+const CENTER_PIN_SIZE: Vector2Like = { x: 36, y: 48 };
+
+const TEXTURE_PIN_POSITION: Vector3Like = { x: 1.0, y: 0.5, z: 0 };
+const TEXTURE_PIN_SIZE: Vector2Like = { x: 32, y: 32 };
+const TEXTURE_PIN_ANCHOR: Vector2Like = { x: 0.5, y: 0.5 };
 
 /**
  * Declarative 3D galaxy backdrop scene composed of <rj-scene>,
- * <rj-galaxy-camera>, <rj-galactic-cloud>, and <rj-galaxy-stars>.
+ * <rj-galaxy-camera>, <rj-galactic-cloud>, <rj-galaxy-stars>, and <rj-sprite-instance>.
  */
 export function GalaxyScene({
     controller,
@@ -15,11 +28,51 @@ export function GalaxyScene({
 }: GalaxySceneProps): React.JSX.Element {
     const activeParams = controller?.params ?? rawParams ?? DEFAULT_GALAXY_PARAMETERS;
 
+    const centerPinMaterial = useMemo(
+        () =>
+            new SpritePinMaterial({
+                tint: { r: 1.0, g: 0.2, b: 0.2, a: 1.0 },
+                innerColor: { r: 1.0, g: 1.0, b: 1.0, a: 1.0 },
+                alwaysOnTop: true,
+            }),
+        []
+    );
+
+    const texturePinMaterial = useMemo(() => {
+        const texture = new ImageTexture(faviconUrl, {
+            generateMipmaps: false,
+            minFilter: "linear",
+            magFilter: "linear",
+        });
+        return new SpriteTextureMaterial({
+            texture,
+            tint: { r: 1.0, g: 1.0, b: 1.0, a: 1.0 },
+            alwaysOnTop: true,
+            alphaCutoff: 0.05,
+        });
+    }, []);
+
     return (
         <rj-scene priority={priority} clear-depth={clearDepth}>
             <rj-galaxy-camera params={activeParams} make-default />
             <rj-galactic-cloud params={activeParams} />
-            <rj-galaxy-stars params={activeParams} />
+            <rj-galaxy-stars params={activeParams} >
+                <rj-sprite-instance
+                    name="GalaxyCenterPin"
+                    position={CENTER_PIN_POSITION}
+                    size={CENTER_PIN_SIZE}
+                    material={centerPinMaterial}
+                    billboardMode={BillboardMode.Cylindrical}
+                />
+                <rj-sprite-instance
+                    name="GalaxyTexturePin"
+                    position={TEXTURE_PIN_POSITION}
+                    size={TEXTURE_PIN_SIZE}
+                    anchor={TEXTURE_PIN_ANCHOR}
+                    material={texturePinMaterial}
+                    billboardMode={BillboardMode.Cylindrical}
+                />
+            </rj-galaxy-stars>
         </rj-scene>
     );
 }

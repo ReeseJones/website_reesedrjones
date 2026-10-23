@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeAll } from "vitest";
 import React from "react";
 import { render } from "@testing-library/react";
+import { BillboardMode } from "../scene/sprites/sprite_instance_types";
 import { DEFAULT_GALAXY_PARAMETERS } from "./parameters/index";
 import type { GalaxyParameters } from "./parameters/types";
 import type { GalaxyController } from "./galaxy_controller_types";
@@ -48,6 +49,17 @@ describe("<GalaxyScene />", () => {
         const starsEl = container.querySelector("rj-galaxy-stars") as (HTMLElement & { params: unknown }) | null;
         expect(starsEl).not.toBeNull();
         expect(starsEl?.params).toBe(params);
+
+        const spriteInstances = container.querySelectorAll("rj-sprite-instance");
+        expect(spriteInstances.length).toBe(2);
+
+        const centerPin = spriteInstances[0] as (HTMLElement & { name: string; billboardMode: BillboardMode });
+        expect(centerPin.name).toBe("GalaxyCenterPin");
+        expect(centerPin.billboardMode).toBe(BillboardMode.Cylindrical);
+
+        const texturePin = spriteInstances[1] as (HTMLElement & { name: string; billboardMode: BillboardMode });
+        expect(texturePin.name).toBe("GalaxyTexturePin");
+        expect(texturePin.billboardMode).toBe(BillboardMode.Cylindrical);
     });
 
     it("forwards clearDepth prop to <rj-scene clear-depth>", () => {
