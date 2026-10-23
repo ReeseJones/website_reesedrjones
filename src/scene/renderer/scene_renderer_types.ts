@@ -45,6 +45,8 @@ export interface RenderOptions {
 export interface RenderQueueItem {
     renderable: IRenderable;
     renderOrder: number;
+    depth: number;
+    index: number;
 }
 
 /**

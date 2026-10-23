@@ -27,6 +27,16 @@ import { STANDARD_VERTEX_LAYOUT } from "../models/primitives/standard_layout";
 import { Material } from "../materials/material";
 import { UnlitMaterial } from "../materials/unlit_material";
 import { ModelInstance } from "../models/model_instance";
+import {
+    DEFAULT_RENDER_ORDER,
+    DEPTH_SORT_EPSILON,
+    TRANSPARENT_RENDER_ORDER_THRESHOLD,
+} from "./scene_renderer_constants";
+import { SpriteInstance } from "../sprites/sprite_instance";
+import { SpriteGeometry } from "../sprites/sprite_geometry";
+import { SpritePinMaterial } from "../sprites/sprite_pin_material";
+import type { ISpriteMaterial } from "../sprites/sprite_material_types";
+import { DEFAULT_SPRITE_RENDER_ORDER } from "../sprites/sprite_constants";
 
 describe("SceneRenderer", () => {
     let mockGl: WebGL2RenderingContext;
@@ -105,10 +115,34 @@ describe("SceneRenderer", () => {
         return instance;
     }
 
+    function createSpriteInstance(options?: {
+        material?: ISpriteMaterial;
+        renderOrder?: number;
+        visible?: boolean;
+        name?: string;
+    }): SpriteInstance {
+        const material = options?.material ?? new SpritePinMaterial();
+        const instance = new SpriteInstance(
+            { material },
+            options?.name ?? "TestSpriteInstance"
+        );
+
+        if (options?.renderOrder !== undefined) {
+            instance.renderOrder = options.renderOrder;
+        }
+
+        if (options?.visible !== undefined) {
+            instance.visible = options.visible;
+        }
+
+        return instance;
+    }
+
     beforeEach(() => {
         mockGl = createMockWebGL2Context();
         mockCm = createMockContextManager(mockGl);
         renderer = new SceneRenderer();
+        SpriteGeometry.disposeSharedQuad();
     });
 
     describe("constructor", () => {
@@ -303,6 +337,363 @@ describe("SceneRenderer", () => {
                 instOrderUndefined.geometry,
                 instOrder5.geometry,
             ]);
+        });
+
+        describe("transparent camera-depth sorting", () => {
+            it("sorts transparent items with equal renderOrder >= TRANSPARENT_RENDER_ORDER_THRESHOLD back-to-front (item A closer than item B)", () => {
+                const camera = createCamera({ x: 0, y: 0, z: 10 });
+                const itemA = createModelInstance({
+                    renderOrder: TRANSPARENT_RENDER_ORDER_THRESHOLD,
+                    name: "ItemA_Near",
+                });
+                itemA.transform.setPosition(0, 0, 5); // depth = 10 - 5 = 5 (closer)
+
+                const itemB = createModelInstance({
+                    renderOrder: TRANSPARENT_RENDER_ORDER_THRESHOLD,
+                    name: "ItemB_Far",
+                });
+                itemB.transform.setPosition(0, 0, -10); // depth = 10 - (-10) = 20 (farther)
+
+                const executionOrder: string[] = [];
+                vi.spyOn(itemA, "render").mockImplementation(() => {
+                    executionOrder.push(itemA.name);
+                });
+                vi.spyOn(itemB, "render").mockImplementation(() => {
+                    executionOrder.push(itemB.name);
+                });
+
+                const scene = new Scene();
+                scene.addChild(itemA);
+                scene.addChild(itemB);
+
+                renderer.render(createRenderOptions(scene, camera));
+
+                // B is farther from camera than A, so B renders before A
+                expect(executionOrder).toEqual(["ItemB_Far", "ItemA_Near"]);
+                expect(itemA.render).toHaveBeenCalledTimes(1);
+                expect(itemB.render).toHaveBeenCalledTimes(1);
+            });
+
+            it("sorts transparent items with equal renderOrder >= TRANSPARENT_RENDER_ORDER_THRESHOLD back-to-front (item B closer than item A)", () => {
+                const camera = createCamera({ x: 0, y: 0, z: 10 });
+                const itemA = createModelInstance({
+                    renderOrder: TRANSPARENT_RENDER_ORDER_THRESHOLD,
+                    name: "ItemA_Far",
+                });
+                itemA.transform.setPosition(0, 0, -20); // depth = 10 - (-20) = 30 (farther)
+
+                const itemB = createModelInstance({
+                    renderOrder: TRANSPARENT_RENDER_ORDER_THRESHOLD,
+                    name: "ItemB_Near",
+                });
+                itemB.transform.setPosition(0, 0, 2); // depth = 10 - 2 = 8 (closer)
+
+                const executionOrder: string[] = [];
+                vi.spyOn(itemA, "render").mockImplementation(() => {
+                    executionOrder.push(itemA.name);
+                });
+                vi.spyOn(itemB, "render").mockImplementation(() => {
+                    executionOrder.push(itemB.name);
+                });
+
+                const scene = new Scene();
+                scene.addChild(itemA);
+                scene.addChild(itemB);
+
+                renderer.render(createRenderOptions(scene, camera));
+
+                // A is farther from camera than B, so A renders before B
+                expect(executionOrder).toEqual(["ItemA_Far", "ItemB_Near"]);
+                expect(itemA.render).toHaveBeenCalledTimes(1);
+                expect(itemB.render).toHaveBeenCalledTimes(1);
+            });
+
+            it("preserves stable insertion order when two transparent items share the exact same camera depth (A added before B)", () => {
+                const camera = createCamera({ x: 0, y: 0, z: 10 });
+                const itemA = createModelInstance({
+                    renderOrder: TRANSPARENT_RENDER_ORDER_THRESHOLD,
+                    name: "ItemA_EqualDepth",
+                });
+                itemA.transform.setPosition(5, 2, 0); // depth = 10 - 0 = 10
+
+                const itemB = createModelInstance({
+                    renderOrder: TRANSPARENT_RENDER_ORDER_THRESHOLD,
+                    name: "ItemB_EqualDepth",
+                });
+                itemB.transform.setPosition(-3, -4, 0); // depth = 10 - 0 = 10
+
+                const executionOrder: string[] = [];
+                vi.spyOn(itemA, "render").mockImplementation(() => {
+                    executionOrder.push(itemA.name);
+                });
+                vi.spyOn(itemB, "render").mockImplementation(() => {
+                    executionOrder.push(itemB.name);
+                });
+
+                const scene = new Scene();
+                scene.addChild(itemA);
+                scene.addChild(itemB);
+
+                renderer.render(createRenderOptions(scene, camera));
+                expect(executionOrder).toEqual(["ItemA_EqualDepth", "ItemB_EqualDepth"]);
+            });
+
+            it("preserves stable insertion order when two transparent items share the exact same camera depth (B added before A)", () => {
+                const camera = createCamera({ x: 0, y: 0, z: 10 });
+                const itemA = createModelInstance({
+                    renderOrder: TRANSPARENT_RENDER_ORDER_THRESHOLD,
+                    name: "ItemA_EqualDepth",
+                });
+                itemA.transform.setPosition(5, 2, 0); // depth = 10 - 0 = 10
+
+                const itemB = createModelInstance({
+                    renderOrder: TRANSPARENT_RENDER_ORDER_THRESHOLD,
+                    name: "ItemB_EqualDepth",
+                });
+                itemB.transform.setPosition(-3, -4, 0); // depth = 10 - 0 = 10
+
+                const executionOrder: string[] = [];
+                vi.spyOn(itemA, "render").mockImplementation(() => {
+                    executionOrder.push(itemA.name);
+                });
+                vi.spyOn(itemB, "render").mockImplementation(() => {
+                    executionOrder.push(itemB.name);
+                });
+
+                const scene = new Scene();
+                scene.addChild(itemB);
+                scene.addChild(itemA);
+
+                renderer.render(createRenderOptions(scene, camera));
+                expect(executionOrder).toEqual(["ItemB_EqualDepth", "ItemA_EqualDepth"]);
+            });
+
+            it("preserves stable insertion order when depth difference is within DEPTH_SORT_EPSILON", () => {
+                const camera = createCamera({ x: 0, y: 0, z: 10 });
+                const itemA = createModelInstance({
+                    renderOrder: TRANSPARENT_RENDER_ORDER_THRESHOLD,
+                    name: "ItemA_BaseDepth",
+                });
+                itemA.transform.setPosition(0, 0, 0); // depth = 10.0
+
+                const itemB = createModelInstance({
+                    renderOrder: TRANSPARENT_RENDER_ORDER_THRESHOLD,
+                    name: "ItemB_SubEpsilonDepth",
+                });
+                // Slightly different z within DEPTH_SORT_EPSILON (e.g. half of DEPTH_SORT_EPSILON)
+                itemB.transform.setPosition(0, 0, DEPTH_SORT_EPSILON * 0.5);
+
+                const executionOrder: string[] = [];
+                vi.spyOn(itemA, "render").mockImplementation(() => {
+                    executionOrder.push(itemA.name);
+                });
+                vi.spyOn(itemB, "render").mockImplementation(() => {
+                    executionOrder.push(itemB.name);
+                });
+
+                const scene = new Scene();
+                scene.addChild(itemA);
+                scene.addChild(itemB);
+
+                renderer.render(createRenderOptions(scene, camera));
+
+                // Since depth difference is <= DEPTH_SORT_EPSILON, stable insertion order (A then B) is preserved
+                expect(executionOrder).toEqual(["ItemA_BaseDepth", "ItemB_SubEpsilonDepth"]);
+            });
+
+            it("preserves stable insertion order for items with renderOrder < TRANSPARENT_RENDER_ORDER_THRESHOLD regardless of depth (near added before far)", () => {
+                const camera = createCamera({ x: 0, y: 0, z: 10 });
+                const itemNear = createModelInstance({
+                    renderOrder: DEFAULT_RENDER_ORDER,
+                    name: "OpaqueNear",
+                });
+                itemNear.transform.setPosition(0, 0, 8); // depth = 2 (closer)
+
+                const itemFar = createModelInstance({
+                    renderOrder: DEFAULT_RENDER_ORDER,
+                    name: "OpaqueFar",
+                });
+                itemFar.transform.setPosition(0, 0, -50); // depth = 60 (farther)
+
+                const executionOrder: string[] = [];
+                vi.spyOn(itemNear, "render").mockImplementation(() => {
+                    executionOrder.push(itemNear.name);
+                });
+                vi.spyOn(itemFar, "render").mockImplementation(() => {
+                    executionOrder.push(itemFar.name);
+                });
+
+                const scene = new Scene();
+                scene.addChild(itemNear);
+                scene.addChild(itemFar);
+
+                renderer.render(createRenderOptions(scene, camera));
+                expect(executionOrder).toEqual(["OpaqueNear", "OpaqueFar"]);
+            });
+
+            it("preserves stable insertion order for items with renderOrder < TRANSPARENT_RENDER_ORDER_THRESHOLD regardless of depth (far added before near)", () => {
+                const camera = createCamera({ x: 0, y: 0, z: 10 });
+                const itemNear = createModelInstance({
+                    renderOrder: DEFAULT_RENDER_ORDER,
+                    name: "OpaqueNear",
+                });
+                itemNear.transform.setPosition(0, 0, 8); // depth = 2 (closer)
+
+                const itemFar = createModelInstance({
+                    renderOrder: DEFAULT_RENDER_ORDER,
+                    name: "OpaqueFar",
+                });
+                itemFar.transform.setPosition(0, 0, -50); // depth = 60 (farther)
+
+                const executionOrder: string[] = [];
+                vi.spyOn(itemNear, "render").mockImplementation(() => {
+                    executionOrder.push(itemNear.name);
+                });
+                vi.spyOn(itemFar, "render").mockImplementation(() => {
+                    executionOrder.push(itemFar.name);
+                });
+
+                const scene = new Scene();
+                scene.addChild(itemFar);
+                scene.addChild(itemNear);
+
+                renderer.render(createRenderOptions(scene, camera));
+                expect(executionOrder).toEqual(["OpaqueFar", "OpaqueNear"]);
+            });
+
+            it("ensures distinct renderOrder values always take precedence over camera depth", () => {
+                const camera = createCamera({ x: 0, y: 0, z: 10 });
+                const opaqueNear = createModelInstance({
+                    renderOrder: DEFAULT_RENDER_ORDER,
+                    name: "OpaqueNear",
+                });
+                opaqueNear.transform.setPosition(0, 0, 9); // depth = 1 (very close)
+
+                const transparentFar = createModelInstance({
+                    renderOrder: TRANSPARENT_RENDER_ORDER_THRESHOLD,
+                    name: "TransparentFar",
+                });
+                transparentFar.transform.setPosition(0, 0, -100); // depth = 110 (very far)
+
+                const executionOrder: string[] = [];
+                vi.spyOn(opaqueNear, "render").mockImplementation(() => {
+                    executionOrder.push(opaqueNear.name);
+                });
+                vi.spyOn(transparentFar, "render").mockImplementation(() => {
+                    executionOrder.push(transparentFar.name);
+                });
+
+                // Add transparent far FIRST to verify that lower renderOrder still draws first
+                const scene = new Scene();
+                scene.addChild(transparentFar);
+                scene.addChild(opaqueNear);
+
+                renderer.render(createRenderOptions(scene, camera));
+
+                // Opaque item with renderOrder 0 renders before transparent item with renderOrder 1000,
+                // even though transparent item is much farther away and was added first.
+                expect(executionOrder).toEqual(["OpaqueNear", "TransparentFar"]);
+            });
+
+            it("sorts SpriteInstance waypoint place pins back-to-front at default sprite renderOrder", () => {
+                const camera = createCamera({ x: 0, y: 0, z: 10 });
+                const pinNear = createSpriteInstance({
+                    name: "PinNear",
+                });
+                pinNear.transform.setPosition(0, 0, 4); // depth = 10 - 4 = 6 (closer)
+
+                const pinFar = createSpriteInstance({
+                    name: "PinFar",
+                });
+                pinFar.transform.setPosition(0, 0, -15); // depth = 10 - (-15) = 25 (farther)
+
+                expect(pinNear.renderOrder).toBe(DEFAULT_SPRITE_RENDER_ORDER);
+                expect(pinFar.renderOrder).toBe(DEFAULT_SPRITE_RENDER_ORDER);
+                expect(pinNear.renderOrder).toBeGreaterThanOrEqual(TRANSPARENT_RENDER_ORDER_THRESHOLD);
+
+                const executionOrder: string[] = [];
+                vi.spyOn(pinNear, "render").mockImplementation(() => {
+                    executionOrder.push(pinNear.name);
+                });
+                vi.spyOn(pinFar, "render").mockImplementation(() => {
+                    executionOrder.push(pinFar.name);
+                });
+
+                const scene = new Scene();
+                scene.addChild(pinNear);
+                scene.addChild(pinFar);
+
+                renderer.render(createRenderOptions(scene, camera));
+
+                // PinFar (depth 25) draws before PinNear (depth 6)
+                expect(executionOrder).toEqual(["PinFar", "PinNear"]);
+                expect(pinNear.render).toHaveBeenCalledTimes(1);
+                expect(pinFar.render).toHaveBeenCalledTimes(1);
+            });
+
+            it("sorts mixed SpriteInstance and ModelInstance transparent items back-to-front", () => {
+                const camera = createCamera({ x: 0, y: 0, z: 10 });
+                const waypointPinFar = createSpriteInstance({
+                    name: "WaypointPinFar",
+                    renderOrder: TRANSPARENT_RENDER_ORDER_THRESHOLD,
+                });
+                waypointPinFar.transform.setPosition(0, 0, -30); // depth = 40 (farther)
+
+                const modelInstanceNear = createModelInstance({
+                    name: "ModelInstanceNear",
+                    renderOrder: TRANSPARENT_RENDER_ORDER_THRESHOLD,
+                });
+                modelInstanceNear.transform.setPosition(0, 0, 2); // depth = 8 (closer)
+
+                const executionOrder: string[] = [];
+                vi.spyOn(waypointPinFar, "render").mockImplementation(() => {
+                    executionOrder.push(waypointPinFar.name);
+                });
+                vi.spyOn(modelInstanceNear, "render").mockImplementation(() => {
+                    executionOrder.push(modelInstanceNear.name);
+                });
+
+                const scene = new Scene();
+                scene.addChild(modelInstanceNear);
+                scene.addChild(waypointPinFar);
+
+                renderer.render(createRenderOptions(scene, camera));
+
+                // WaypointPinFar (depth 40) draws before ModelInstanceNear (depth 8)
+                expect(executionOrder).toEqual(["WaypointPinFar", "ModelInstanceNear"]);
+            });
+
+            it("executes full rendering pass for mixed SpriteInstance and ModelInstance without errors", () => {
+                const mockShader = createMockShaderProgram("unlit");
+                mockCm.shaders.get = vi.fn(() => mockShader);
+
+                const camera = createCamera({ x: 0, y: 0, z: 10 });
+                const pinFar = createSpriteInstance({
+                    name: "WaypointPin",
+                    renderOrder: TRANSPARENT_RENDER_ORDER_THRESHOLD,
+                });
+                pinFar.transform.setPosition(0, 0, -10);
+
+                const meshNear = createModelInstance({
+                    name: "TransparentMesh",
+                    renderOrder: TRANSPARENT_RENDER_ORDER_THRESHOLD,
+                });
+                meshNear.transform.setPosition(0, 0, 5);
+
+                const scene = new Scene();
+                scene.addChild(meshNear);
+                scene.addChild(pinFar);
+
+                const drawOrder: unknown[] = [];
+                (mockCm.geometries.draw as any).mockImplementation((geom: unknown) => {
+                    drawOrder.push(geom);
+                });
+
+                renderer.render(createRenderOptions(scene, camera));
+
+                expect(mockCm.geometries.draw).toHaveBeenCalledTimes(2);
+                expect(drawOrder).toEqual([pinFar.geometry, meshNear.geometry]);
+            });
         });
     });
 
