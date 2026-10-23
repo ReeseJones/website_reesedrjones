@@ -4,6 +4,7 @@ import { setupPerspectiveCameraElement } from "./perspective_camera_element";
 import { setupNode3DElement } from "./node_3d_element";
 import { setupModelInstanceElement } from "./model_instance_element";
 import { setupSpriteInstanceElement } from "./sprite_instance_element";
+import { setupPolylineElement } from "./polyline_instance_element";
 import { setupGalacticCloudElement } from "../../galaxy_backdrop/elements/galactic_cloud_element";
 import { setupGalaxyStarsElement } from "../../galaxy_backdrop/elements/galaxy_stars_element";
 import { setupGalaxyCameraElement } from "../../galaxy_backdrop/elements/galaxy_camera_element";
@@ -36,6 +37,7 @@ export function setupSceneElements(): void {
     setupNode3DElement();
     setupModelInstanceElement();
     setupSpriteInstanceElement();
+    setupPolylineElement();
     setupGalacticCloudElement();
     setupGalaxyStarsElement();
     setupFpsCounterElement();

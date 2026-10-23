@@ -6,6 +6,7 @@ import type { GalaxyCameraElementProps } from "../../galaxy_backdrop/elements/ga
 import type { Node3DElementProps } from "./node_3d_element_types";
 import type { ModelInstanceElementProps } from "./model_instance_element_types";
 import type { SpriteInstanceElementProps } from "./sprite_instance_element_types";
+import type { PolylineInstanceElementProps } from "./polyline_instance_element_types";
 import type { GalacticCloudElementProps } from "../../galaxy_backdrop/elements/galactic_cloud_element_types";
 import type { GalaxyStarsElementProps } from "../../galaxy_backdrop/elements/galaxy_stars_element_types";
 import type { FpsCounterElementProps } from "../../components/webgl_canvas/fps_counter_element_types";
@@ -22,6 +23,7 @@ declare global {
                 "rj-node-3d": React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & Node3DElementProps;
                 "rj-model-instance": React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & ModelInstanceElementProps;
                 "rj-sprite-instance": React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & SpriteInstanceElementProps;
+                "rj-polyline": React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & PolylineInstanceElementProps;
                 "rj-galactic-cloud": React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & GalacticCloudElementProps;
                 "rj-galaxy-stars": React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & GalaxyStarsElementProps;
                 "rj-fps-counter": React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & FpsCounterElementProps;
