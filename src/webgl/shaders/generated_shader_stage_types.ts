@@ -26,6 +26,11 @@ import type {
     SkyboxVertOutputs,
 } from "../../scene/shaders/skybox.vert";
 import type {
+    SpriteBillboardVertInputs,
+    SpriteBillboardVertUniforms,
+    SpriteBillboardVertOutputs,
+} from "../../scene/shaders/sprite_billboard.vert";
+import type {
     GalacticCloudFragInputs,
     GalacticCloudFragUniforms,
     GalacticCloudFragOutputs,
@@ -46,6 +51,16 @@ import type {
     SkyboxFragOutputs,
 } from "../../scene/shaders/skybox.frag";
 import type {
+    SpriteSdfPinFragInputs,
+    SpriteSdfPinFragUniforms,
+    SpriteSdfPinFragOutputs,
+} from "../../scene/shaders/sprite_sdf_pin.frag";
+import type {
+    SpriteTextureFragInputs,
+    SpriteTextureFragUniforms,
+    SpriteTextureFragOutputs,
+} from "../../scene/shaders/sprite_texture.frag";
+import type {
     UnlitFragInputs,
     UnlitFragUniforms,
     UnlitFragOutputs,
@@ -57,6 +72,7 @@ export const VERTEX_SHADER_KEYS = [
     "galaxy_pinprick",
     "mesh_standard",
     "skybox",
+    "sprite_billboard",
 ] as const;
 export type VertexShaderKey = (typeof VERTEX_SHADER_KEYS)[number];
 
@@ -65,6 +81,8 @@ export const FRAGMENT_SHADER_KEYS = [
     "galaxy_orb",
     "galaxy_pinprick",
     "skybox",
+    "sprite_sdf_pin",
+    "sprite_texture",
     "unlit",
 ] as const;
 export type FragmentShaderKey = (typeof FRAGMENT_SHADER_KEYS)[number];
@@ -75,6 +93,7 @@ export interface VertexInputMap {
     galaxy_pinprick: GalaxyPinprickVertInputs;
     mesh_standard: MeshStandardVertInputs;
     skybox: SkyboxVertInputs;
+    sprite_billboard: SpriteBillboardVertInputs;
 }
 
 export interface VertexUniformMap {
@@ -83,6 +102,7 @@ export interface VertexUniformMap {
     galaxy_pinprick: GalaxyPinprickVertUniforms;
     mesh_standard: MeshStandardVertUniforms;
     skybox: SkyboxVertUniforms;
+    sprite_billboard: SpriteBillboardVertUniforms;
 }
 
 export interface VertexOutputMap {
@@ -91,6 +111,7 @@ export interface VertexOutputMap {
     galaxy_pinprick: GalaxyPinprickVertOutputs;
     mesh_standard: MeshStandardVertOutputs;
     skybox: SkyboxVertOutputs;
+    sprite_billboard: SpriteBillboardVertOutputs;
 }
 
 export interface FragmentInputMap {
@@ -98,6 +119,8 @@ export interface FragmentInputMap {
     galaxy_orb: GalaxyOrbFragInputs;
     galaxy_pinprick: GalaxyPinprickFragInputs;
     skybox: SkyboxFragInputs;
+    sprite_sdf_pin: SpriteSdfPinFragInputs;
+    sprite_texture: SpriteTextureFragInputs;
     unlit: UnlitFragInputs;
 }
 
@@ -106,6 +129,8 @@ export interface FragmentUniformMap {
     galaxy_orb: GalaxyOrbFragUniforms;
     galaxy_pinprick: GalaxyPinprickFragUniforms;
     skybox: SkyboxFragUniforms;
+    sprite_sdf_pin: SpriteSdfPinFragUniforms;
+    sprite_texture: SpriteTextureFragUniforms;
     unlit: UnlitFragUniforms;
 }
 
@@ -114,5 +139,7 @@ export interface FragmentOutputMap {
     galaxy_orb: GalaxyOrbFragOutputs;
     galaxy_pinprick: GalaxyPinprickFragOutputs;
     skybox: SkyboxFragOutputs;
+    sprite_sdf_pin: SpriteSdfPinFragOutputs;
+    sprite_texture: SpriteTextureFragOutputs;
     unlit: UnlitFragOutputs;
 }

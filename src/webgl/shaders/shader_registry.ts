@@ -15,6 +15,9 @@ import meshStandardVert from "../../scene/shaders/mesh_standard.vert";
 import unlitFrag from "../../scene/shaders/unlit.frag";
 import skyboxVert from "../../scene/shaders/skybox.vert";
 import skyboxFrag from "../../scene/shaders/skybox.frag";
+import spriteBillboardVert from "../../scene/shaders/sprite_billboard.vert";
+import spriteSdfPinFrag from "../../scene/shaders/sprite_sdf_pin.frag";
+import spriteTextureFrag from "../../scene/shaders/sprite_texture.frag";
 
 export const VERTEX_SHADER_DEFS: Record<VertexShaderKey, ShaderStageDef> = {
     galaxy_pinprick: {
@@ -36,6 +39,10 @@ export const VERTEX_SHADER_DEFS: Record<VertexShaderKey, ShaderStageDef> = {
     skybox: {
         source: skyboxVert,
         label: "skybox.vert",
+    },
+    sprite_billboard: {
+        source: spriteBillboardVert,
+        label: "sprite_billboard.vert",
     },
 };
 
@@ -59,6 +66,14 @@ export const FRAGMENT_SHADER_DEFS: Record<FragmentShaderKey, ShaderStageDef> = {
     skybox: {
         source: skyboxFrag,
         label: "skybox.frag",
+    },
+    sprite_sdf_pin: {
+        source: spriteSdfPinFrag,
+        label: "sprite_sdf_pin.frag",
+    },
+    sprite_texture: {
+        source: spriteTextureFrag,
+        label: "sprite_texture.frag",
     },
 };
 
@@ -87,5 +102,15 @@ export const SHADER_PROGRAM_DEFS: { [K in ShaderKey]: ShaderProgramDef<K> } = {
         vertex: "skybox",
         fragment: "skybox",
         label: "skybox",
+    },
+    sprite_sdf_pin: {
+        vertex: "sprite_billboard",
+        fragment: "sprite_sdf_pin",
+        label: "sprite_sdf_pin",
+    },
+    sprite_texture: {
+        vertex: "sprite_billboard",
+        fragment: "sprite_texture",
+        label: "sprite_texture",
     },
 };

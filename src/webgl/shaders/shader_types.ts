@@ -35,7 +35,15 @@ export type SkyboxShaderKey = (typeof SKYBOX_SHADER_KEYS)[number];
 export const GENERATIVE_SHADER_KEYS = ["galactic_cloud"] as const;
 export type GenerativeShaderKey = (typeof GENERATIVE_SHADER_KEYS)[number];
 
-export type MaterialShaderKey = GalaxyShaderKey | UnlitShaderKey | SkyboxShaderKey | GenerativeShaderKey;
+export const SPRITE_SHADER_KEYS = ["sprite_sdf_pin", "sprite_texture"] as const;
+export type SpriteShaderKey = (typeof SPRITE_SHADER_KEYS)[number];
+
+export type MaterialShaderKey =
+    | GalaxyShaderKey
+    | UnlitShaderKey
+    | SkyboxShaderKey
+    | GenerativeShaderKey
+    | SpriteShaderKey;
 
 /**
  * Canonical array of all registered shader program keys available in the engine.
@@ -45,6 +53,7 @@ export const AVAILABLE_SHADER_KEYS = [
     ...UNLIT_SHADER_KEYS,
     ...SKYBOX_SHADER_KEYS,
     ...GENERATIVE_SHADER_KEYS,
+    ...SPRITE_SHADER_KEYS,
 ] as const;
 
 /**
@@ -62,6 +71,8 @@ export interface ShaderProgramStageMap {
     galactic_cloud: { vertex: "galactic_cloud"; fragment: "galactic_cloud" };
     unlit: { vertex: "mesh_standard"; fragment: "unlit" };
     skybox: { vertex: "skybox"; fragment: "skybox" };
+    sprite_sdf_pin: { vertex: "sprite_billboard"; fragment: "sprite_sdf_pin" };
+    sprite_texture: { vertex: "sprite_billboard"; fragment: "sprite_texture" };
 }
 
 /**
