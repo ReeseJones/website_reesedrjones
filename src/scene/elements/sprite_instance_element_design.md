@@ -60,7 +60,7 @@ The component is registered under tag name `rj-sprite-instance`.
   - 3D scaling factors $\{ x, y, z \}$. Default: $\{ x: 1, y: 1, z: 1 \}$.
 - **`visible`** (`boolean`, attribute: `"visible"`, type: Boolean, reflect: true)
   - Visibility toggle. Default: `true`.
-- **`renderOrder`** (`number`, attribute: `"render-order"`, type: Number, reflect: true)
+- **`renderOrder`** (`number`, attribute: `"render-order"`, type: Number)
   - Explicit rendering queue order. Default: `1000` (or `5000` when material has `alwaysOnTop: true`).
 - **`anchor`** ([`Vector2Like`](../../maths/vector_types.ts), attribute: false)
   - Normalized 2D anchor pivot $\{ x, y \}$. For pins, defaults to $\{ x: 0.5, y: 0.0 \}$ (bottom tip).

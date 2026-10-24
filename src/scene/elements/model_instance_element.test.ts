@@ -286,13 +286,13 @@ describe("ModelInstanceElement", () => {
                 expect(element.modelInstance.renderOrder).toBe(DEFAULT_MODEL_INSTANCE_RENDER_ORDER);
             });
 
-            it("should reconcile to modelInstance.renderOrder and reflect to render-order attribute on property change", async () => {
+            it("should reconcile to modelInstance.renderOrder without reflecting to attribute on property change", async () => {
                 element.renderOrder = 5;
                 await element.updateComplete;
 
                 expect(element.renderOrder).toBe(5);
                 expect(element.modelInstance.renderOrder).toBe(5);
-                expect(element.getAttribute("render-order")).toBe("5");
+                expect(element.hasAttribute("render-order")).toBe(false);
             });
 
             it("should update property and modelInstance.renderOrder on attribute change", async () => {

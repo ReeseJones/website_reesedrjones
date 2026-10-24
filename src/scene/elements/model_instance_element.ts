@@ -30,7 +30,7 @@ export class ModelInstanceElement extends LitElement {
         rotation: { converter: vector3Converter, reflect: true },
         scale: { converter: vector3Converter, reflect: true },
         hidden: { type: Boolean, reflect: true },
-        renderOrder: { type: Number, attribute: "render-order", reflect: true },
+        renderOrder: { type: Number, attribute: "render-order" },
         geometry: { attribute: false },
         material: { attribute: false },
     };

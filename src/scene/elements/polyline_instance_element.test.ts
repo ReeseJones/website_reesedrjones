@@ -371,13 +371,13 @@ describe("PolylineInstanceElement", () => {
                 expect(element.polylineInstance.renderOrder).toBe(DEFAULT_POLYLINE_ELEMENT_RENDER_ORDER);
             });
 
-            it("should reconcile to polylineInstance.renderOrder and reflect to 'render-order' attribute", async () => {
+            it("should reconcile to polylineInstance.renderOrder without reflecting to 'render-order' attribute", async () => {
                 element.renderOrder = 3000;
                 await element.updateComplete;
 
                 expect(element.renderOrder).toBe(3000);
                 expect(element.polylineInstance.renderOrder).toBe(3000);
-                expect(element.getAttribute("render-order")).toBe("3000");
+                expect(element.hasAttribute("render-order")).toBe(false);
             });
 
             it("should parse 'render-order' attribute", async () => {
@@ -396,7 +396,7 @@ describe("PolylineInstanceElement", () => {
                 expect(element.polylineInstance.geometry.pointsCount).toBe(0);
             });
 
-            it("should update geometry waypoints and reflect to attribute on property change", async () => {
+            it("should update geometry waypoints without reflecting to attribute on property change", async () => {
                 const testPoints: Vector3Like[] = [
                     { x: 0, y: 0, z: 0 },
                     { x: 10, y: 0, z: 0 },
@@ -406,7 +406,7 @@ describe("PolylineInstanceElement", () => {
 
                 expect(element.polylineInstance.geometry.pointsCount).toBe(2);
                 expect(element.polylineInstance.geometry.totalLength).toBeCloseTo(10.0);
-                expect(element.getAttribute("points")).toBe("0 0 0, 10 0 0");
+                expect(element.hasAttribute("points")).toBe(false);
             });
 
             it("should parse points from string attribute", async () => {
@@ -425,13 +425,13 @@ describe("PolylineInstanceElement", () => {
                 expect(element.polylineInstance.width).toBeCloseTo(DEFAULT_POLYLINE_ELEMENT_WIDTH);
             });
 
-            it("should update polylineInstance.width and reflect to 'line-width' attribute", async () => {
+            it("should update polylineInstance.width without reflecting to 'line-width' attribute", async () => {
                 element.lineWidth = 8.0;
                 await element.updateComplete;
 
                 expect(element.lineWidth).toBe(8.0);
                 expect(element.polylineInstance.width).toBe(8.0);
-                expect(element.getAttribute("line-width")).toBe("8");
+                expect(element.hasAttribute("line-width")).toBe(false);
             });
 
             it("should parse 'line-width' attribute", async () => {
@@ -450,13 +450,13 @@ describe("PolylineInstanceElement", () => {
                 expect(element.polylineInstance.miterLimit).toBeCloseTo(DEFAULT_POLYLINE_ELEMENT_MITER_LIMIT);
             });
 
-            it("should update polylineInstance.miterLimit and reflect to 'miter-limit' attribute", async () => {
+            it("should update polylineInstance.miterLimit without reflecting to 'miter-limit' attribute", async () => {
                 element.miterLimit = 5.0;
                 await element.updateComplete;
 
                 expect(element.miterLimit).toBe(5.0);
                 expect(element.polylineInstance.miterLimit).toBe(5.0);
-                expect(element.getAttribute("miter-limit")).toBe("5");
+                expect(element.hasAttribute("miter-limit")).toBe(false);
             });
 
             it("should parse 'miter-limit' attribute", async () => {
@@ -478,7 +478,7 @@ describe("PolylineInstanceElement", () => {
                 expect(col.a).toBeCloseTo(DEFAULT_POLYLINE_ELEMENT_COLOR.a!);
             });
 
-            it("should update polylineInstance color and reflect to attribute on property change", async () => {
+            it("should update polylineInstance color without reflecting to attribute on property change", async () => {
                 const targetColor: RgbaLike = { r: 1.0, g: 0.0, b: 0.0, a: 1.0 };
                 element.color = targetColor;
                 await element.updateComplete;
@@ -488,7 +488,7 @@ describe("PolylineInstanceElement", () => {
                 expect(instanceCol.g).toBeCloseTo(0.0);
                 expect(instanceCol.b).toBeCloseTo(0.0);
                 expect(instanceCol.a).toBeCloseTo(1.0);
-                expect(element.getAttribute("color")).toBe("#ff0000");
+                expect(element.hasAttribute("color")).toBe(false);
             });
 
             it("should parse color from hex attribute", async () => {
@@ -512,7 +512,7 @@ describe("PolylineInstanceElement", () => {
                 expect(glow.a).toBeCloseTo(DEFAULT_POLYLINE_ELEMENT_GLOW_COLOR.a!);
             });
 
-            it("should update polylineInstance glowColor and reflect to 'glow-color' attribute", async () => {
+            it("should update polylineInstance glowColor without reflecting to 'glow-color' attribute", async () => {
                 const targetGlow: RgbaLike = { r: 0.5, g: 0.5, b: 1.0, a: 0.8 };
                 element.glowColor = targetGlow;
                 await element.updateComplete;
@@ -522,7 +522,7 @@ describe("PolylineInstanceElement", () => {
                 expect(instanceGlow.g).toBeCloseTo(0.5);
                 expect(instanceGlow.b).toBeCloseTo(1.0);
                 expect(instanceGlow.a).toBeCloseTo(0.8);
-                expect(element.getAttribute("glow-color")).toBe("#8080ffcc");
+                expect(element.hasAttribute("glow-color")).toBe(false);
             });
 
             it("should parse 'glow-color' from hex attribute", async () => {
@@ -554,13 +554,13 @@ describe("PolylineInstanceElement", () => {
                 expect(element.polylineInstance.glowIntensity).toBeCloseTo(DEFAULT_POLYLINE_ELEMENT_GLOW_INTENSITY);
             });
 
-            it("should update polylineInstance.glowIntensity and reflect to 'glow-intensity' attribute", async () => {
+            it("should update polylineInstance.glowIntensity without reflecting to 'glow-intensity' attribute", async () => {
                 element.glowIntensity = 2.5;
                 await element.updateComplete;
 
                 expect(element.glowIntensity).toBe(2.5);
                 expect(element.polylineInstance.glowIntensity).toBe(2.5);
-                expect(element.getAttribute("glow-intensity")).toBe("2.5");
+                expect(element.hasAttribute("glow-intensity")).toBe(false);
             });
 
             it("should parse 'glow-intensity' attribute", async () => {
@@ -579,13 +579,13 @@ describe("PolylineInstanceElement", () => {
                 expect(element.polylineInstance.dashSpeed).toBeCloseTo(DEFAULT_POLYLINE_ELEMENT_DASH_SPEED);
             });
 
-            it("should update polylineInstance.dashSpeed and reflect to 'dash-speed' attribute", async () => {
+            it("should update polylineInstance.dashSpeed without reflecting to 'dash-speed' attribute", async () => {
                 element.dashSpeed = 1.8;
                 await element.updateComplete;
 
                 expect(element.dashSpeed).toBe(1.8);
                 expect(element.polylineInstance.dashSpeed).toBe(1.8);
-                expect(element.getAttribute("dash-speed")).toBe("1.8");
+                expect(element.hasAttribute("dash-speed")).toBe(false);
             });
 
             it("should parse 'dash-speed' attribute", async () => {
@@ -604,13 +604,13 @@ describe("PolylineInstanceElement", () => {
                 expect(element.polylineInstance.dashFrequency).toBeCloseTo(DEFAULT_POLYLINE_ELEMENT_DASH_FREQUENCY);
             });
 
-            it("should update polylineInstance.dashFrequency and reflect to 'dash-frequency' attribute", async () => {
+            it("should update polylineInstance.dashFrequency without reflecting to 'dash-frequency' attribute", async () => {
                 element.dashFrequency = 0.35;
                 await element.updateComplete;
 
                 expect(element.dashFrequency).toBe(0.35);
                 expect(element.polylineInstance.dashFrequency).toBe(0.35);
-                expect(element.getAttribute("dash-frequency")).toBe("0.35");
+                expect(element.hasAttribute("dash-frequency")).toBe(false);
             });
 
             it("should parse 'dash-frequency' attribute", async () => {
@@ -629,13 +629,13 @@ describe("PolylineInstanceElement", () => {
                 expect(element.polylineInstance.joinStyle).toBe(PolylineJoinStyle.Miter);
             });
 
-            it("should update polylineInstance.joinStyle and reflect to 'join-style' attribute", async () => {
+            it("should update polylineInstance.joinStyle without reflecting to 'join-style' attribute", async () => {
                 element.joinStyle = PolylineJoinStyle.Round;
                 await element.updateComplete;
 
                 expect(element.joinStyle).toBe(PolylineJoinStyle.Round);
                 expect(element.polylineInstance.joinStyle).toBe(PolylineJoinStyle.Round);
-                expect(element.getAttribute("join-style")).toBe("round");
+                expect(element.hasAttribute("join-style")).toBe(false);
             });
 
             it("should parse 'join-style' attribute", async () => {
@@ -654,13 +654,13 @@ describe("PolylineInstanceElement", () => {
                 expect(element.polylineInstance.capStyle).toBe(PolylineCapStyle.Round);
             });
 
-            it("should update polylineInstance.capStyle and reflect to 'cap-style' attribute", async () => {
+            it("should update polylineInstance.capStyle without reflecting to 'cap-style' attribute", async () => {
                 element.capStyle = PolylineCapStyle.Square;
                 await element.updateComplete;
 
                 expect(element.capStyle).toBe(PolylineCapStyle.Square);
                 expect(element.polylineInstance.capStyle).toBe(PolylineCapStyle.Square);
-                expect(element.getAttribute("cap-style")).toBe("square");
+                expect(element.hasAttribute("cap-style")).toBe(false);
             });
 
             it("should parse 'cap-style' attribute", async () => {

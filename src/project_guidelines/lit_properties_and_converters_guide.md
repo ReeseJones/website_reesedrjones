@@ -424,29 +424,50 @@ export function createJsonConfigConverter<T>(fallback: T): ComplexAttributeConve
 
 ---
 
-## 6. Reflection Best Practices
+## 6. Reflection Best Practices & 5-Tier Classification
 
-Enabling `reflect: true` configures Lit to write property changes back to the HTML attribute via `setAttribute()`. While convenient, careless reflection can severely degrade application performance.
+Enabling `reflect: true` configures Lit to write property changes back to the HTML attribute via `setAttribute()`. While convenient, careless reflection can severely degrade application performance and pollute the DOM with default attribute noise.
 
-### When to Enable Reflection (`reflect: true`)
+To ensure a clean, performant DOM tree that only shows overridden state, properties are categorized into five distinct tiers:
+
+### 6.1 Codified Property Reflection Tiers
+
+- **Tier A: Core Spatial & Node Identity (`reflect: true`)**
+  - Properties: `name`, `position`, `rotation`, `scale`.
+  - Always reflects into DOM attributes so that 3D world/local transforms and element identification can be inspected live in browser DevTools.
+- **Tier B: Boolean State Flags (`type: Boolean, reflect: true`)**
+  - Properties: `hidden`, `clearDepth`, `makeDefault`.
+  - Only applies to flags whose default state is `false`. Lit's boolean converter removes the attribute when `false` (`null`), and sets an empty attribute when `true` (`<rj-node-3d hidden>`). Attributes appear only when the default state is overridden.
+  - *Caution:* Never enable `reflect: true` on boolean properties that default to `true` (such as `pauseWhenOffscreen` or `visible`), as Lit would stamp attributes into the DOM by default.
+- **Tier C: Pipeline & Sorting Keys (`reflect: false` or omitted)**
+  - Properties: `renderOrder` (`render-order`), `priority`, `aspect`.
+  - Internal engine and render pipeline sorting keys. Inbound markup parsing (`<rj-model render-order="5">`) works seamlessly, but removing `reflect: true` prevents Lit from stamping `render-order="0"` across every single DOM node.
+- **Tier D: Styling Defaults, Enums & Numeric Configurations (`reflect: false` or omitted)**
+  - Properties: `lineWidth`, `miterLimit`, `color`, `glowColor`, `glowIntensity`, `dashSpeed`, `dashFrequency`, `joinStyle`, `capStyle`, `anchor`, `size`, `sizeMode`, `billboardMode`, `fov`, `near`, `far`, `dprCap`, `renderMode`.
+  - Allows full declarative markup authoring (`<rj-polyline line-width="8">`), but avoids forcing dozens of default property strings into the DOM tree when defaults are untouched.
+- **Tier E: Heavy Data, Geometries & Materials (`attribute: false`)**
+  - Properties: `points`, `geometry`, `material`, `params`, `sizeClamping`.
+  - Heavy Float32Arrays, geometries, and material references must never be serialized into HTML strings.
+
+### 6.2 When to Enable Reflection (`reflect: true`)
 - **CSS Styling Hooks:**
   - When child or host styles depend on attribute selectors:
   ```css
   :host([active]) { opacity: 1; }
-  :host([variant="wireframe"]) canvas { filter: contrast(1.5); }
+  :host([position="top-left"]) { top: 0; left: 0; }
   ```
-- **State Inspection & Debugging:**
-  - For coarse element state flags (e.g., `loaded`, `selected`, `disabled`) that developers inspect via DevTools.
-- **Accessibility & ARIA Coordination:**
-  - When reflecting state to standard ARIA attributes (e.g., `aria-expanded`).
+- **Spatial Inspection & Transform Debugging:**
+  - For Tier A transforms (`position`, `rotation`, `scale`, `name`) inspected in 3D scene hierarchies.
+- **Active Boolean Flags:**
+  - For Tier B booleans whose active overridden state is `true` (`hidden`).
 
-### When to Avoid Reflection (`reflect: false` or `attribute: false`)
+### 6.3 When to Avoid Reflection (`reflect: false` or `attribute: false`)
 - **High-Frequency Animated Values:**
   - Never reflect camera coordinates, tick counters, matrices, or pointer positions. Writing attributes 60–120 times per second triggers DOM mutation observers, attribute change callbacks, and style recalculations.
-- **Large Collections or Objects:**
-  - Avoid reflecting geometry arrays, meshes, or large JSON configurations. Serializing kilobytes of JSON to an HTML string on every modification introduces severe CPU overhead.
-- **Unidirectional Property Flows:**
-  - If a property is passed downward from React 19 or TypeScript code and never queried from CSS, reflection adds zero value and creates unnecessary DOM writes.
+- **Large Collections, Geometries, or Vertex Buffers:**
+  - Avoid reflecting geometry arrays, meshes, polyline waypoints, or large configurations.
+- **Internal WebGL Pipeline State & Default Properties:**
+  - Pipeline keys (`renderOrder`), enums, and numerical defaults must not reflect outbound; they add zero value to CSS and clutter the DOM tree.
 
 ---
 

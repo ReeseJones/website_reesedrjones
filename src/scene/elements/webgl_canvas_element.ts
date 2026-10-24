@@ -80,10 +80,10 @@ export class WebGLCanvasElement extends LitElement implements IWebGLCanvasContex
     `;
 
     public static override properties = {
-        dprCap: { type: Number, attribute: "dpr-cap", reflect: true },
-        renderMode: { type: String, attribute: "render-mode", reflect: true },
-        pauseWhenOffscreen: { type: Boolean, attribute: "pause-when-offscreen", reflect: true },
-        pauseWhenHidden: { type: Boolean, attribute: "pause-when-hidden", reflect: true },
+        dprCap: { type: Number, attribute: "dpr-cap" },
+        renderMode: { type: String, attribute: "render-mode" },
+        pauseWhenOffscreen: { type: Boolean, attribute: "pause-when-offscreen" },
+        pauseWhenHidden: { type: Boolean, attribute: "pause-when-hidden" },
     };
 
     public declare dprCap: number;

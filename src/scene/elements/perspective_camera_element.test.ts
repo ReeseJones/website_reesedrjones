@@ -143,14 +143,14 @@ describe("PerspectiveCameraElement", () => {
                 expect(element.camera.fov).toBe(DEFAULT_CAMERA_FOV);
             });
 
-            it("should reconcile to camera.fov and reflect to attribute on property change", async () => {
+            it("should reconcile to camera.fov without reflecting to attribute on property change", async () => {
                 const targetFov = 45;
                 element.fov = targetFov;
                 await element.updateComplete;
 
                 expect(element.fov).toBe(targetFov);
                 expect(element.camera.fov).toBe(targetFov);
-                expect(element.getAttribute("fov")).toBe(String(targetFov));
+                expect(element.hasAttribute("fov")).toBe(false);
             });
 
             it("should update property and camera.fov on attribute change", async () => {
@@ -169,14 +169,14 @@ describe("PerspectiveCameraElement", () => {
                 expect(element.camera.near).toBe(DEFAULT_CAMERA_NEAR);
             });
 
-            it("should reconcile to camera.near and reflect to attribute on property change", async () => {
+            it("should reconcile to camera.near without reflecting to attribute on property change", async () => {
                 const targetNear = 0.5;
                 element.near = targetNear;
                 await element.updateComplete;
 
                 expect(element.near).toBe(targetNear);
                 expect(element.camera.near).toBe(targetNear);
-                expect(element.getAttribute("near")).toBe(String(targetNear));
+                expect(element.hasAttribute("near")).toBe(false);
             });
 
             it("should update property and camera.near on attribute change", async () => {
@@ -195,14 +195,14 @@ describe("PerspectiveCameraElement", () => {
                 expect(element.camera.far).toBe(DEFAULT_CAMERA_FAR);
             });
 
-            it("should reconcile to camera.far and reflect to attribute on property change", async () => {
+            it("should reconcile to camera.far without reflecting to attribute on property change", async () => {
                 const targetFar = 2000;
                 element.far = targetFar;
                 await element.updateComplete;
 
                 expect(element.far).toBe(targetFar);
                 expect(element.camera.far).toBe(targetFar);
-                expect(element.getAttribute("far")).toBe(String(targetFar));
+                expect(element.hasAttribute("far")).toBe(false);
             });
 
             it("should update property and camera.far on attribute change", async () => {
@@ -221,14 +221,14 @@ describe("PerspectiveCameraElement", () => {
                 expect(element.camera.aspect).toBe(DEFAULT_CAMERA_ASPECT);
             });
 
-            it("should reconcile to camera.aspect and reflect to attribute on property change", async () => {
+            it("should reconcile to camera.aspect without reflecting to attribute on property change", async () => {
                 const targetAspect = 16 / 9;
                 element.aspect = targetAspect;
                 await element.updateComplete;
 
                 expect(element.aspect).toBeCloseTo(targetAspect);
                 expect(element.camera.aspect).toBeCloseTo(targetAspect);
-                expect(Number(element.getAttribute("aspect"))).toBeCloseTo(targetAspect);
+                expect(element.hasAttribute("aspect")).toBe(false);
             });
 
             it("should update property and camera.aspect on attribute change", async () => {

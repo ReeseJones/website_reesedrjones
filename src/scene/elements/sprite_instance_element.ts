@@ -56,12 +56,12 @@ export class SpriteInstanceElement extends LitElement {
         rotation: { converter: vector3Converter, reflect: true },
         scale: { converter: vector3Converter, reflect: true },
         hidden: { type: Boolean, reflect: true },
-        renderOrder: { type: Number, attribute: "render-order", reflect: true },
-        anchor: { converter: vector2Converter, reflect: true },
-        size: { converter: vector2Converter, reflect: true },
-        sizeMode: { converter: spriteSizeModeConverter, attribute: "size-mode", reflect: true },
+        renderOrder: { type: Number, attribute: "render-order" },
+        anchor: { converter: vector2Converter },
+        size: { converter: vector2Converter },
+        sizeMode: { converter: spriteSizeModeConverter, attribute: "size-mode" },
         sizeClamping: { attribute: false },
-        billboardMode: { converter: billboardModeConverter, attribute: "billboard-mode", reflect: true },
+        billboardMode: { converter: billboardModeConverter, attribute: "billboard-mode" },
         material: { attribute: false },
     };
 

@@ -99,11 +99,11 @@ describe("WebGLCanvasElement", () => {
                 expect(element.dprCap).toBe(DEFAULT_DPR_CAP);
             });
 
-            it("should reflect property update to dpr-cap attribute", async () => {
+            it("should update property without reflecting to dpr-cap attribute", async () => {
                 element.dprCap = 2.0;
                 await element.updateComplete;
 
-                expect(element.getAttribute("dpr-cap")).toBe("2");
+                expect(element.hasAttribute("dpr-cap")).toBe(false);
                 expect(element.dprCap).toBe(2.0);
             });
 
@@ -152,11 +152,11 @@ describe("WebGLCanvasElement", () => {
                 expect(element.renderMode).toBe(DEFAULT_RENDER_MODE);
             });
 
-            it("should reflect property update to render-mode attribute", async () => {
+            it("should update property without reflecting to render-mode attribute", async () => {
                 element.renderMode = "on-demand";
                 await element.updateComplete;
 
-                expect(element.getAttribute("render-mode")).toBe("on-demand");
+                expect(element.hasAttribute("render-mode")).toBe(false);
             });
 
             it("should reflect render-mode attribute change to property", async () => {
@@ -172,7 +172,7 @@ describe("WebGLCanvasElement", () => {
                 expect(element.pauseWhenOffscreen).toBe(DEFAULT_PAUSE_WHEN_OFFSCREEN);
             });
 
-            it("should reflect property update to pause-when-offscreen attribute", async () => {
+            it("should update property without reflecting to pause-when-offscreen attribute", async () => {
                 element.pauseWhenOffscreen = false;
                 await element.updateComplete;
 
@@ -180,6 +180,7 @@ describe("WebGLCanvasElement", () => {
             });
 
             it("should reflect attribute change to property", async () => {
+                element.setAttribute("pause-when-offscreen", "");
                 element.removeAttribute("pause-when-offscreen");
                 await element.updateComplete;
                 expect(element.pauseWhenOffscreen).toBe(false);
@@ -195,7 +196,7 @@ describe("WebGLCanvasElement", () => {
                 expect(element.pauseWhenHidden).toBe(DEFAULT_PAUSE_WHEN_HIDDEN);
             });
 
-            it("should reflect property update to pause-when-hidden attribute", async () => {
+            it("should update property without reflecting to pause-when-hidden attribute", async () => {
                 element.pauseWhenHidden = false;
                 await element.updateComplete;
 
@@ -203,6 +204,7 @@ describe("WebGLCanvasElement", () => {
             });
 
             it("should reflect attribute change to property", async () => {
+                element.setAttribute("pause-when-hidden", "");
                 element.removeAttribute("pause-when-hidden");
                 await element.updateComplete;
                 expect(element.pauseWhenHidden).toBe(false);

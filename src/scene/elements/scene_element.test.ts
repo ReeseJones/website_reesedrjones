@@ -151,13 +151,13 @@ describe("SceneElement", () => {
                 expect(element.priority).toBe(DEFAULT_SCENE_PASS_PRIORITY);
             });
 
-            it("should update and reflect to attribute when set via property", async () => {
+            it("should update without reflecting to attribute when set via property", async () => {
                 const targetPriority = 25;
                 element.priority = targetPriority;
                 await element.updateComplete;
 
                 expect(element.priority).toBe(targetPriority);
-                expect(element.getAttribute("priority")).toBe(String(targetPriority));
+                expect(element.hasAttribute("priority")).toBe(false);
             });
 
             it("should update when set via attribute", async () => {
@@ -174,7 +174,7 @@ describe("SceneElement", () => {
                 expect(element.clearDepth).toBe(DEFAULT_SCENE_CLEAR_DEPTH);
             });
 
-            it("should update and reflect to attribute when set via property", async () => {
+            it("should update without reflecting to attribute when set via property", async () => {
                 element.clearDepth = false;
                 await element.updateComplete;
 

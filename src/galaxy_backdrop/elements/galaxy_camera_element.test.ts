@@ -126,35 +126,35 @@ describe("GalaxyCameraElement", () => {
         });
 
         describe("fov", () => {
-            it("should reflect to attribute and reconcile to camera.fov", async () => {
+            it("should reconcile to camera.fov without reflecting to attribute", async () => {
                 element.fov = 85;
                 await element.updateComplete;
 
                 expect(element.fov).toBe(85);
                 expect(element.camera.fov).toBe(85);
-                expect(element.getAttribute("fov")).toBe("85");
+                expect(element.hasAttribute("fov")).toBe(false);
             });
         });
 
         describe("near", () => {
-            it("should reflect to attribute and reconcile to camera.near", async () => {
+            it("should reconcile to camera.near without reflecting to attribute", async () => {
                 element.near = 0.5;
                 await element.updateComplete;
 
                 expect(element.near).toBe(0.5);
                 expect(element.camera.near).toBe(0.5);
-                expect(element.getAttribute("near")).toBe("0.5");
+                expect(element.hasAttribute("near")).toBe(false);
             });
         });
 
         describe("far", () => {
-            it("should reflect to attribute and reconcile to camera.far", async () => {
+            it("should reconcile to camera.far without reflecting to attribute", async () => {
                 element.far = 1500;
                 await element.updateComplete;
 
                 expect(element.far).toBe(1500);
                 expect(element.camera.far).toBe(1500);
-                expect(element.getAttribute("far")).toBe("1500");
+                expect(element.hasAttribute("far")).toBe(false);
             });
         });
 

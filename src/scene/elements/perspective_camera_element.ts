@@ -32,10 +32,10 @@ import {
 export class PerspectiveCameraElement extends LitElement {
     public static override properties = {
         name: { type: String, reflect: true },
-        fov: { type: Number, reflect: true },
-        near: { type: Number, reflect: true },
-        far: { type: Number, reflect: true },
-        aspect: { type: Number, reflect: true },
+        fov: { type: Number },
+        near: { type: Number },
+        far: { type: Number },
+        aspect: { type: Number },
         makeDefault: { type: Boolean, attribute: "make-default", reflect: true },
         position: { converter: vector3Converter, reflect: true },
         rotation: { converter: vector3Converter, reflect: true },

@@ -299,13 +299,13 @@ describe("SpriteInstanceElement", () => {
                 expect(element.spriteInstance.renderOrder).toBe(DEFAULT_SPRITE_INSTANCE_RENDER_ORDER);
             });
 
-            it("should reconcile to spriteInstance.renderOrder and reflect to render-order attribute on property change", async () => {
+            it("should reconcile to spriteInstance.renderOrder without reflecting to attribute on property change", async () => {
                 element.renderOrder = 2500;
                 await element.updateComplete;
 
                 expect(element.renderOrder).toBe(2500);
                 expect(element.spriteInstance.renderOrder).toBe(2500);
-                expect(element.getAttribute("render-order")).toBe("2500");
+                expect(element.hasAttribute("render-order")).toBe(false);
             });
 
             it("should update property and spriteInstance.renderOrder on attribute change", async () => {
@@ -324,22 +324,22 @@ describe("SpriteInstanceElement", () => {
                 expect(element.spriteInstance.getAnchor()).toEqual(DEFAULT_SPRITE_INSTANCE_ANCHOR);
             });
 
-            it("should reconcile to spriteInstance.setAnchor and reflect to attribute on property change", async () => {
+            it("should reconcile to spriteInstance.setAnchor without reflecting to attribute on property change", async () => {
                 const targetAnchor: Vector2Like = { x: 0.5, y: 0.5 };
                 element.anchor = targetAnchor;
                 await element.updateComplete;
 
                 expect(element.anchor).toEqual(targetAnchor);
                 expect(element.spriteInstance.getAnchor()).toEqual(targetAnchor);
-                expect(element.getAttribute("anchor")).toBe("0.5 0.5");
+                expect(element.hasAttribute("anchor")).toBe(false);
             });
 
-            it("should support tuple assignment and reflect to attribute", async () => {
+            it("should support tuple assignment without reflecting to attribute", async () => {
                 element.anchor = [0.25, 0.75];
                 await element.updateComplete;
 
                 expect(element.spriteInstance.getAnchor()).toEqual({ x: 0.25, y: 0.75 });
-                expect(element.getAttribute("anchor")).toBe("0.25 0.75");
+                expect(element.hasAttribute("anchor")).toBe(false);
             });
 
             it("should parse space-delimited string attribute", async () => {
@@ -366,22 +366,22 @@ describe("SpriteInstanceElement", () => {
                 expect(element.spriteInstance.getSize()).toEqual(DEFAULT_SPRITE_INSTANCE_SIZE);
             });
 
-            it("should reconcile to spriteInstance.setSize and reflect to attribute on property change", async () => {
+            it("should reconcile to spriteInstance.setSize without reflecting to attribute on property change", async () => {
                 const targetSize: Vector2Like = { x: 64, y: 48 };
                 element.size = targetSize;
                 await element.updateComplete;
 
                 expect(element.size).toEqual(targetSize);
                 expect(element.spriteInstance.getSize()).toEqual(targetSize);
-                expect(element.getAttribute("size")).toBe("64 48");
+                expect(element.hasAttribute("size")).toBe(false);
             });
 
-            it("should support tuple assignment and reflect to attribute", async () => {
+            it("should support tuple assignment without reflecting to attribute", async () => {
                 element.size = [40, 50];
                 await element.updateComplete;
 
                 expect(element.spriteInstance.getSize()).toEqual({ x: 40, y: 50 });
-                expect(element.getAttribute("size")).toBe("40 50");
+                expect(element.hasAttribute("size")).toBe(false);
             });
 
             it("should parse space-delimited string attribute", async () => {
@@ -408,20 +408,20 @@ describe("SpriteInstanceElement", () => {
                 expect(element.spriteInstance.sizeMode).toBe(DEFAULT_SPRITE_INSTANCE_SIZE_MODE);
             });
 
-            it("should reconcile to spriteInstance.sizeMode and reflect to size-mode attribute on property change", async () => {
+            it("should reconcile to spriteInstance.sizeMode without reflecting to size-mode attribute on property change", async () => {
                 element.sizeMode = SpriteSizeMode.WorldSpace;
                 await element.updateComplete;
 
                 expect(element.sizeMode).toBe(SpriteSizeMode.WorldSpace);
                 expect(element.spriteInstance.sizeMode).toBe(SpriteSizeMode.WorldSpace);
-                expect(element.getAttribute("size-mode")).toBe("world-space");
+                expect(element.hasAttribute("size-mode")).toBe(false);
 
                 element.sizeMode = SpriteSizeMode.ClampedScreenSpace;
                 await element.updateComplete;
 
                 expect(element.sizeMode).toBe(SpriteSizeMode.ClampedScreenSpace);
                 expect(element.spriteInstance.sizeMode).toBe(SpriteSizeMode.ClampedScreenSpace);
-                expect(element.getAttribute("size-mode")).toBe("clamped-screen-space");
+                expect(element.hasAttribute("size-mode")).toBe(false);
             });
 
             it("should update property and spriteInstance.sizeMode on attribute change", async () => {
@@ -479,13 +479,13 @@ describe("SpriteInstanceElement", () => {
                 expect(element.spriteInstance.billboardMode).toBe(DEFAULT_SPRITE_INSTANCE_BILLBOARD_MODE);
             });
 
-            it("should reconcile to spriteInstance.billboardMode and reflect to billboard-mode attribute on property change", async () => {
+            it("should reconcile to spriteInstance.billboardMode without reflecting to billboard-mode attribute on property change", async () => {
                 element.billboardMode = BillboardMode.Cylindrical;
                 await element.updateComplete;
 
                 expect(element.billboardMode).toBe(BillboardMode.Cylindrical);
                 expect(element.spriteInstance.billboardMode).toBe(BillboardMode.Cylindrical);
-                expect(element.getAttribute("billboard-mode")).toBe("cylindrical");
+                expect(element.hasAttribute("billboard-mode")).toBe(false);
             });
 
             it("should update property and spriteInstance.billboardMode on attribute change", async () => {

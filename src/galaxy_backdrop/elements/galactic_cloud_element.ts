@@ -36,8 +36,8 @@ import { getSharedCloudGeometry, getSharedCloudMaterial } from "../resources/gal
 export class GalacticCloudElement extends LitElement {
     public static override properties = {
         params: { attribute: false },
-        renderOrder: { type: Number, attribute: "render-order", reflect: true },
-        visible: { type: Boolean, reflect: true },
+        renderOrder: { type: Number, attribute: "render-order" },
+        visible: { type: Boolean },
     };
 
     public declare params: GalacticCloudParameters | GalaxyParameters;

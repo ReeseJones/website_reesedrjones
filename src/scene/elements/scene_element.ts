@@ -29,7 +29,7 @@ import {
  */
 export class SceneElement extends LitElement implements ISceneContext {
     public static override properties = {
-        priority: { type: Number, reflect: true },
+        priority: { type: Number },
         clearDepth: { type: Boolean, attribute: "clear-depth", reflect: true },
     };
 
