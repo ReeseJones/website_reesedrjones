@@ -20,7 +20,6 @@ export const TAG_RJ_POLYLINE = "rj-polyline" as const;
  * Default node name for PolylineInstanceElement.
  */
 export const DEFAULT_POLYLINE_NAME = "Polyline" as const;
-export const DEFAULT_POLYLINE_ELEMENT_NAME = DEFAULT_POLYLINE_NAME;
 
 /**
  * Default hidden flag for PolylineInstanceElement (visible by default).

@@ -170,3 +170,26 @@ Any time codebase logic interacts with browser-native hardware, DOM observers, o
   - Executing custom logic, state updates, validation, or side-effects before or after calling `super`.
   - Implementing or fulfilling an `abstract` method or virtual extension hook defined by the base contract.
   - Explicitly specializing or narrowing the return type of a method that cannot be expressed via generics on the base class.
+
+---
+
+## 11. Constants & Magic Numbers: Judicious Use vs. Constant Over-Extraction
+
+Constants are intended to communicate intent, prevent magic-number hazards, and consolidate values that drive algorithmic calculations or shared contract configurations. However, extracting trivial values into top-level constants creates indirection, boilerplate, and maintenance overhead without providing safety or readability.
+
+### What Should Be a Constant
+
+- **Algorithmic Values & Math Invariants:** Values involved in complex mathematical formulas, physics calculations, procedural generation curves (e.g., galaxy arm spiral pitches, density decay coefficients), camera easing factors, and interpolation coefficients.
+- **Arbitrary Index & Protocol Values:** Seemingly arbitrary or opaque hardware/protocol values that carry specific domain semantics, such as:
+  - WebGL generic vertex attribute indices (e.g., `POSITION_LOC = 0`, `TEXCOORD_LOC = 1`).
+  - Texture unit bindings (e.g., `TEXTURE_UNIT_0 = 0`).
+  - Bitmasks and flag bitshifts.
+  - Byte stride or offset alignments in raw binary buffers.
+- **Shared API Contracts & Config Defaults:** Default fallback values or priority enums that are explicitly shared across multiple distinct consumer files as part of a public interface contract.
+
+### What Should NOT Be a Constant (Keep Inline)
+
+- **Lit & React Template Attributes:** Direct template attributes and props such as element dimensions, pixel widths, dash speeds, anchors, rotation offsets, titles, and test identifiers. Inline literals (`<rj-polyline line-width={16} dash-speed={1} />` or `size={{ x: 32, y: 32 }}`) are immediately legible in the declarative tree and should not be extracted to top-level constants.
+- **Trivial Booleans and Primitives:** Do not create constants for self-evident defaults (e.g., `DEFAULT_HIDDEN = false`, `DEFAULT_NAME = ""`, `DEFAULT_PRIORITY = 0`). Initialize properties directly in class field declarations, constructor signatures, or destructuring defaults.
+- **One-Off Geometry/Vector Literals in Declarative Trees:** Vectors or dimensions used exclusively to configure a single declarative template instance.
+- **Backwards-Compatibility Constant Aliases:** Never retain alias exports (e.g., `export const FOO_ELEMENT_NAME = FOO_NAME;`). Update references cleanly across the codebase.

@@ -17,7 +17,6 @@ export const TAG_RJ_SPRITE_INSTANCE = "rj-sprite-instance" as const;
  * Default node name for SpriteInstanceElement.
  */
 export const DEFAULT_SPRITE_INSTANCE_NAME = "SpriteInstance" as const;
-export const DEFAULT_SPRITE_INSTANCE_ELEMENT_NAME = DEFAULT_SPRITE_INSTANCE_NAME;
 
 /**
  * Default hidden flag for SpriteInstanceElement (visible by default).

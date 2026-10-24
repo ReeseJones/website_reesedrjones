@@ -65,6 +65,9 @@ Design principles, architecture standards, and authoring conventions for React c
 - **Hook Rules & Dependency Verification:**
   - All components and hooks must strictly comply with React Hooks rules (`rules-of-hooks` and `exhaustive-deps`).
   - Verify changes via `npx eslint <path-to-file.tsx>` or `npm run lint`. Ensure all hook dependency arrays are exhaustive and free of unnecessary dependencies.
+- **Inline Props & Avoiding Superfluous Constants:**
+  - Keep declarative template attributes (dimensions, sizes, line widths, positions, anchors, names) inline within the JSX elements instead of extracting them to top-level constants.
+  - Reserve constants strictly for algorithmic calculations, shared configuration contracts, or complex memoized objects. Refer to [typescript_guidelines.md](typescript_guidelines.md#11-constants--magic-numbers-judicious-use-vs-constant-over-extraction).
 
 ---
 

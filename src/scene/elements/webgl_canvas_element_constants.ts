@@ -15,18 +15,12 @@ export const DEFAULT_RESIZE_DEBOUNCE_MS = 100;
 /**
  * Default WebGL context initialization attributes.
  */
-export const DEFAULT_CONTEXT_ALPHA = true;
-export const DEFAULT_CONTEXT_ANTIALIAS = false;
-export const DEFAULT_CONTEXT_DEPTH = true;
-export const DEFAULT_CONTEXT_POWER_PREFERENCE: WebGLPowerPreference = "high-performance";
-export const DEFAULT_CONTEXT_PRESERVE_DRAWING_BUFFER = false;
-
 export const DEFAULT_WEBGL_CONTEXT_ATTRIBUTES: WebGLContextAttributes = {
-    alpha: DEFAULT_CONTEXT_ALPHA,
-    antialias: DEFAULT_CONTEXT_ANTIALIAS,
-    depth: DEFAULT_CONTEXT_DEPTH,
-    powerPreference: DEFAULT_CONTEXT_POWER_PREFERENCE,
-    preserveDrawingBuffer: DEFAULT_CONTEXT_PRESERVE_DRAWING_BUFFER,
+    alpha: true,
+    antialias: false,
+    depth: true,
+    powerPreference: "high-performance",
+    preserveDrawingBuffer: false,
 };
 
 /**
@@ -43,4 +37,3 @@ export const DEFAULT_METRICS_INTERVAL_SEC = 0.25;
  * Milliseconds per second conversion constant.
  */
 export const MS_PER_SECOND = 1000;
-

@@ -14,7 +14,7 @@ import type { GalaxySettingsTabProps } from "./galaxy_settings_tab_types";
 
 const COPIED_FEEDBACK_DURATION_MS = 2000;
 const CUSTOM_PRESET_ID = "custom";
-const JSON_INDENT_SPACES = 2;
+
 
 /**
  * Tab component adapter that houses galaxy preset management, parameters export, and the 7 tuning sections.
@@ -38,7 +38,7 @@ export function GalaxySettingsTab(
             return;
         }
         navigator.clipboard.writeText(
-            JSON.stringify(params, null, JSON_INDENT_SPACES)
+            JSON.stringify(params, null, 2)
         );
         setCopied(true);
         setTimeout(() => setCopied(false), COPIED_FEEDBACK_DURATION_MS);

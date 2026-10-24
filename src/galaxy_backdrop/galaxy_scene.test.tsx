@@ -58,9 +58,9 @@ describe("<GalaxyScene />", () => {
         }) | null;
         expect(polylineEl).not.toBeNull();
         expect(polylineEl?.name).toBe("GalacticTransitRoute");
-        expect(polylineEl?.lineWidth).toBe(32);
-        expect(polylineEl?.dashSpeed).toBe(2.5);
-        expect(polylineEl?.glowIntensity).toBe(0.75);
+        expect(polylineEl?.lineWidth).toBe(16);
+        expect(polylineEl?.dashSpeed).toBe(1);
+        expect(polylineEl?.glowIntensity).toBe(0.3);
 
         const spriteInstances = container.querySelectorAll("rj-sprite-instance");
         expect(spriteInstances.length).toBe(2);

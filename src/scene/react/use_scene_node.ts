@@ -1,7 +1,6 @@
 import { useEffect, useImperativeHandle, useRef } from "react";
 import type React from "react";
 import { useParentNode } from "./scene_context";
-import { DEFAULT_TRANSFORM_ORIGIN, DEFAULT_TRANSFORM_UNIT_SCALE } from "./scene_react_constants";
 import type { ISceneNode } from "../core/scene_node_types";
 import type { Vector3Like } from "../../maths/vector_types";
 import type { EulerAngles } from "../core/transform_types";
@@ -67,7 +66,7 @@ export function useSceneNode<TNode extends ISceneNode = ISceneNode>(
                 }
             }
         } else if (prevPositionRef.current !== null) {
-            node.transform.setPosition(DEFAULT_TRANSFORM_ORIGIN, DEFAULT_TRANSFORM_ORIGIN, DEFAULT_TRANSFORM_ORIGIN);
+            node.transform.setPosition(0, 0, 0);
             prevPositionRef.current = null;
         }
 
@@ -88,7 +87,7 @@ export function useSceneNode<TNode extends ISceneNode = ISceneNode>(
                 }
             }
         } else if (prevRotationRef.current !== null) {
-            node.transform.setRotationEuler(DEFAULT_TRANSFORM_ORIGIN, DEFAULT_TRANSFORM_ORIGIN, DEFAULT_TRANSFORM_ORIGIN);
+            node.transform.setRotationEuler(0, 0, 0);
             prevRotationRef.current = null;
         }
 
@@ -117,7 +116,7 @@ export function useSceneNode<TNode extends ISceneNode = ISceneNode>(
                 }
             }
         } else if (prevScaleRef.current !== null) {
-            node.transform.setUniformScale(DEFAULT_TRANSFORM_UNIT_SCALE);
+            node.transform.setUniformScale(1);
             prevScaleRef.current = null;
         }
     }, [node, props.name, props.visible, props.position, props.rotation, props.scale]);

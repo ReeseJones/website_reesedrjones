@@ -1,10 +1,10 @@
 import type { ReactNode, Ref } from "react";
 
 export const DEFAULT_ACTIVE_TAB_ID = "general";
-export const DEFAULT_DIALOG_TITLE = "Settings";
-export const ROLE_TAB = "tab";
-export const ROLE_TABLIST = "tablist";
-export const ROLE_TABPANEL = "tabpanel";
+
+
+
+
 
 /**
  * Props for the declarative SettingsTab child element.

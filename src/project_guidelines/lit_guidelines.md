@@ -103,6 +103,9 @@ Design principles, architecture standards, and authoring conventions for Lit Web
     ```
   - Always specify the property `type` (e.g., `Number`, `Boolean`, `String`, `Object`) for primitive attributes, and configure `reflect: true` only when the attribute needs to be mirrored to the DOM for CSS styling or external inspection. Complex objects, arrays, or non-serialized properties must specify `attribute: false`.
   - **Prohibition of Decorators:** Do not use experimental or Stage 3 decorators (`@property`, `@state`, or the `accessor` keyword). The project's build pipeline (Parcel 2 and SWC) is strictly standard ECMAScript without decorator transpilation.
+- **Constructor Defaults & Judicious Constants:**
+  - Initialize default property values directly in the class `constructor()` using clean literals (e.g., `this.fov = 60; this.hidden = false;`) rather than creating trivial top-level constants (`DEFAULT_HIDDEN = false`, `DEFAULT_NAME = ""`).
+  - Keep template attributes and child element props inline in `html` / JSX trees rather than extracting one-off top-level constants. See [typescript_guidelines.md](typescript_guidelines.md#11-constants--magic-numbers-judicious-use-vs-constant-over-extraction).
 - **Scene Node Naming Scope:** Only components that inherit from scene node base classes (`PerspectiveCameraElement`, `ModelInstanceElement`, `Node3DElement`) should expose a `name` property. Do not declare `name` properties on specialized elements or composite components that do not inherit from scene node elements.
 - **Lifecycle Distinction: `willUpdate` vs. `updated` vs. `render`:**
   - **`willUpdate(changedProperties)` (Model & State Synchronization):**
@@ -262,4 +265,3 @@ For comprehensive deep-dives, concept indexes, and advanced architectural guides
   - [DOM Access, Shadow Roots & Light DOM Guide](lit_dom_access_guide.md): Template `ref()` directives, element queries, slotted content access, and Light DOM scene graph architecture.
 - **Curriculum Roadmap & Task List:**
   - [Lit Guidelines Task List](lit_guidelines_tasklist.md): Master checklist and progress tracking for the Lit documentation curriculum.
-

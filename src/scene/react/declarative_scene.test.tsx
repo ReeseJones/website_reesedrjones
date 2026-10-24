@@ -9,10 +9,6 @@ import { ModelInstance } from "./model_instance_component";
 import { useSceneNode } from "./use_scene_node";
 import { useSceneFrame } from "./use_scene_frame";
 import {
-    DEFAULT_TRANSFORM_ORIGIN,
-    DEFAULT_TRANSFORM_UNIT_SCALE,
-} from "./scene_react_constants";
-import {
     DEFAULT_FRAME_SUBSCRIBER_PRIORITY,
     MAX_SIMULATION_DT_SEC,
     MIN_SIMULATION_DT_SEC,
@@ -885,11 +881,7 @@ describe("Declarative Scene Architecture", () => {
             // Fallback when position becomes undefined
             setPosSpy.mockClear();
             rerender(<NodeConsumer position={undefined} />);
-            expect(setPosSpy).toHaveBeenCalledWith(
-                DEFAULT_TRANSFORM_ORIGIN,
-                DEFAULT_TRANSFORM_ORIGIN,
-                DEFAULT_TRANSFORM_ORIGIN
-            );
+            expect(setPosSpy).toHaveBeenCalledWith(0, 0, 0);
             const pos3 = child.transform.getPosition();
             expect(pos3.x).toBe(0);
             expect(pos3.y).toBe(0);
@@ -929,11 +921,7 @@ describe("Declarative Scene Architecture", () => {
             // Fallback when rotation becomes undefined
             setRotSpy.mockClear();
             rerender(<NodeConsumer rotation={undefined} />);
-            expect(setRotSpy).toHaveBeenCalledWith(
-                DEFAULT_TRANSFORM_ORIGIN,
-                DEFAULT_TRANSFORM_ORIGIN,
-                DEFAULT_TRANSFORM_ORIGIN
-            );
+            expect(setRotSpy).toHaveBeenCalledWith(0, 0, 0);
         });
 
         it("reconciles scale (number and tuple) updates and falls back to unit scale when undefined", () => {
@@ -980,7 +968,7 @@ describe("Declarative Scene Architecture", () => {
             // Fallback when scale becomes undefined
             setUniformScaleSpy.mockClear();
             rerender(<NodeConsumer scale={undefined} />);
-            expect(setUniformScaleSpy).toHaveBeenCalledWith(DEFAULT_TRANSFORM_UNIT_SCALE);
+            expect(setUniformScaleSpy).toHaveBeenCalledWith(1);
             expect(child.transform.getScale().x).toBe(1);
             expect(child.transform.getScale().y).toBe(1);
             expect(child.transform.getScale().z).toBe(1);
@@ -1036,11 +1024,7 @@ describe("Declarative Scene Architecture", () => {
             // Fallback when position becomes undefined
             setPosSpy.mockClear();
             rerender(<NodeConsumer position={undefined} />);
-            expect(setPosSpy).toHaveBeenCalledWith(
-                DEFAULT_TRANSFORM_ORIGIN,
-                DEFAULT_TRANSFORM_ORIGIN,
-                DEFAULT_TRANSFORM_ORIGIN
-            );
+            expect(setPosSpy).toHaveBeenCalledWith(0, 0, 0);
             const pos4 = child.transform.getPosition();
             expect(pos4.x).toBe(0);
             expect(pos4.y).toBe(0);
@@ -1085,11 +1069,7 @@ describe("Declarative Scene Architecture", () => {
             // Fallback when rotation becomes undefined
             setRotSpy.mockClear();
             rerender(<NodeConsumer rotation={undefined} />);
-            expect(setRotSpy).toHaveBeenCalledWith(
-                DEFAULT_TRANSFORM_ORIGIN,
-                DEFAULT_TRANSFORM_ORIGIN,
-                DEFAULT_TRANSFORM_ORIGIN
-            );
+            expect(setRotSpy).toHaveBeenCalledWith(0, 0, 0);
         });
 
         it("reconciles scale updates using Vector3Like objects ({ x, y, z }) and falls back to unit scale when undefined", () => {
@@ -1139,7 +1119,7 @@ describe("Declarative Scene Architecture", () => {
             // Fallback when scale becomes undefined
             setUniformScaleSpy.mockClear();
             rerender(<NodeConsumer scale={undefined} />);
-            expect(setUniformScaleSpy).toHaveBeenCalledWith(DEFAULT_TRANSFORM_UNIT_SCALE);
+            expect(setUniformScaleSpy).toHaveBeenCalledWith(1);
             expect(child.transform.getScale().x).toBe(1);
             expect(child.transform.getScale().y).toBe(1);
             expect(child.transform.getScale().z).toBe(1);

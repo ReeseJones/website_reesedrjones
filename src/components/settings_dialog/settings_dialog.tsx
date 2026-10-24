@@ -11,19 +11,10 @@ import { GearIcon } from "../icons/gear_icon";
 import { classNameMap } from "../../lib/classNameMap";
 import {
     DEFAULT_ACTIVE_TAB_ID,
-    DEFAULT_DIALOG_TITLE,
-    ROLE_TAB,
-    ROLE_TABLIST,
-    ROLE_TABPANEL,
     type SettingsDialogProps,
     type SettingsTabDescriptor,
     type SettingsTabProps,
 } from "./settings_dialog_types";
-
-const KEY_ARROW_LEFT = "ArrowLeft";
-const KEY_ARROW_RIGHT = "ArrowRight";
-const KEY_HOME = "Home";
-const KEY_END = "End";
 
 /**
  * Generalized, accessible settings dialog modal supporting declarative and programmatic tabs.
@@ -38,7 +29,7 @@ export function SettingsDialog(props: SettingsDialogProps): React.JSX.Element {
         tabs,
         children,
         className,
-        title = DEFAULT_DIALOG_TITLE,
+        title = "Settings",
     } = props;
 
     // Collect tab descriptors from programmatic tabs prop and declarative children
@@ -120,20 +111,20 @@ export function SettingsDialog(props: SettingsDialogProps): React.JSX.Element {
 
             let nextIndex = -1;
 
-            if (e.key === KEY_ARROW_RIGHT) {
+            if (e.key === "ArrowRight") {
                 nextIndex =
                     currentIndex >= 0
                         ? (currentIndex + 1) % enabledTabs.length
                         : 0;
-            } else if (e.key === KEY_ARROW_LEFT) {
+            } else if (e.key === "ArrowLeft") {
                 nextIndex =
                     currentIndex >= 0
                         ? (currentIndex - 1 + enabledTabs.length) %
                           enabledTabs.length
                         : enabledTabs.length - 1;
-            } else if (e.key === KEY_HOME) {
+            } else if (e.key === "Home") {
                 nextIndex = 0;
-            } else if (e.key === KEY_END) {
+            } else if (e.key === "End") {
                 nextIndex = enabledTabs.length - 1;
             }
 
@@ -180,7 +171,7 @@ export function SettingsDialog(props: SettingsDialogProps): React.JSX.Element {
             {tabDescriptors.length > 0 && (
                 <div
                     className="tab-bar"
-                    role={ROLE_TABLIST}
+                    role="tablist"
                     aria-label="Settings categories"
                     onKeyDown={handleKeyDown}
                 >
@@ -202,7 +193,7 @@ export function SettingsDialog(props: SettingsDialogProps): React.JSX.Element {
                                     }
                                 }}
                                 type="button"
-                                role={ROLE_TAB}
+                                role="tab"
                                 id={`settings-tab-${tab.id}`}
                                 aria-selected={isSelected}
                                 aria-controls={`settings-panel-${tab.id}`}
@@ -229,7 +220,7 @@ export function SettingsDialog(props: SettingsDialogProps): React.JSX.Element {
             {/* Tab Panel */}
             {activeTab && (
                 <div
-                    role={ROLE_TABPANEL}
+                    role="tabpanel"
                     id={`settings-panel-${activeTab.id}`}
                     aria-labelledby={`settings-tab-${activeTab.id}`}
                     tabIndex={0}
